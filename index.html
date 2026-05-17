@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sutomo HR · Teacher Recruitment & Onboarding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: { DEFAULT: '#6B3A00', dark: '#4A2800', light: '#8B5A2F' },
+            gold:  { DEFAULT: '#D4AF37', dark: '#B8860B', light: '#E8CC7A' },
+            maroon:{ DEFAULT: '#8A1538', dark: '#5E0F27', light: '#B8305A' },
+            cream: { DEFAULT: '#F7F4EF', soft: '#FBF9F4' },
+            ink:   { DEFAULT: '#0F172A', soft: '#1E293B', mute: '#475569' },
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body class="bg-slate-50 text-ink antialiased">
+  <div id="app"></div>
+  <div id="modalRoot"></div>
+  <div id="drawerRoot"></div>
+  <div id="toastRoot" class="fixed bottom-4 right-4 z-[300] flex flex-col gap-2"></div>
+
+  <script src="data.js"></script>
+  <script src="components.js"></script>
+  <script src="pages.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
