@@ -12,9 +12,29 @@ class Candidate extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'subjects'   => 'array',
-        'meta'       => 'array',
-        'applied_at' => 'date',
+        'subjects'       => 'array',
+        'past_schools'   => 'array',
+        'certifications' => 'array',
+        'languages'      => 'array',
+        'meta'           => 'array',
+        'talent_pool'    => 'boolean',
+        'shortlisted'    => 'boolean',
+        'applied_at'     => 'date',
+    ];
+
+    public const SOURCES = [
+        'website'  => 'Website',
+        'walk-in'  => 'Walk-in',
+        'referral' => 'Referral',
+        'agency'   => 'Agency',
+        'fair'     => 'Career Fair',
+    ];
+
+    public const QUALIFICATIONS = [
+        'D3' => 'D3 / Diploma',
+        'S1' => 'S1 / Bachelor',
+        'S2' => 'S2 / Master',
+        'S3' => 'S3 / Doctorate',
     ];
 
     public const STAGES = [
