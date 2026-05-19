@@ -187,7 +187,7 @@ class ApplicationResource extends Resource
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\Action::make('invoice')->label('Open Invoice')->icon('heroicon-o-document-currency-dollar')->color('primary')
-                        ->url(fn (Application $r) => route('filament.principal.pages.application-invoice', ['record' => $r->id]))
+                        ->url(fn (Application $r) => \App\Filament\Principal\Pages\ApplicationInvoice::getUrl(['record' => $r->id]))
                         ->openUrlInNewTab(),
                     Tables\Actions\Action::make('receipt')->label('View Receipt')->icon('heroicon-o-paper-clip')->color('warning')
                         ->visible(fn (Application $r) => filled($r->receipt_file))

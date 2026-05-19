@@ -15,9 +15,9 @@ class ApplicationInvoice extends Page
 
     public Application $record;
 
-    public function mount(int $record): void
+    public function mount(int|Application $record): void
     {
-        $this->record = Application::findOrFail($record);
+        $this->record = $record instanceof Application ? $record : Application::findOrFail($record);
         if (empty($this->record->invoice_no)) {
             $this->record->invoice_no = 'INV-' . now()->format('Y') . '-' . str_pad((string) $this->record->id, 5, '0', STR_PAD_LEFT);
             $this->record->save();

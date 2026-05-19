@@ -14,7 +14,7 @@ class ViewApplication extends ViewRecord
     {
         return [
             Actions\Action::make('invoice')->label('Open Invoice')->icon('heroicon-o-document-currency-dollar')
-                ->url(fn () => route('filament.principal.pages.application-invoice', ['record' => $this->record->id]))
+                ->url(fn () => \App\Filament\Principal\Pages\ApplicationInvoice::getUrl(['record' => $this->record->id]))
                 ->openUrlInNewTab(),
             Actions\EditAction::make(),
         ];
