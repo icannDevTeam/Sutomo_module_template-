@@ -11,10 +11,24 @@ class Student extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'dob'         => 'date',
-        'enrolled_at' => 'date',
-        'meta'        => 'array',
-        'gpa'         => 'decimal:2',
+        'dob'                  => 'date',
+        'enrolled_at'          => 'date',
+        'books_issued_at'      => 'date',
+        'account_activated_at' => 'date',
+        'first_attendance_at'  => 'date',
+        'meta'                 => 'array',
+        'gpa'                  => 'decimal:2',
+    ];
+
+    public const ONBOARDING_STEPS = [
+        'accepted'      => 'Accepted',
+        'temp_id'       => 'Temporary ID',
+        'dev_fee'       => 'Development Fee',
+        'books'         => 'Books Issued',
+        'class_assigned'=> 'Class Assigned',
+        'attendance'    => '5-Day Attendance',
+        'permanent_id'  => 'Permanent ID + VA',
+        'activated'     => 'Activated',
     ];
 
     public const STATUSES = [

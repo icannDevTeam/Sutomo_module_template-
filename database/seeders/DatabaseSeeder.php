@@ -184,12 +184,21 @@ class DatabaseSeeder extends Seeder
 
         EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SMA'], [
             'campus' => 'sma', 'unit' => 'SMA', 'opens_at' => '2026-04-01', 'closes_at' => '2026-07-15', 'status' => 'open', 'quota' => 120,
+            'pass_threshold' => 70, 'fail_threshold' => 50,
+            'exam_starts_at' => now()->addDays(20)->setTime(8,0), 'exam_venue' => 'Aula Sutomo 1 — Lt. 3',
+            'exam_instructions' => 'Bawa kartu ujian, alat tulis, dan kalkulator. Datang 30 menit sebelum mulai.',
         ]);
         EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SMP'], [
             'campus' => 'smp', 'unit' => 'SMP', 'opens_at' => '2026-04-01', 'closes_at' => '2026-07-15', 'status' => 'open', 'quota' => 140,
+            'pass_threshold' => 68, 'fail_threshold' => 48,
+            'exam_starts_at' => now()->addDays(22)->setTime(8,0), 'exam_venue' => 'Aula Sutomo 2 — Lt. 2',
+            'exam_instructions' => 'Bawa kartu ujian dan alat tulis. Datang 30 menit lebih awal.',
         ]);
         EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SD'], [
             'campus' => 'sd', 'unit' => 'SD', 'opens_at' => '2026-03-15', 'closes_at' => '2026-07-31', 'status' => 'open', 'quota' => 180,
+            'pass_threshold' => 65, 'fail_threshold' => 45,
+            'exam_starts_at' => now()->addDays(15)->setTime(9,0), 'exam_venue' => 'Ruang Asesmen SD',
+            'exam_instructions' => 'Wawancara singkat dan tes psikomotor. Wajib didampingi orang tua.',
         ]);
 
         $classDefs = [
@@ -247,29 +256,59 @@ class DatabaseSeeder extends Seeder
         }
 
         $pipeline = Application::PIPELINE;
-        $extra = ['failed','waitlisted','withdrawn'];
+        $extra = ['failed','waitlisted','withdrawn','declined'];
+        $methods = array_keys(Application::PAYMENT_METHODS);
+        $religionList = $religions;
+        $ethnicityList = ['Jawa','Sunda','Tionghoa','Batak','Minang','Melayu','Bali'];
+        $periodsByCampus = [
+            'sma' => EnrollmentPeriod::where('campus','sma')->first()?->id,
+            'smp' => EnrollmentPeriod::where('campus','smp')->first()?->id,
+            'sd'  => EnrollmentPeriod::where('campus','sd')->first()?->id,
+            'int' => EnrollmentPeriod::where('campus','sma')->first()?->id,
+        ];
         for ($i = 1; $i <= 35; $i++) {
             $status = $i <= 28 ? $pipeline[array_rand($pipeline)] : $extra[array_rand($extra)];
             $campus = fake()->randomElement(['sd','smp','sma','int']);
+            $paid = fake()->boolean(70);
+            $paymentStatus = $paid ? 'paid' : 'pending';
+            $hasReceipt = $paid && fake()->boolean(70);
             Application::create([
                 'code' => 'APP-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
                 'name' => $firstNames[array_rand($firstNames)].' '.$lastNames[array_rand($lastNames)],
                 'gender' => fake()->randomElement(['M','F']),
                 'dob' => now()->subYears(fake()->numberBetween(6,16))->toDateString(),
+                'birthplace' => fake()->randomElement(['Medan','Jakarta','Surabaya','Bandung','Pematangsiantar']),
+                'nisn' => fake()->numerify('##########'),
+                'religion' => fake()->randomElement($religionList),
+                'ethnicity' => fake()->randomElement($ethnicityList),
+                'address' => fake()->streetAddress(),
+                'city' => fake()->randomElement($cities),
                 'parent_name' => 'Bpk./Ibu '.$lastNames[array_rand($lastNames)],
                 'parent_phone' => '+62 81'.fake()->numerify('########'),
+                'parent_whatsapp' => fake()->boolean(60) ? '+62 81'.fake()->numerify('########') : null,
                 'parent_email' => fake()->safeEmail(),
+                'parent_occupation' => fake()->randomElement(['Wiraswasta','PNS','Karyawan Swasta','Dokter','Guru','Ibu Rumah Tangga']),
                 'current_school' => fake()->randomElement(['SD Tarakanita','SMP Pelita','SMA Cita Buana','SD Mardi Yuana','SMP Kanisius','SD IPEKA']),
                 'campus' => $campus, 'unit' => strtoupper($campus),
                 'grade' => (string) fake()->numberBetween(1, 12),
                 'stream' => $campus === 'sma' ? fake()->randomElement(['ipa','ips']) : null,
-                'applicant_type' => fake()->randomElement(['new','new','transfer','sibling']),
+                'enrollment_period_id' => $periodsByCampus[$campus] ?? null,
+                'applicant_type' => fake()->randomElement(['new','new','new','transfer','sibling','returning']),
+                'is_teacher_child' => fake()->boolean(10),
+                'is_existing_student' => fake()->boolean(25),
+                'existing_unit' => fake()->boolean(25) ? fake()->randomElement(['sd','smp','sma']) : null,
+                'orphan_status' => fake()->randomElement(['none','none','none','none','none','yatim','piatu']),
                 'status' => $status,
                 'applied_at' => now()->subDays(fake()->numberBetween(1, 55))->toDateString(),
                 'exam_date' => in_array($status, ['exam_scheduled','passed','failed']) ? now()->addDays(fake()->numberBetween(-10, 14))->toDateString() : null,
                 'placement_score' => in_array($status, ['passed','failed','accepted','dev_fee','class_assigned','activated']) ? fake()->numberBetween(45, 95) : null,
                 'placement_recommendation' => in_array($status, ['passed','accepted']) ? fake()->randomElement(['Grade per request','One grade up','Extra support recommended']) : null,
-                'payment_status' => fake()->randomElement(['pending','paid','paid','paid']),
+                'payment_status' => $paymentStatus,
+                'payment_method' => $paid ? fake()->randomElement($methods) : null,
+                'payment_amount' => 300000,
+                'payment_paid_at' => $paid ? now()->subDays(fake()->numberBetween(0, 40)) : null,
+                'invoice_no' => $paid ? 'INV-2026-' . str_pad((string)$i, 5, '0', STR_PAD_LEFT) : null,
+                'receipt_file' => $hasReceipt ? 'receipts/sample-receipt.pdf' : null,
                 'waitlisted' => $status === 'waitlisted',
             ]);
         }
