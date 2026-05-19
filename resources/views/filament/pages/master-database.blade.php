@@ -10,7 +10,7 @@
     </div>
 
     {{-- Stat strip --}}
-    <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-top:1rem;">
         @foreach ([
             ['Total in pool',     $totals['pool'],       'heroicon-o-users',         'primary'],
             ['Shortlisted',       $totals['shortlist'],  'heroicon-o-star',          'warning'],
@@ -96,7 +96,7 @@
     </div>
 
     {{-- Result cards --}}
-    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:.75rem;margin-top:1rem;">
         @forelse ($list as $c)
             @php
                 $initials = collect(explode(' ', $c->name))->map(fn($p)=>mb_substr($p,0,1))->take(2)->implode('');

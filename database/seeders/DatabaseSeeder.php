@@ -2,11 +2,21 @@
 
 namespace Database\Seeders;
 
+use App\Models\Application;
 use App\Models\AuditLog;
+use App\Models\BehaviorLog;
 use App\Models\Candidate;
 use App\Models\Deposit;
+use App\Models\EnrollmentPeriod;
 use App\Models\Interview;
+use App\Models\ProcurementRequest;
+use App\Models\SchoolClass;
+use App\Models\SchoolEvent;
+use App\Models\SscRequest;
+use App\Models\Student;
+use App\Models\SupervisiEvaluation;
 use App\Models\Teacher;
+use App\Models\TeacherLeave;
 use App\Models\Vacancy;
 use Illuminate\Database\Seeder;
 
@@ -20,6 +30,7 @@ class DatabaseSeeder extends Seeder
         $this->seedTeachers();
         $this->seedInterviews();
         $this->seedAudit();
+        $this->seedPrincipalModule();
     }
 
     private function seedVacancies(): void
@@ -162,5 +173,204 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@sutomo.sch.id'],
             ['name' => 'Sri Lestari', 'password' => bcrypt('password')]
         );
+    }
+
+    private function seedPrincipalModule(): void
+    {
+        \App\Models\User::firstOrCreate(
+            ['email' => 'principal@sutomo.sch.id'],
+            ['name' => 'Drs. Budi Santoso', 'password' => bcrypt('password'), 'role' => 'principal', 'campus' => 'sma']
+        );
+
+        EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SMA'], [
+            'campus' => 'sma', 'unit' => 'SMA', 'opens_at' => '2026-04-01', 'closes_at' => '2026-07-15', 'status' => 'open', 'quota' => 120,
+        ]);
+        EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SMP'], [
+            'campus' => 'smp', 'unit' => 'SMP', 'opens_at' => '2026-04-01', 'closes_at' => '2026-07-15', 'status' => 'open', 'quota' => 140,
+        ]);
+        EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SD'], [
+            'campus' => 'sd', 'unit' => 'SD', 'opens_at' => '2026-03-15', 'closes_at' => '2026-07-31', 'status' => 'open', 'quota' => 180,
+        ]);
+
+        $classDefs = [
+            ['SMA-10-IPA-A','X IPA-A','sma','10','ipa','A.201',28],
+            ['SMA-10-IPA-B','X IPA-B','sma','10','ipa','A.202',28],
+            ['SMA-10-IPS-A','X IPS-A','sma','10','ips','A.203',28],
+            ['SMA-11-IPA-A','XI IPA-A','sma','11','ipa','A.301',28],
+            ['SMA-12-IPA-A','XII IPA-A','sma','12','ipa','A.401',26],
+            ['SMP-7-A','VII-A','smp','7','umum','B.101',30],
+            ['SMP-7-B','VII-B','smp','7','umum','B.102',30],
+            ['SMP-8-A','VIII-A','smp','8','umum','B.201',30],
+            ['SMP-9-A','IX-A','smp','9','umum','B.301',30],
+            ['SD-3-A','3-A','sd','3','umum','C.103',24],
+            ['SD-4-A','4-A','sd','4','umum','C.104',24],
+            ['SD-5-A','5-A','sd','5','umum','C.105',24],
+        ];
+        $teachers = Teacher::pluck('id')->all();
+        foreach ($classDefs as $i => [$code,$name,$campus,$grade,$stream,$room,$cap]) {
+            SchoolClass::firstOrCreate(['code' => $code], [
+                'name' => $name, 'campus' => $campus, 'grade' => $grade, 'stream' => $stream,
+                'room' => $room, 'capacity' => $cap, 'homeroom_teacher_id' => $teachers[$i % max(1,count($teachers))] ?? null,
+            ]);
+        }
+
+        $classes = SchoolClass::all();
+        $firstNames = ['Ahmad','Putri','Kevin','Anissa','Rio','Citra','Bayu','Dewi','Eko','Sari','Joko','Maya','Nanda','Oki','Putu','Rahma','Sinta','Tomi','Umi','Vino','Wahyu','Yanti','Zaki','Beni','Hana','Indra','Kiki','Lulu','Mira','Naufal','Olive','Pandu','Qori','Rangga','Sigit','Tika','Ulil','Vera','Wanda','Yoga'];
+        $lastNames  = ['Wijaya','Hartanto','Lestari','Pratama','Santoso','Halim','Suryadi','Anggraini','Saputra','Kusuma','Rahman','Setiawan','Putra','Putri','Sari','Nugraha','Permadi','Yuwono','Mahendra'];
+        $cities = ['Jakarta','Bekasi','Tangerang','Depok','Bogor'];
+        $religions = ['Islam','Kristen','Katolik','Buddha','Hindu'];
+
+        $studentN = 0;
+        foreach ($classes as $c) {
+            $count = (int) round($c->capacity * fake()->randomFloat(2, 0.65, 0.95));
+            for ($i = 0; $i < $count; $i++) {
+                $studentN++;
+                $g = fake()->randomElement(['M','F']);
+                $attendance = fake()->numberBetween(70, 100);
+                $gpa = fake()->randomFloat(2, 60, 95);
+                Student::create([
+                    'nis' => 'S' . str_pad((string)$studentN, 5, '0', STR_PAD_LEFT),
+                    'name' => $firstNames[array_rand($firstNames)].' '.$lastNames[array_rand($lastNames)],
+                    'gender' => $g, 'dob' => now()->subYears(fake()->numberBetween(7,18))->subDays(fake()->numberBetween(1,360))->toDateString(),
+                    'religion' => fake()->randomElement($religions), 'ethnicity' => fake()->randomElement(['Jawa','Sunda','Tionghoa','Batak','Minang']),
+                    'city' => fake()->randomElement($cities), 'campus' => $c->campus, 'unit' => strtoupper($c->campus),
+                    'grade' => $c->grade, 'stream' => $c->stream, 'school_class_id' => $c->id,
+                    'status' => fake()->randomElement(['active','active','active','active','active','observation']),
+                    'enrolled_at' => now()->subMonths(fake()->numberBetween(6,36))->toDateString(),
+                    'parent_name' => 'Bpk./Ibu '.$lastNames[array_rand($lastNames)],
+                    'parent_phone' => '+62 81' . fake()->numerify('########'),
+                    'parent_email' => fake()->safeEmail(),
+                    'attendance_rate' => $attendance, 'gpa' => $gpa,
+                    'fee_status' => $attendance < 80 ? fake()->randomElement(['paid','arrears','arrears']) : fake()->randomElement(['paid','paid','paid','paid','arrears']),
+                ]);
+            }
+        }
+
+        $pipeline = Application::PIPELINE;
+        $extra = ['failed','waitlisted','withdrawn'];
+        for ($i = 1; $i <= 35; $i++) {
+            $status = $i <= 28 ? $pipeline[array_rand($pipeline)] : $extra[array_rand($extra)];
+            $campus = fake()->randomElement(['sd','smp','sma','int']);
+            Application::create([
+                'code' => 'APP-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
+                'name' => $firstNames[array_rand($firstNames)].' '.$lastNames[array_rand($lastNames)],
+                'gender' => fake()->randomElement(['M','F']),
+                'dob' => now()->subYears(fake()->numberBetween(6,16))->toDateString(),
+                'parent_name' => 'Bpk./Ibu '.$lastNames[array_rand($lastNames)],
+                'parent_phone' => '+62 81'.fake()->numerify('########'),
+                'parent_email' => fake()->safeEmail(),
+                'current_school' => fake()->randomElement(['SD Tarakanita','SMP Pelita','SMA Cita Buana','SD Mardi Yuana','SMP Kanisius','SD IPEKA']),
+                'campus' => $campus, 'unit' => strtoupper($campus),
+                'grade' => (string) fake()->numberBetween(1, 12),
+                'stream' => $campus === 'sma' ? fake()->randomElement(['ipa','ips']) : null,
+                'applicant_type' => fake()->randomElement(['new','new','transfer','sibling']),
+                'status' => $status,
+                'applied_at' => now()->subDays(fake()->numberBetween(1, 55))->toDateString(),
+                'exam_date' => in_array($status, ['exam_scheduled','passed','failed']) ? now()->addDays(fake()->numberBetween(-10, 14))->toDateString() : null,
+                'placement_score' => in_array($status, ['passed','failed','accepted','dev_fee','class_assigned','activated']) ? fake()->numberBetween(45, 95) : null,
+                'placement_recommendation' => in_array($status, ['passed','accepted']) ? fake()->randomElement(['Grade per request','One grade up','Extra support recommended']) : null,
+                'payment_status' => fake()->randomElement(['pending','paid','paid','paid']),
+                'waitlisted' => $status === 'waitlisted',
+            ]);
+        }
+
+        $allStudents = Student::all();
+        for ($i = 1; $i <= 22; $i++) {
+            $student = $allStudents->random();
+            $severity = fake()->randomElement(['low','low','medium','high','critical']);
+            $status = fake()->randomElement(['open','open','unit_review','vp_review','principal_action','closed']);
+            BehaviorLog::create([
+                'student_id' => $student->id,
+                'teacher_id' => $teachers ? $teachers[array_rand($teachers)] : null,
+                'occurred_at' => now()->subDays(fake()->numberBetween(0, 60))->toDateString(),
+                'category' => fake()->randomElement(array_keys(BehaviorLog::CATEGORIES)),
+                'severity' => $severity,
+                'title' => fake()->randomElement(['Tardiness repeated','Disruptive in class','Bullying report','Uniform violation','Excellent leadership','Cheating suspected','Mobile phone violation','Late submission']),
+                'notes' => fake()->sentence(12),
+                'status' => $status,
+                'action_taken' => $status === 'closed' ? fake()->randomElement(['Counseled','Detention','Parent meeting','Warning letter']) : null,
+            ]);
+        }
+
+        for ($i = 1; $i <= 12; $i++) {
+            $tid = $teachers[array_rand($teachers)];
+            $starts = now()->addDays(fake()->numberBetween(-30, 30));
+            TeacherLeave::create([
+                'teacher_id' => $tid,
+                'type' => fake()->randomElement(array_keys(TeacherLeave::TYPES)),
+                'starts_at' => $starts->toDateString(),
+                'ends_at' => $starts->copy()->addDays(fake()->numberBetween(1, 5))->toDateString(),
+                'reason' => fake()->sentence(8),
+                'status' => fake()->randomElement(['pending','pending','approved','approved','rejected']),
+                'substitute_teacher_id' => fake()->boolean(60) ? $teachers[array_rand($teachers)] : null,
+            ]);
+        }
+
+        for ($i = 1; $i <= 10; $i++) {
+            $s = $allStudents->random();
+            SscRequest::create([
+                'code' => 'SSC-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
+                'student_id' => $s->id,
+                'type' => fake()->randomElement(array_keys(SscRequest::TYPES)),
+                'priority' => fake()->randomElement(['low','normal','normal','high']),
+                'status' => fake()->randomElement(['pending','clearance','approved','issued']),
+                'requested_at' => now()->subDays(fake()->numberBetween(0, 40))->toDateString(),
+                'notes' => fake()->sentence(6),
+            ]);
+        }
+
+        $procRows = [
+            ['PR-2026-001','books','New SMA Physics lab textbook set (Grade 11)','sma',8500000,'pending'],
+            ['PR-2026-002','equipment','Smart whiteboard for Class XI IPA-A','sma',12500000,'principal_review'],
+            ['PR-2026-003','uniforms','Olympiad team uniforms (Mathematics)','sma',4250000,'approved'],
+            ['PR-2026-004','classroom','SD furniture refresh — 3 classrooms','sd',24000000,'yayasan_review'],
+            ['PR-2026-005','event','Graduation ceremony decorations','sma',6500000,'pending'],
+            ['PR-2026-006','equipment','Mandarin language lab headphones','smp',3800000,'principal_review'],
+        ];
+        foreach ($procRows as [$code,$cat,$title,$campus,$amt,$status]) {
+            ProcurementRequest::firstOrCreate(['code' => $code], [
+                'category' => $cat, 'title' => $title, 'campus' => $campus,
+                'amount' => $amt, 'status' => $status,
+                'requested_by' => 'Maria Hartanto', 'needed_by' => now()->addDays(rand(20,60))->toDateString(),
+                'description' => 'Operational request submitted via principal workflow.',
+            ]);
+        }
+
+        $eventRows = [
+            ['EV-001','Olimpiade Matematika SMA','competition','sma',now()->addDays(14),now()->addDays(15),'approved',80],
+            ['EV-002','Field Trip ke Taman Mini','fieldtrip','sd',now()->addDays(20),now()->addDays(20),'approved',120],
+            ['EV-003','Graduation Ceremony XII','graduation','sma',now()->addDays(45),now()->addDays(45),'pending',300],
+            ['EV-004','PTA Meeting — Q3','pta','smp',now()->addDays(7),now()->addDays(7),'approved',60],
+            ['EV-005','Robotics Club Showcase','cca','sma',now()->addDays(28),now()->addDays(28),'approved',45],
+            ['EV-006','Bahasa Indonesia Speech Competition','competition','smp',now()->addDays(35),now()->addDays(35),'draft',55],
+            ['EV-007','Art Exhibition — SD','cca','sd',now()->addDays(10),now()->addDays(11),'approved',90],
+            ['EV-008','Career Day SMA','cca','sma',now()->addDays(50),now()->addDays(50),'pending',200],
+        ];
+        foreach ($eventRows as [$code,$title,$cat,$campus,$start,$end,$status,$part]) {
+            SchoolEvent::firstOrCreate(['code' => $code], [
+                'title' => $title, 'category' => $cat, 'campus' => $campus,
+                'starts_at' => $start->toDateString(), 'ends_at' => $end->toDateString(),
+                'pic' => fake()->randomElement(['Maria Hartanto','Rini Surya','Dimas Pratama']),
+                'status' => $status, 'participants' => $part,
+                'description' => fake()->sentence(14),
+            ]);
+        }
+
+        for ($i = 0; $i < 18; $i++) {
+            $tid = $teachers[array_rand($teachers)];
+            $status = fake()->randomElement(['scheduled','scheduled','completed','completed','training']);
+            $score = $status === 'completed' || $status === 'training' ? fake()->numberBetween(60, 95) : null;
+            SupervisiEvaluation::create([
+                'teacher_id' => $tid,
+                'scheduled_at' => now()->subDays(fake()->numberBetween(-30, 60))->toDateString(),
+                'evaluator' => fake()->randomElement(['Drs. Budi Santoso','Maria Hartanto']),
+                'round' => 'Q' . fake()->numberBetween(1, 4),
+                'score' => $score,
+                'status' => $status,
+                'strengths' => $score ? 'Strong subject knowledge, clear delivery.' : null,
+                'improvements' => $score && $score < 80 ? 'Improve classroom management and pacing.' : null,
+                'training_recommended' => $status === 'training' ? fake()->randomElement(['Classroom management','Differentiated instruction','Tech integration']) : null,
+            ]);
+        }
     }
 }
