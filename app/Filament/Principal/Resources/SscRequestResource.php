@@ -43,7 +43,7 @@ class SscRequestResource extends Resource
                 Tables\Columns\TextColumn::make('student.name')->searchable(),
                 Tables\Columns\TextColumn::make('type')->badge(),
                 Tables\Columns\TextColumn::make('priority')->badge()
-                    ->color(fn ($s) => $s === 'high' ? 'danger' : ($s === 'normal' ? 'gray' : 'info')),
+                    ->color(fn ($state) => $state === 'high' ? 'danger' : ($state === 'normal' ? 'gray' : 'info')),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn ($state) => SscRequest::STATUS_COLORS[$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('requested_at')->date(),

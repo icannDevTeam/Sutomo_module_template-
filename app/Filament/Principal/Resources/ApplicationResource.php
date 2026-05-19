@@ -97,7 +97,7 @@ class ApplicationResource extends Resource
                 Infolists\Components\TextEntry::make('code')->badge()->color('primary'),
                 Infolists\Components\TextEntry::make('name')->weight('bold')->size('lg'),
                 Infolists\Components\TextEntry::make('nisn')->label('NISN'),
-                Infolists\Components\TextEntry::make('gender')->formatStateUsing(fn ($s)=>$s==='M'?'Laki-laki':'Perempuan'),
+                Infolists\Components\TextEntry::make('gender')->formatStateUsing(fn ($state)=>$state==='M'?'Laki-laki':'Perempuan'),
                 Infolists\Components\TextEntry::make('dob')->date(),
                 Infolists\Components\TextEntry::make('birthplace'),
                 Infolists\Components\TextEntry::make('religion'),
@@ -131,7 +131,7 @@ class ApplicationResource extends Resource
                 Infolists\Components\TextEntry::make('payment_amount')->money('IDR'),
                 Infolists\Components\TextEntry::make('payment_paid_at')->dateTime(),
                 Infolists\Components\TextEntry::make('payment_status')->badge()
-                    ->color(fn ($s)=>$s==='paid'?'success':'warning'),
+                    ->color(fn ($state)=>$state==='paid'?'success':'warning'),
                 Infolists\Components\TextEntry::make('receipt_file')->label('Receipt')
                     ->formatStateUsing(fn ($state)=>$state?'View uploaded file':'Not uploaded')
                     ->url(fn ($state)=>$state?Storage::disk('public')->url($state):null, true)
@@ -139,8 +139,8 @@ class ApplicationResource extends Resource
             ]),
             Infolists\Components\Section::make('E. Pipeline & Decision')->columns(3)->schema([
                 Infolists\Components\TextEntry::make('status')->badge()
-                    ->color(fn ($s)=>Application::STATUS_COLORS[$s] ?? 'gray')
-                    ->formatStateUsing(fn ($s)=>Application::STATUSES[$s] ?? $s),
+                    ->color(fn ($state)=>Application::STATUS_COLORS[$state] ?? 'gray')
+                    ->formatStateUsing(fn ($state)=>Application::STATUSES[$state] ?? $state),
                 Infolists\Components\TextEntry::make('applied_at')->date(),
                 Infolists\Components\TextEntry::make('exam_date')->dateTime(),
                 Infolists\Components\TextEntry::make('placement_score'),
@@ -157,14 +157,14 @@ class ApplicationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('code')->searchable()->copyable(),
                 Tables\Columns\TextColumn::make('name')->searchable()->weight('bold')
-                    ->description(fn ($r) => $r->is_teacher_child ? '★ Teacher child' : null),
+                    ->description(fn ($record) => $record->is_teacher_child ? '★ Teacher child' : null),
                 Tables\Columns\TextColumn::make('campus')->badge()->color('gray'),
                 Tables\Columns\TextColumn::make('grade'),
                 Tables\Columns\TextColumn::make('applicant_type')->badge()
-                    ->color(fn ($s) => match($s) { 'transfer'=>'info','sibling'=>'warning','returning'=>'primary',default=>'gray' }),
+                    ->color(fn ($state) => match($state) { 'transfer'=>'info','sibling'=>'warning','returning'=>'primary',default=>'gray' }),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn ($state) => Application::STATUS_COLORS[$state] ?? 'gray')
-                    ->formatStateUsing(fn ($s) => Application::STATUSES[$s] ?? $s),
+                    ->formatStateUsing(fn ($state) => Application::STATUSES[$state] ?? $state),
                 Tables\Columns\TextColumn::make('placement_score')->sortable()->alignCenter()
                     ->color(fn ($state) => $state === null ? 'gray' : ($state >= 70 ? 'success' : ($state < 50 ? 'danger' : 'warning'))),
                 Tables\Columns\TextColumn::make('payment_method')->badge()->color('gray')->toggleable(),

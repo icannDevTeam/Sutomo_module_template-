@@ -49,7 +49,7 @@ class EnrollmentPeriodResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable()->weight('bold'),
                 Tables\Columns\TextColumn::make('campus')->badge(),
                 Tables\Columns\TextColumn::make('status')->badge()
-                    ->color(fn ($s) => EnrollmentPeriod::STATUS_COLORS[$s] ?? 'gray'),
+                    ->color(fn ($state) => EnrollmentPeriod::STATUS_COLORS[$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('opens_at')->date(),
                 Tables\Columns\TextColumn::make('closes_at')->date(),
                 Tables\Columns\TextColumn::make('quota')->alignCenter(),

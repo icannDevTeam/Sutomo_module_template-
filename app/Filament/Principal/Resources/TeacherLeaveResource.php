@@ -57,7 +57,7 @@ class TeacherLeaveResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('approve')->icon('heroicon-o-check')->color('success')
-                    ->visible(fn ($r) => $r->status === 'pending')
+                    ->visible(fn ($record) => $record->status === 'pending')
                     ->action(function ($record) {
                         $record->update([
                             'status' => 'approved',
@@ -67,7 +67,7 @@ class TeacherLeaveResource extends Resource
                         Notification::make()->title('Leave approved')->success()->send();
                     }),
                 Tables\Actions\Action::make('reject')->icon('heroicon-o-x-mark')->color('danger')
-                    ->visible(fn ($r) => $r->status === 'pending')
+                    ->visible(fn ($record) => $record->status === 'pending')
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->update([
