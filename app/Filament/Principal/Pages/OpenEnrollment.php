@@ -283,11 +283,11 @@ class OpenEnrollment extends Page
             ->color('gray')
             ->modalWidth('5xl')
             ->modalHeading('Edit Enrollment Info')
-            ->modalDescription('Pick the unit first — every other tab (Header, Requirements, Guide, Dates, Flyers, VA Accounts) is scoped to that unit.')
+            ->modalDescription('Select the unit first. All other tabs (Header, Requirements, Guide, Dates, Flyers, VA Accounts) are scoped to that unit.')
             ->fillForm(fn () => $this->buildFormStateForUnit($this->unit ?? 'smp'))
             ->form([
                 Forms\Components\Section::make('Unit')
-                    ->description('Each unit publishes its own application page — select the unit you are configuring. Switching units loads that unit’s saved values.')
+                    ->description('Each unit publishes its own application page. Select the unit you are configuring. Switching units loads that unit’s saved values.')
                     ->icon('heroicon-o-academic-cap')
                     ->schema([
                         Forms\Components\Select::make('unit')

@@ -105,7 +105,7 @@
             </div>
         @else
             <div style="margin-top:1.5rem;padding:.85rem 1rem;background:#fef3c7;border:1px solid #fde68a;border-radius:.6rem;color:#92400e;font-size:.85rem;">
-                ⚠ Parent has not uploaded payment proof yet.
+                Parent has not uploaded payment proof yet.
             </div>
         @endif
 

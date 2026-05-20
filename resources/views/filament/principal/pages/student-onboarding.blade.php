@@ -28,7 +28,7 @@
          ===================================================== --}}
     @php
         $banner = match ($tab) {
-            'accepted'   => ['#4338ca','heroicon-o-information-circle','Each row shows the onboarding flow. Steps unlock in order — Dev Fee → Books → Class → Observation (5 days) → Student ID → CCA + e-Books → Tuition. Status changes move students between tabs automatically.'],
+            'accepted'   => ['#4338ca','heroicon-o-information-circle','Each row shows the onboarding flow. Steps unlock in order: Dev Fee, Books, Class, Observation (5 days), Student ID, CCA and e-Books, Tuition. Status changes move students between tabs automatically.'],
             'waitlisted' => ['#f59e0b','heroicon-o-clock','Students on the waiting list can be reinstated or withdrawn. Reinstating moves them back to Accepted at the start of the onboarding flow.'],
             'withdrawn'  => ['#64748b','heroicon-o-archive-box','Voluntarily withdrawn or declined. Records are kept for the academic year audit. Reinstate to restart onboarding.'],
             'failed'     => ['#ef4444','heroicon-o-exclamation-triangle','Did not pass the placement exam threshold. Reinstating sends them back to Accepted (use only with principal override).'],
@@ -112,7 +112,7 @@
                     <div class="sp-onb-id">
                         <div class="sp-onb-name">
                             {{ $a->name }}
-                            @if ($a->is_teacher_child) <span class="sp-pill sp-pill-amber">★ Teacher child</span> @endif
+                            @if ($a->is_teacher_child) <span class="sp-pill sp-pill-amber">Teacher child</span> @endif
                         </div>
                         <div class="sp-onb-meta">
                             {{ $a->code }} · {{ \App\Models\Application::applicantTypeLabel($a->applicant_type) }}
@@ -123,7 +123,7 @@
                             @if ($a->nisn) · <span class="sp-pill sp-pill-slate">NISN {{ $a->nisn }}</span> @endif
                             @if ($score !== null) · <b>Score {{ $score }}</b> @endif
                             @if ($a->assigned_student_no) · <span class="sp-pill sp-pill-blue">ID {{ $a->assigned_student_no }}</span> @endif
-                            @if ($needsCheckup) · <span class="sp-pill sp-pill-red">⚠ Check-up: {{ $absences }} absences</span> @endif
+                            @if ($needsCheckup) · <span class="sp-pill sp-pill-red">Check-up required: {{ $absences }} absences</span> @endif
                         </div>
                     </div>
                     <div class="sp-onb-actions">

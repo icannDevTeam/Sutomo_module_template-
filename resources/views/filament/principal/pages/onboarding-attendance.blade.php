@@ -41,7 +41,7 @@
                     </span>
                 @else
                     <span class="sp-pill" style="background:#fef3c7;color:#92400e;padding:.25rem .625rem;">
-                        No observation window set — open <strong>Open Enrollment</strong> → "Set Observation Window".
+                        No observation window set. Open Enrollment, "Set Observation Window".
                     </span>
                 @endif
                 <span class="sp-pill" style="background:#f3f4f6;color:#374151;padding:.25rem .625rem;">
@@ -77,7 +77,7 @@
         <div class="sp-card" style="margin-top:1rem;padding:2rem;text-align:center;color:#6b7280;">
             <div style="font-size:2.5rem;margin-bottom:.5rem;">📅</div>
             <p style="font-weight:600;color:#374151;">No observation window scheduled yet.</p>
-            <p style="font-size:.875rem;">Go to <strong>Open Enrollment</strong> → click <strong>Set Observation Window</strong> to choose Day 1.</p>
+            <p style="font-size:.875rem;">Go to <strong>Open Enrollment</strong> and click <strong>Set Observation Window</strong> to choose Day 1.</p>
         </div>
     @elseif ($apps->isEmpty())
         <div class="sp-card" style="margin-top:1rem;padding:2rem;text-align:center;color:#6b7280;">
@@ -135,7 +135,7 @@
                                 <td style="padding:.25rem;text-align:center;">
                                     <button type="button"
                                         wire:click="cycleCell({{ $a->id }}, '{{ $d }}')"
-                                        title="{{ $title }} (click to cycle present → absent → pending)"
+                                        title="{{ $title }} (click to cycle: present, absent, pending)"
                                         class="obs-cell"
                                         style="cursor:pointer;border:1px solid {{ $borderColor }};
                                                background:{{ $bg }};color:{{ $fg }};border-radius:6px;
@@ -157,7 +157,7 @@
                                 @if ($complete)
                                     <span class="sp-pill" style="background:#d1fae5;color:#065f46;padding:.25rem .5rem;font-weight:600;">✓ Complete</span>
                                 @elseif ($warn)
-                                    <span class="sp-pill" style="background:#fef3c7;color:#92400e;padding:.25rem .5rem;font-weight:600;">⚠ Check-up</span>
+                                    <span class="sp-pill" style="background:#fef3c7;color:#92400e;padding:.25rem .5rem;font-weight:600;">Check-up</span>
                                 @else
                                     <span class="sp-pill" style="background:#eef2ff;color:#3730a3;padding:.25rem .5rem;font-weight:600;">In progress</span>
                                 @endif
@@ -190,7 +190,7 @@
             <span><strong style="color:#065f46;">✓</strong> Present</span>
             <span><strong style="color:#991b1b;">✗</strong> Absent</span>
             <span><strong style="color:#9ca3af;">—</strong> Pending</span>
-            <span style="margin-left:auto;">Click any cell to cycle <em>present → absent → pending</em>. Principal overrides are logged.</span>
+            <span style="margin-left:auto;">Click any cell to cycle <em>present, absent, pending</em>. Principal overrides are logged.</span>
         </div>
     </div>
     @endif

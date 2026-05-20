@@ -13,7 +13,7 @@
         </table>
     </div>
     <div style="background:white;border:1px solid #e2e8f0;border-radius:.75rem;overflow:hidden;">
-        <div style="padding:.75rem 1rem;border-bottom:1px solid #e2e8f0;font-weight:600;background:#fef2f2;color:#991b1b;">⚠️ At-Risk Students</div>
+        <div style="padding:.75rem 1rem;border-bottom:1px solid #e2e8f0;font-weight:600;background:#fef2f2;color:#991b1b;">At-Risk Students</div>
         <table style="width:100%;font-size:.85rem;border-collapse:collapse;">
             @foreach ($atRisk as $s)
                 <tr style="border-top:1px solid #f1f5f9;">

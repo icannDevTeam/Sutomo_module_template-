@@ -477,7 +477,7 @@ class StudentOnboarding extends Page
                         ->required()
                         ->live()
                         ->helperText($packages->isEmpty()
-                            ? '⚠ No active package for this cohort. Add one in Enrollment → Book Catalog.'
+                            ? 'No active package for this cohort. Add one in Enrollment, Book Catalog.'
                             : null)
                         ->disabled($packages->isEmpty()),
 
@@ -506,7 +506,7 @@ class StudentOnboarding extends Page
                         ]))
                         ->required()
                         ->helperText($accounts->isEmpty()
-                            ? '⚠ No active Books account for this campus. Add one in Enrollment → Payment Accounts.'
+                            ? 'No active Books account for this campus. Add one in Enrollment, Payment Accounts.'
                             : null)
                         ->disabled($accounts->isEmpty()),
 
@@ -635,7 +635,7 @@ class StudentOnboarding extends Page
                 $marked     = $obs['present'] + $obs['absent'];
                 $progressPct = (int) round(($obs['present'] / 5) * 100);
                 $absenceWarn = $obs['absent'] >= 3
-                    ? '<div class="mt-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800"><strong>⚠ Check-up flag.</strong> 3 or more absences recorded — counsellor follow-up will be raised.</div>'
+                    ? '<div class="mt-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800"><strong>Check-up flag.</strong> 3 or more absences recorded. Counsellor follow-up will be raised.</div>'
                     : '';
 
                 $headerHtml = <<<HTML
@@ -643,7 +643,7 @@ class StudentOnboarding extends Page
   <div class="flex flex-wrap items-center gap-2 text-sm">
     <span class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 font-medium text-primary-700">
       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      {$startedFmt} &rarr; {$endFmt}
+      {$startedFmt} to {$endFmt}
     </span>
     <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 font-medium text-emerald-700">Present {$obs['present']}/5</span>
     <span class="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 font-medium text-rose-700">Absent {$obs['absent']}</span>
@@ -663,10 +663,10 @@ HTML;
                     $dateFmt   = \Illuminate\Support\Carbon::parse($row['date'])->translatedFormat('D');
                     $dateFmt2  = \Illuminate\Support\Carbon::parse($row['date'])->translatedFormat('d M');
                     $statusBadge = $row['status'] === 'present'
-                        ? '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">✓ Present</span>'
+                        ? '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Present</span>'
                         : ($row['status'] === 'absent'
-                            ? '<span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">✗ Absent</span>'
-                            : '<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">— Pending</span>');
+                            ? '<span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">Absent</span>'
+                            : '<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Pending</span>');
                     $byLine = $row['by']
                         ? '<div class="mt-1 truncate text-[11px] text-gray-500" title="'.e($row['by']).'">' . e($row['by']) . '</div>'
                         : '<div class="mt-1 text-[11px] italic text-gray-400">Not marked</div>';
@@ -790,7 +790,7 @@ HTML;
                         ->required()
                         ->live()
                         ->helperText($packs->isEmpty()
-                            ? '⚠ No active e-Book pack for this cohort. Add one in Enrollment → e-Book Catalog.'
+                            ? 'No active e-Book pack for this cohort. Add one in Enrollment, e-Book Catalog.'
                             : null)
                         ->disabled($packs->isEmpty()),
 
@@ -972,7 +972,7 @@ HTML;
                 $a->meta = $meta;
                 $a->status = 'activated';
                 $a->save();
-                Notification::make()->title('Student activated 🎉')->body("{$a->name} is now fully onboarded.")->success()->send();
+                Notification::make()->title('Student activated')->body("{$a->name} is now fully onboarded.")->success()->send();
             });
     }
 

@@ -69,7 +69,7 @@
         {{-- Awaiting score --}}
         <div class="sp-card">
             <div class="sp-card-h">Awaiting Score Entry</div>
-            <div class="sp-card-sub">Enter score → status auto-flips per period thresholds.</div>
+            <div class="sp-card-sub">Enter score. Status auto-flips per period thresholds.</div>
             <div style="display:flex;flex-direction:column;gap:.4rem;max-height:340px;overflow-y:auto;">
                 @forelse ($awaitScore as $r)
                     <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #f3f4f6;border-radius:.45rem;padding:.45rem .6rem;font-size:.8rem;">

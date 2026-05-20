@@ -38,8 +38,7 @@
                 </a>
             @empty
                 <div style="padding:2rem;text-align:center;font-size:.875rem;color:#94a3b8;">
-                    <div style="font-size:2rem;margin-bottom:.5rem;">🎉</div>
-                    Nothing pending — you're all caught up.
+                    Nothing pending. You are all caught up.
                 </div>
             @endforelse
         </div>
