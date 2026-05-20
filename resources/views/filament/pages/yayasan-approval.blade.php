@@ -26,9 +26,9 @@
                 <x-filament::icon icon="heroicon-o-eye" style="width:20px;height:20px;" />
             </div>
             <div style="flex:1;min-width:0;">
-                <div style="font-weight:700;color:#0f172a;">Principal monitoring view</div>
+                <div style="font-weight:700;color:#0f172a;">Awaiting Yayasan Board decision</div>
                 <div style="font-size:.84rem;color:#475569;margin-top:.2rem;line-height:1.5;">
-                    Candidates listed here have completed all assessment stages and are awaiting <b>Yayasan Board</b> approval. You can attach a recommendation note. You will be notified automatically when the board records a decision.
+                    Candidates listed here have completed all assessment stages and are pending <b>Yayasan Board</b> approval. The board's current status appears on each card. You may attach a recommendation note for the board.
                 </div>
             </div>
         </div>
@@ -40,12 +40,16 @@
             @php
                 $v = $c->vacancy;
                 $score = collect($c->meta['scores'] ?? [])->avg();
-                $written = $c->meta['scores']['written'] ?? null;
-                $interview = $c->meta['scores']['interview'] ?? null;
+                $written = $c->meta['scores']['written'] ?? $c->score_written ?? null;
+                $interview = $c->meta['scores']['interview'] ?? $c->score_interview ?? null;
                 $psycho = $c->meta['psycho_status'] ?? 'pending';
                 $medical = $c->meta['medical_status'] ?? 'pending';
                 $initials = collect(explode(' ', $c->name))->map(fn($p)=>mb_substr($p,0,1))->take(2)->implode('');
                 $notes = $c->meta['yayasan_notes'] ?? [];
+                $yayStatus = $c->meta['yayasan_status'] ?? 'received';
+                $yayStatusLabel = $statuses[$yayStatus] ?? 'Received';
+                $yayStatusAt = $c->meta['yayasan_status_at'] ?? null;
+                $yayStatusNote = $c->meta['yayasan_status_note'] ?? null;
             @endphp
             <div class="sp-card sp-yay-card">
                 {{-- Header row --}}
@@ -56,7 +60,7 @@
                         <div class="sp-yay-meta">
                             {{ $v?->title ?? 'Unassigned vacancy' }}
                             @if ($v?->campus) · {{ strtoupper($v->campus) }} @endif
-                            @if ($c->years_experience) · {{ $c->years_experience }} yrs experience @endif
+                            @if ($c->years) · {{ $c->years }} yrs experience @endif
                         </div>
                         <div class="sp-yay-pills">
                             <span class="sp-pill sp-pill-green">Strong Hire</span>
@@ -66,13 +70,80 @@
                             @endif
                         </div>
                     </div>
-                    <div class="sp-yay-actions">
-                        {{ ($this->noteAction)(['id' => $c->id]) }}
-                        {{ ($this->returnAction)(['id' => $c->id]) }}
-                        {{ ($this->rejectAction)(['id' => $c->id]) }}
-                        {{ ($this->approveAction)(['id' => $c->id]) }}
+                    <div class="sp-yay-actions" style="flex-direction:column;align-items:flex-end;gap:.5rem;">
+                        <span class="sp-yay-status sp-yay-status--{{ $yayStatus }}">{{ $yayStatusLabel }}</span>
+                        @if ($yayStatusAt)
+                            <span style="font-size:.7rem;color:#94a3b8;">Updated {{ \Carbon\Carbon::parse($yayStatusAt)->diffForHumans() }}</span>
+                        @endif
+                        <div style="display:flex;gap:.4rem;">
+                            {{ ($this->noteAction)(['id' => $c->id]) }}
+                            {{ ($this->simulateYayasanAction)(['id' => $c->id]) }}
+                        </div>
                     </div>
                 </div>
+
+                {{-- Candidate detail block --}}
+                <div class="sp-yay-detail">
+                    <div>
+                        <div class="sp-yay-detail-lbl">Education</div>
+                        <div class="sp-yay-detail-val">{{ $c->education ?: '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="sp-yay-detail-lbl">Applied</div>
+                        <div class="sp-yay-detail-val">{{ $c->applied_at?->format('d M Y') ?: '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="sp-yay-detail-lbl">Code</div>
+                        <div class="sp-yay-detail-val" style="font-family:ui-monospace,monospace;">{{ $c->code }}</div>
+                    </div>
+                    @if ($v)
+                        <div>
+                            <div class="sp-yay-detail-lbl">Vacancy code</div>
+                            <div class="sp-yay-detail-val" style="font-family:ui-monospace,monospace;">{{ $v->code }}</div>
+                        </div>
+                    @endif
+                </div>
+
+                @if (!empty($c->subjects) || !empty($c->languages) || !empty($c->certifications))
+                    <div class="sp-yay-chips-block">
+                        @if (!empty($c->subjects))
+                            <div>
+                                <div class="sp-yay-detail-lbl">Subjects</div>
+                                <div class="sp-cand-chip-row" style="margin-top:.25rem;">
+                                    @foreach ($c->subjects as $s)
+                                        <span class="sp-cand-chip">{{ $s }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                        @if (!empty($c->languages))
+                            <div>
+                                <div class="sp-yay-detail-lbl">Languages</div>
+                                <div class="sp-cand-chip-row" style="margin-top:.25rem;">
+                                    @foreach ($c->languages as $l)
+                                        <span class="sp-cand-chip">{{ $l }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                        @if (!empty($c->certifications))
+                            <div>
+                                <div class="sp-yay-detail-lbl">Certifications</div>
+                                <div class="sp-cand-chip-row" style="margin-top:.25rem;">
+                                    @foreach ($c->certifications as $cert)
+                                        <span class="sp-cand-chip">{{ $cert }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                @if ($yayStatusNote)
+                    <div class="sp-yay-status-note">
+                        <b>Yayasan board note.</b> {{ $yayStatusNote }}
+                    </div>
+                @endif
 
                 <hr class="sp-yay-divider">
 

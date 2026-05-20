@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\AuditLog;
 use App\Models\Candidate;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -18,11 +19,19 @@ class YayasanApproval extends Page
     protected static ?string $title = 'Yayasan Approval';
     protected static ?string $slug = 'yayasan-approval';
 
+    /** Status codes mirrored by Yayasan Board (visible to principal as read-only). */
+    public const YAYASAN_STATUSES = [
+        'received'     => 'Received',
+        'under_review' => 'Under Review',
+        'on_hold'      => 'On Hold',
+        'approved'     => 'Approved',
+        'rejected'     => 'Rejected',
+    ];
+
     public function getViewData(): array
     {
         $queue = Candidate::with('vacancy')->where('stage', 'yayasan')->orderByDesc('updated_at')->get();
 
-        // Approvals in last 30 days
         $approved30 = AuditLog::where('action', 'candidate.yayasan_approved')
             ->where('occurred_at', '>=', now()->subDays(30))->count();
         $returned30 = AuditLog::where('action', 'candidate.yayasan_returned')
@@ -31,27 +40,24 @@ class YayasanApproval extends Page
             ->where('occurred_at', '>=', now()->subDays(30))->count();
 
         return [
-            'queue'      => $queue,
-            'kpi'        => [
+            'queue'    => $queue,
+            'statuses' => self::YAYASAN_STATUSES,
+            'kpi'      => [
                 'awaiting' => $queue->count(),
                 'approved' => $approved30,
                 'returned' => $returned30,
                 'rejected' => $rejected30,
             ],
-            'recent'     => AuditLog::whereIn('action', [
+            'recent'   => AuditLog::whereIn('action', [
                 'candidate.yayasan_approved',
                 'candidate.yayasan_returned',
                 'candidate.yayasan_rejected',
+                'candidate.yayasan_status_changed',
             ])->latest('occurred_at')->limit(8)->get(),
         ];
     }
 
-    /* ---------- Row actions (Principal monitoring view) ----------
-       Principal cannot approve/reject on this page — only Yayasan does that.
-       But for the prototype we expose simulated actions for the panel demo.
-       The Principal's primary affordance here is to add a recommendation note
-       and view the audit trail. The Yayasan board approves elsewhere. */
-
+    /* ---------- Principal-side action: attach a recommendation note. ---------- */
     public function noteAction(): Action
     {
         return Action::make('note')
@@ -61,7 +67,7 @@ class YayasanApproval extends Page
             ->size('sm')
             ->form([
                 Textarea::make('note')
-                    ->label('Principal recommendation / context')
+                    ->label('Principal recommendation or context')
                     ->rows(4)
                     ->required(),
             ])
@@ -92,103 +98,70 @@ class YayasanApproval extends Page
             });
     }
 
-    public function approveAction(): Action
+    /* ---------- Demo: simulate a Yayasan board status update. ----------
+       In production this status is pushed by the Yayasan panel. For the
+       prototype the principal page exposes a single dropdown so the demo
+       can move a candidate through Received, Under Review, On Hold,
+       Approved or Rejected. ------------------------------------------- */
+    public function simulateYayasanAction(): Action
     {
-        return Action::make('approve')
-            ->label('Mark approved (Yayasan)')
-            ->icon('heroicon-m-check-circle')
-            ->color('success')
+        return Action::make('simulateYayasan')
+            ->label('Simulate Yayasan update')
+            ->icon('heroicon-m-arrow-path')
+            ->color('gray')
             ->size('sm')
-            ->requiresConfirmation()
-            ->modalHeading('Mark candidate as Yayasan-approved')
-            ->modalDescription('This simulates Yayasan board approval and moves the candidate to OPL Probation.')
-            ->action(function (array $arguments): void {
+            ->modalHeading('Simulate Yayasan board status update')
+            ->modalDescription('Demo only. Mirrors a status push from the Yayasan board.')
+            ->form([
+                Select::make('status')
+                    ->label('New status')
+                    ->options(self::YAYASAN_STATUSES)
+                    ->required(),
+                Textarea::make('reason')
+                    ->label('Note (optional)')
+                    ->rows(3),
+            ])
+            ->action(function (array $arguments, array $data): void {
                 $c = Candidate::find($arguments['id']);
                 if (! $c) return;
 
-                $c->stage = 'opl';
+                $status = $data['status'];
+                $reason = trim((string) ($data['reason'] ?? ''));
+
+                $meta = $c->meta ?? [];
+                $meta['yayasan_status']       = $status;
+                $meta['yayasan_status_at']    = now()->toIso8601String();
+                $meta['yayasan_status_label'] = self::YAYASAN_STATUSES[$status];
+                if ($reason !== '') {
+                    $meta['yayasan_status_note'] = $reason;
+                }
+
+                $action = 'candidate.yayasan_status_changed';
+                if ($status === 'approved') {
+                    $c->stage = 'opl';
+                    $action = 'candidate.yayasan_approved';
+                } elseif ($status === 'rejected') {
+                    $c->stage = 'rejected';
+                    $action = 'candidate.yayasan_rejected';
+                }
+                $c->meta = $meta;
                 $c->save();
 
                 AuditLog::create([
                     'occurred_at' => now(),
                     'user_name'   => 'Yayasan Board',
                     'role'        => 'yayasan',
-                    'action'      => 'candidate.yayasan_approved',
+                    'action'      => $action,
                     'subject_type'=> 'candidate',
                     'subject_id'  => $c->id,
-                    'detail'      => "{$c->name} approved by Yayasan — moved to OPL",
+                    'detail'      => "{$c->name}: " . self::YAYASAN_STATUSES[$status] . ($reason !== '' ? " — {$reason}" : ''),
                 ]);
 
                 Notification::make()
-                    ->title('Yayasan approval recorded')
-                    ->body("{$c->name} moved to OPL Probation.")
+                    ->title('Yayasan status updated')
+                    ->body("{$c->name}: " . self::YAYASAN_STATUSES[$status])
                     ->success()
-                    ->sendToDatabase(auth()->user());
-
-                Notification::make()->title("{$c->name} approved")->success()->send();
-            });
-    }
-
-    public function returnAction(): Action
-    {
-        return Action::make('return')
-            ->label('Return for review')
-            ->icon('heroicon-m-arrow-uturn-left')
-            ->color('warning')
-            ->size('sm')
-            ->form([
-                Textarea::make('reason')->label('Reason')->rows(3)->required(),
-            ])
-            ->action(function (array $arguments, array $data): void {
-                $c = Candidate::find($arguments['id']);
-                if (! $c) return;
-
-                $c->stage = 'interview';
-                $c->save();
-
-                AuditLog::create([
-                    'occurred_at' => now(),
-                    'user_name'   => 'Yayasan Board',
-                    'role'        => 'yayasan',
-                    'action'      => 'candidate.yayasan_returned',
-                    'subject_type'=> 'candidate',
-                    'subject_id'  => $c->id,
-                    'detail'      => "Returned for review: {$data['reason']}",
-                ]);
-
-                Notification::make()->title("{$c->name} returned for review")->warning()->send();
-            });
-    }
-
-    public function rejectAction(): Action
-    {
-        return Action::make('reject')
-            ->label('Reject')
-            ->icon('heroicon-m-x-circle')
-            ->color('danger')
-            ->size('sm')
-            ->requiresConfirmation()
-            ->form([
-                Textarea::make('reason')->label('Reason')->rows(3)->required(),
-            ])
-            ->action(function (array $arguments, array $data): void {
-                $c = Candidate::find($arguments['id']);
-                if (! $c) return;
-
-                $c->stage = 'rejected';
-                $c->save();
-
-                AuditLog::create([
-                    'occurred_at' => now(),
-                    'user_name'   => 'Yayasan Board',
-                    'role'        => 'yayasan',
-                    'action'      => 'candidate.yayasan_rejected',
-                    'subject_type'=> 'candidate',
-                    'subject_id'  => $c->id,
-                    'detail'      => "Rejected: {$data['reason']}",
-                ]);
-
-                Notification::make()->title("{$c->name} rejected")->danger()->send();
+                    ->send();
             });
     }
 
@@ -200,6 +173,7 @@ class YayasanApproval extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'gray';
     }
 }
+

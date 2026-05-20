@@ -29,10 +29,8 @@
 
     {{-- HERO --}}
     <x-filament::section>
-        <div class="flex items-start gap-4 flex-wrap">
-            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white text-xl font-bold">
-                {{ $initials }}
-            </div>
+        <div class="sp-cand-hero">
+            <div class="sp-cand-avatar">{{ $initials }}</div>
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="text-2xl font-bold text-gray-950 dark:text-white">{{ $c->name }}</h1>
@@ -44,12 +42,14 @@
                     </span>
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $c->education }}</div>
-                <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    @if ($v) <span>💼 {{ $v->title }}</span> @endif
-                    <span>✉ {{ $c->email ?: '—' }}</span>
-                    <span>📞 {{ $c->phone ?: '—' }}</span>
-                    <span>📅 Applied {{ $c->applied_at?->format('d M Y') }}</span>
-                    <span class="font-mono">{{ $c->code }}</span>
+                <div class="sp-cand-meta-row">
+                    @if ($v)
+                        <span><x-filament::icon icon="heroicon-m-briefcase" class="w-3.5 h-3.5" /> {{ $v->title }}</span>
+                    @endif
+                    <span><x-filament::icon icon="heroicon-m-envelope" class="w-3.5 h-3.5" /> {{ $c->email ?: '—' }}</span>
+                    <span><x-filament::icon icon="heroicon-m-phone" class="w-3.5 h-3.5" /> {{ $c->phone ?: '—' }}</span>
+                    <span><x-filament::icon icon="heroicon-m-calendar" class="w-3.5 h-3.5" /> Applied {{ $c->applied_at?->format('d M Y') }}</span>
+                    <code>{{ $c->code }}</code>
                 </div>
             </div>
         </div>
@@ -63,7 +63,7 @@
                         <div class="flex items-center gap-1.5">
                             <div @class([
                                 'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold',
-                                'bg-primary-600 text-white' => $active,
+                                'bg-primary-600 text-white sp-stage-active' => $active,
                                 'bg-emerald-500 text-white' => $done,
                                 'bg-gray-200 text-gray-500 dark:bg-white/10 dark:text-gray-400' => !$active && !$done,
                             ])>{{ $i + 1 }}</div>
@@ -103,15 +103,123 @@
 
         <div class="p-5">
             @if ($activeTab === 'overview')
-                <div class="grid lg:grid-cols-3 gap-5">
-                    <div class="lg:col-span-2 space-y-5">
+                <div class="sp-cand-overview-grid">
+                    <div class="space-y-5">
                         <div>
-                            <div class="text-xs uppercase font-bold text-gray-400 tracking-wider mb-1">Candidate summary</div>
-                            <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                                {{ $c->years }} years of teaching experience in {{ collect($c->subjects ?? [])->join(', ') }}.
+                            <div class="sp-cand-block-h">Candidate summary</div>
+                            <p class="sp-cand-summary">
+                                {{ $c->years }} years of teaching experience in {{ collect($c->subjects ?? [])->join(', ') ?: 'general subjects' }}.
                                 Applying for <b>{{ $v?->title }}</b>. Strong written-test performance and consistent micro-teaching evaluations.
                             </p>
+                            @if (!empty($c->subjects))
+                                <div class="sp-cand-chip-row">
+                                    @foreach ($c->subjects as $sub)
+                                        <span class="sp-cand-chip">{{ $sub }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
+
+                        @if ($c->score_written && $c->score_interview)
+                            <div>
+                                <div class="sp-cand-block-h">Internal recommendation</div>
+                                <div class="rounded-lg bg-emerald-50 dark:bg-emerald-500/10 p-4 flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
+                                        <x-filament::icon icon="heroicon-m-hand-thumb-up" class="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-base text-gray-950 dark:text-white">Strong Hire</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Per panel evaluation. 3 of 3 evaluators agreed.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        <div>
+                            <div class="sp-cand-block-h">Internal notes ({{ count($notes) }})</div>
+                            <div class="space-y-2">
+                                @forelse ($notes as $n)
+                                    <div class="rounded-lg bg-gray-50 dark:bg-white/5 p-3">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ $n['who'] }}</span>
+                                            <span class="text-[10px] text-gray-400">{{ $n['when'] }}</span>
+                                        </div>
+                                        <div class="text-sm text-gray-700 dark:text-gray-300">{{ $n['text'] }}</div>
+                                    </div>
+                                @empty
+                                    <div class="text-sm text-gray-400">No notes yet.</div>
+                                @endforelse
+                            </div>
+                            <div class="mt-3">
+                                <textarea wire:model="newNote" rows="2" class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-white/5 text-sm" placeholder="Add internal note (visible to hiring team only)"></textarea>
+                                <x-filament::button wire:click="addNote" size="sm" icon="heroicon-m-paper-airplane" class="mt-2">Post note</x-filament::button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="sp-cand-side-card">
+                            <div class="sp-cand-block-h">Scores</div>
+                            <div class="sp-cand-score-grid">
+                                @foreach ([['Written',$c->score_written],['Interview',$c->score_interview],['Micro',$c->score_micro]] as $s)
+                                    <div class="sp-cand-score">
+                                        <div class="sp-cand-score-v">{{ $s[1] ?: '—' }}</div>
+                                        <div class="sp-cand-score-l">{{ $s[0] }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="sp-cand-side-card">
+                            <div class="sp-cand-block-h">Verifications</div>
+                            @php
+                                $rows = [
+                                    ['Deposit',  $deposit?->status, $deposit?->status === 'verified' ? 'success' : 'warning'],
+                                    ['Psycho',   $psycho['status'] ?? null, ($psycho['status'] ?? null) === 'passed' ? 'success' : 'warning'],
+                                    ['Medical',  $medical['status'] ?? null, ($medical['status'] ?? null) === 'passed' ? 'success' : 'warning'],
+                                    ['Yayasan',  $yayasan['status'] ?? null, ($yayasan['status'] ?? null) === 'approved' ? 'success' : 'warning'],
+                                ];
+                            @endphp
+                            @foreach ($rows as [$label, $state, $color])
+                                <div class="sp-cand-verif-row">
+                                    <span class="text-gray-700 dark:text-gray-300">{{ $label }}</span>
+                                    @if ($state)
+                                        <x-filament::badge :color="$color" size="xs">{{ $state }}</x-filament::badge>
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                        @if ($v)
+                            <div class="sp-cand-side-card">
+                                <div class="sp-cand-block-h">Vacancy</div>
+                                <div class="font-semibold text-sm text-gray-950 dark:text-white">{{ $v->title }}</div>
+                                <div class="text-xs text-gray-500 mt-1">{{ $v->code }} · {{ strtoupper($v->campus) }}</div>
+                            </div>
+                        @endif
+                        @if (!empty($c->languages) || !empty($c->certifications))
+                            <div class="sp-cand-side-card">
+                                <div class="sp-cand-block-h">Profile</div>
+                                @if (!empty($c->languages))
+                                    <div class="text-xs text-gray-500 mb-1">Languages</div>
+                                    <div class="sp-cand-chip-row" style="margin-top:0;margin-bottom:.5rem;">
+                                        @foreach ($c->languages as $lang)
+                                            <span class="sp-cand-chip">{{ $lang }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if (!empty($c->certifications))
+                                    <div class="text-xs text-gray-500 mb-1">Certifications</div>
+                                    <div class="sp-cand-chip-row" style="margin-top:0;">
+                                        @foreach ($c->certifications as $cert)
+                                            <span class="sp-cand-chip">{{ $cert }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
 
                         @if ($c->score_written && $c->score_interview)
                             <div>
@@ -251,7 +359,9 @@
                     @forelse ($interviews as $iv)
                         <div class="rounded-lg bg-gray-50 dark:bg-white/5 p-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-md bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 flex items-center justify-center">🎥</div>
+                                    <div class="w-10 h-10 rounded-md bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 flex items-center justify-center">
+                                        <x-filament::icon icon="heroicon-m-video-camera" class="w-5 h-5" />
+                                    </div>
                                 <div class="flex-1">
                                     <div class="font-semibold text-base text-gray-950 dark:text-white">{{ $iv->type }}</div>
                                     <div class="text-xs text-gray-500">{{ $iv->scheduled_date?->format('d M Y') }} · {{ $iv->scheduled_time }} · {{ $iv->room }} · Panel: {{ collect($iv->panel ?? [])->join(', ') }}</div>
@@ -295,7 +405,7 @@
                     $data = $isMed ? $medical : $psycho;
                 @endphp
                 <div class="mb-4 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-                    🔒 <b>Restricted access</b> — {{ $isMed ? 'Medical' : 'Psychological' }} records visible to authorized roles only. All views are audit-logged.
+                    <b>Restricted access.</b> {{ $isMed ? 'Medical' : 'Psychological' }} records are visible to authorized roles only. All views are audit-logged.
                 </div>
                 @if ($data)
                     <div class="rounded-lg bg-gray-50 dark:bg-white/5 p-5 max-w-xl">
