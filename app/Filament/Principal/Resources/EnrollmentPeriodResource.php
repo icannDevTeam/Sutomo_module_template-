@@ -20,12 +20,18 @@ class EnrollmentPeriodResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
     protected static ?string $label = 'Enrollment Period';
 
+    /** Managed inside the Open Enrollment hub page, not surfaced in the sidebar. */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\Section::make('Period')->columns(2)->schema([
                 Forms\Components\TextInput::make('name')->required(),
-                Forms\Components\Select::make('campus')->required()->options(['sd'=>'SD','smp'=>'SMP','sma'=>'SMA','int'=>'International']),
+                Forms\Components\Select::make('campus')->label('Unit')->required()->options(\App\Support\SchoolDirectory::unitOptions()),
                 Forms\Components\TextInput::make('unit'),
                 Forms\Components\Select::make('status')->options(EnrollmentPeriod::STATUSES)->default('draft')->required(),
                 Forms\Components\DatePicker::make('opens_at')->required(),
@@ -39,6 +45,22 @@ class EnrollmentPeriodResource extends Resource
                 Forms\Components\TextInput::make('exam_venue'),
                 Forms\Components\Textarea::make('exam_instructions')->rows(3)->columnSpanFull(),
             ]),
+            Forms\Components\Section::make('Application Fee')
+                ->description('Locked to Rp 300.000 / 24h by default. Front-end /apply reads these values from /api/enrollment-config/{unit}.')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\TextInput::make('application_fee')
+                        ->label('Fee amount')
+                        ->numeric()->minValue(0)->required()
+                        ->prefix('Rp')
+                        ->default(300000),
+                    Forms\Components\TextInput::make('payment_expiry_hours')
+                        ->label('Payment window')
+                        ->numeric()->minValue(1)->required()
+                        ->suffix('hours')
+                        ->default(24)
+                        ->helperText('VA expires this many hours after the applicant submits.'),
+                ]),
         ]);
     }
 
@@ -47,12 +69,15 @@ class EnrollmentPeriodResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->weight('bold'),
-                Tables\Columns\TextColumn::make('campus')->badge(),
+                Tables\Columns\TextColumn::make('campus')->label('Unit')->badge()
+                    ->formatStateUsing(fn ($state) => \App\Support\SchoolDirectory::unitLabel($state) ?? '—'),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn ($state) => EnrollmentPeriod::STATUS_COLORS[$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('opens_at')->date(),
                 Tables\Columns\TextColumn::make('closes_at')->date(),
                 Tables\Columns\TextColumn::make('quota')->alignCenter(),
+                Tables\Columns\TextColumn::make('application_fee')->label('Fee')->money('IDR', divideBy: 1)->alignEnd(),
+                Tables\Columns\TextColumn::make('payment_expiry_hours')->label('Expiry')->suffix('h')->alignCenter(),
                 Tables\Columns\TextColumn::make('applications_count')->counts('applications')->label('Apps')->alignCenter(),
                 Tables\Columns\TextColumn::make('pass_threshold')->label('Pass ≥')->alignCenter(),
                 Tables\Columns\TextColumn::make('exam_starts_at')->dateTime()->label('Exam'),

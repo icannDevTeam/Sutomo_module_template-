@@ -10,11 +10,13 @@ use Filament\Navigation\MenuItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class PrincipalPanelProvider extends PanelProvider
@@ -48,10 +50,15 @@ class PrincipalPanelProvider extends PanelProvider
                 'Academics',
                 'Students',
                 'Teachers',
+                'Hiring',          // Teacher Recruitment (Vacancy / Candidate / Interview / Deposit / Pipeline / Assessments)
+                'People',          // Teacher Onboarding (Teacher master + OPL/Probation/Contract board)
                 'Approvals',
                 'Operations',
             ])
             ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('15rem')
+            ->collapsedSidebarWidth('4.5rem')
+            ->maxContentWidth('full')
             ->userMenuItems([
                 MenuItem::make()
                     ->label('Back to HR admin')
@@ -59,9 +66,21 @@ class PrincipalPanelProvider extends PanelProvider
                     ->url(fn () => '/admin'),
             ])
             ->discoverResources(in: app_path('Filament/Principal/Resources'), for: 'App\\Filament\\Principal\\Resources')
+            ->resources([
+                // Teacher Recruitment & Onboarding module (shared with Admin panel).
+                \App\Filament\Resources\VacancyResource::class,
+                \App\Filament\Resources\CandidateResource::class,
+                \App\Filament\Resources\InterviewResource::class,
+                \App\Filament\Resources\DepositResource::class,
+                \App\Filament\Resources\TeacherResource::class,
+            ])
             ->discoverPages(in: app_path('Filament/Principal/Pages'), for: 'App\\Filament\\Principal\\Pages')
             ->pages([
                 \App\Filament\Principal\Pages\PrincipalDashboard::class,
+                \App\Filament\Pages\Pipeline::class,
+                \App\Filament\Pages\Assessments::class,
+                \App\Filament\Pages\YayasanApproval::class,
+                \App\Filament\Pages\Onboarding::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Principal/Widgets'), for: 'App\\Filament\\Principal\\Widgets')
             ->middleware([
@@ -77,6 +96,10 @@ class PrincipalPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn () => Blade::render('<link rel="stylesheet" href="{{ asset(\'css/principal.css\') }}?v=' . filemtime(public_path('css/principal.css')) . '">')
+            );
     }
 }

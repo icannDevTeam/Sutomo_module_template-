@@ -9,7 +9,22 @@ class EnrollmentTrendChart extends ChartWidget
 {
     protected static ?string $heading = 'Applications — last 8 weeks';
     protected static ?int $sort = 2;
-    protected int|string|array $columnSpan = 2;
+    protected int|string|array $columnSpan = 'full';
+    protected static ?string $maxHeight = '260px';
+
+    protected function getOptions(): array
+    {
+        return [
+            'responsive' => true,
+            'maintainAspectRatio' => false,
+            'plugins' => [
+                'legend' => ['display' => false],
+            ],
+            'scales' => [
+                'y' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]],
+            ],
+        ];
+    }
 
     protected function getData(): array
     {

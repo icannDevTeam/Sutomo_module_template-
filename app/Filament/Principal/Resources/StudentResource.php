@@ -32,7 +32,7 @@ class StudentResource extends Resource
                 Forms\Components\TextInput::make('city'),
             ]),
             Forms\Components\Section::make('Placement')->columns(2)->schema([
-                Forms\Components\Select::make('campus')->options(['sd'=>'SD','smp'=>'SMP','sma'=>'SMA','int'=>'International'])->required(),
+                Forms\Components\Select::make('campus')->label('Unit')->options(\App\Support\SchoolDirectory::unitOptions())->required(),
                 Forms\Components\TextInput::make('unit'),
                 Forms\Components\TextInput::make('grade'),
                 Forms\Components\Select::make('stream')->options(['ipa'=>'IPA','ips'=>'IPS','umum'=>'Umum'])->nullable(),
@@ -60,7 +60,8 @@ class StudentResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('nis')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable()->weight('bold'),
-                Tables\Columns\TextColumn::make('campus')->badge()->color('gray'),
+                Tables\Columns\TextColumn::make('campus')->label('Unit')->badge()->color('gray')
+                    ->formatStateUsing(fn ($state) => \App\Support\SchoolDirectory::unitLabel($state) ?? '—'),
                 Tables\Columns\TextColumn::make('grade')->badge(),
                 Tables\Columns\TextColumn::make('schoolClass.name')->label('Class')->toggleable(),
                 Tables\Columns\TextColumn::make('attendance_rate')->suffix('%')->sortable()
@@ -72,7 +73,7 @@ class StudentResource extends Resource
                     ->color(fn ($state) => $state === 'paid' ? 'success' : 'warning'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('campus')->options(['sd'=>'SD','smp'=>'SMP','sma'=>'SMA','int'=>'International']),
+                Tables\Filters\SelectFilter::make('campus')->label('Unit')->options(\App\Support\SchoolDirectory::unitOptions()),
                 Tables\Filters\SelectFilter::make('status')->options(Student::STATUSES),
                 Tables\Filters\SelectFilter::make('grade')->options(fn () => Student::query()->distinct()->pluck('grade','grade')->filter()->toArray()),
                 Tables\Filters\TernaryFilter::make('fee_status')->label('Arrears only')

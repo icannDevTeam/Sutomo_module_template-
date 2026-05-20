@@ -1,0 +1,1037 @@
+/* =========================================================================
+   Sutomo · Principal Panel — global polish
+   Loaded via render hook in PrincipalPanelProvider.
+   Goal: enterprise-grade spacing, consistent cards/buttons, no overlaps,
+   responsive layouts that survive long content (15k-user school).
+   ========================================================================= */
+
+:root {
+    --sp-radius:        .75rem;
+    --sp-radius-sm:     .5rem;
+    --sp-gap:           1rem;
+    --sp-gap-sm:        .75rem;
+    --sp-pad:           1.25rem;
+    --sp-pad-sm:        1rem;
+    --sp-border:        #e5e7eb;
+    --sp-border-soft:   #f1f5f9;
+    --sp-ink:           #0f172a;
+    --sp-ink-mute:      #475569;
+    --sp-ink-faint:     #94a3b8;
+    --sp-bg:            #ffffff;
+    --sp-bg-soft:       #f8fafc;
+    --sp-shadow-sm:     0 1px 2px rgba(15,23,42,.04);
+    --sp-shadow:        0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+}
+
+/* ---------- Page chrome ---------- */
+.fi-page > .fi-page-content,
+.fi-page .fi-section,
+.fi-page form {
+    overflow: visible;        /* don't clip floating menus */
+}
+
+/* Consistent vertical rhythm between sections on a page */
+.fi-page-content > * + * { margin-top: var(--sp-gap); }
+
+/* Ensure pages have side breathing room on narrow screens */
+.fi-main { padding-bottom: 2.5rem; }
+
+/* ---------- Header actions row: prevent button overlap ---------- */
+.fi-page-header,
+.fi-header {
+    align-items: center !important;
+    gap: 1rem !important;
+    flex-wrap: wrap !important;
+}
+.fi-page-header .fi-header-actions,
+.fi-header .fi-header-actions,
+.fi-ac {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: .5rem !important;
+    align-items: center !important;
+    row-gap: .5rem !important;
+}
+.fi-page-header .fi-btn,
+.fi-header .fi-btn { white-space: nowrap; }
+
+/* ---------- Cards / Sections ---------- */
+.fi-section {
+    border-radius: var(--sp-radius) !important;
+    box-shadow: var(--sp-shadow-sm);
+}
+.fi-section + .fi-section { margin-top: var(--sp-gap) !important; }
+
+/* Custom inline cards used across pages (replace ad-hoc inline styling) */
+.sp-card {
+    background: var(--sp-bg);
+    border: 1px solid var(--sp-border);
+    border-radius: var(--sp-radius);
+    padding: var(--sp-pad);
+    box-shadow: var(--sp-shadow-sm);
+}
+.sp-card + .sp-card { margin-top: var(--sp-gap); }
+.sp-card-h { font-weight: 700; color: var(--sp-ink); margin-bottom: .5rem; }
+.sp-card-sub { font-size: .8rem; color: var(--sp-ink-mute); margin-bottom: .75rem; }
+
+/* ---------- KPI strip ---------- */
+.sp-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: var(--sp-gap-sm);
+}
+.sp-kpi {
+    background: var(--sp-bg);
+    border: 1px solid var(--sp-border);
+    border-radius: var(--sp-radius);
+    padding: 1rem 1.1rem;
+    min-height: 88px;
+    display: flex; flex-direction: column; justify-content: center;
+    box-shadow: var(--sp-shadow-sm);
+}
+.sp-kpi-label { font-size: .68rem; letter-spacing: .08em; color: var(--sp-ink-mute); text-transform: uppercase; font-weight: 600; }
+.sp-kpi-value { font-size: 1.6rem; font-weight: 800; margin-top: .25rem; line-height: 1.1; color: var(--sp-ink); }
+
+/* ---------- Multi-column workspaces ---------- */
+.sp-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sp-gap); }
+.sp-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--sp-gap); }
+
+/* Inner scrollable list panes never collapse to 0 height */
+.sp-scroll {
+    display: flex; flex-direction: column; gap: .4rem;
+    max-height: 380px; overflow-y: auto; padding-right: .25rem;
+}
+
+/* Row item inside list panes */
+.sp-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: .75rem;
+    border: 1px solid var(--sp-border-soft);
+    border-radius: var(--sp-radius-sm);
+    padding: .55rem .7rem;
+    font-size: .82rem;
+    background: var(--sp-bg);
+    min-height: 44px;
+}
+.sp-row:hover { background: var(--sp-bg-soft); }
+.sp-row > .sp-row-main { flex: 1; min-width: 0; }
+.sp-row .sp-row-main > * { display: block; }
+.sp-row .sp-row-name { font-weight: 600; color: var(--sp-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-row .sp-row-sub  { font-size: .72rem; color: var(--sp-ink-faint); margin-top: 2px; }
+
+/* ---------- Buttons (non-Filament inline buttons across pages) ---------- */
+.sp-btn,
+.fi-page button.sp-btn {
+    display: inline-flex; align-items: center; gap: .35rem;
+    background: #4338ca; color: #fff;
+    border: 0;
+    padding: .55rem 1rem;
+    border-radius: var(--sp-radius-sm);
+    font-weight: 600; font-size: .85rem;
+    cursor: pointer; line-height: 1.2;
+    box-shadow: var(--sp-shadow-sm);
+    transition: filter .15s;
+}
+.sp-btn:hover { filter: brightness(1.06); }
+.sp-btn:disabled { opacity: .55; cursor: not-allowed; }
+.sp-btn-ghost { background: #fff; color: var(--sp-ink); border: 1px solid var(--sp-border); }
+.sp-btn-ghost:hover { background: var(--sp-bg-soft); }
+
+/* Stop adjacent buttons from touching */
+.fi-page button + button:not(.fi-btn) { margin-left: .5rem; }
+
+/* ---------- Tables embedded in pages ---------- */
+.fi-page .fi-ta,
+.fi-page .fi-ta-content { overflow-x: auto; }
+.fi-page .fi-ta-row { min-height: 48px; }
+.fi-page .fi-ta-header-cell,
+.fi-page .fi-ta-cell { white-space: nowrap; }
+
+/* ---------- Forms: avoid label clip ---------- */
+.fi-fo-component-ctn { gap: .5rem; }
+.fi-fo-field-wrp .fi-fo-field-wrp-label-ctn { margin-bottom: .25rem; }
+
+/* ---------- Modals: cap width so dropdowns aren't clipped ---------- */
+.fi-modal-window { max-width: min(900px, 96vw); }
+.fi-modal-content { padding: 1.25rem 1.5rem; }
+
+/* ---------- Badges / pills ---------- */
+.sp-pill {
+    display: inline-flex; align-items: center; gap: .25rem;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: .68rem; font-weight: 700; letter-spacing: .03em;
+    text-transform: uppercase; line-height: 1.6;
+}
+.sp-pill-gray   { background:#f1f5f9; color:#475569; }
+.sp-pill-green  { background:#d1fae5; color:#065f46; }
+.sp-pill-amber  { background:#fef3c7; color:#92400e; }
+.sp-pill-red    { background:#fee2e2; color:#991b1b; }
+.sp-pill-blue   { background:#dbeafe; color:#1e40af; }
+.sp-pill-slate  { background:#e2e8f0; color:#334155; }
+.sp-pill-indigo { background:#e0e7ff; color:#3730a3; }
+
+/* ---------- Empty states ---------- */
+.sp-empty {
+    text-align: center; color: var(--sp-ink-faint);
+    padding: 2rem 1rem; font-size: .85rem;
+}
+
+/* ---------- Section divider ---------- */
+.sp-divider { height: 1px; background: var(--sp-border); margin: var(--sp-gap) 0; }
+
+/* ---------- Responsive overrides ---------- */
+@media (max-width: 768px) {
+    .sp-kpi-value { font-size: 1.35rem; }
+    .sp-kpi { min-height: 76px; padding: .85rem .9rem; }
+    .sp-card { padding: var(--sp-pad-sm); }
+    .fi-page-header { gap: .5rem !important; }
+}
+
+/* ---------- Announcements page polish ---------- */
+.sp-inbox-shell { min-height: calc(100vh - 240px); }
+.sp-inbox-shell button { font-family: inherit; }
+
+/* ---------- Long-form rich text in reader panes ---------- */
+.sp-prose { line-height: 1.65; font-size: .93rem; color: #1f2937; }
+.sp-prose p { margin: 0 0 .85em; }
+.sp-prose ul, .sp-prose ol { padding-left: 1.4em; margin: 0 0 .85em; }
+.sp-prose h1, .sp-prose h2, .sp-prose h3 { margin: 1.25em 0 .5em; font-weight: 700; color: var(--sp-ink); }
+
+/* ---------- Defensive: prevent Filament action group overlap ---------- */
+.fi-dropdown-panel { z-index: 50; }
+.fi-modal { z-index: 60; }
+
+/* =========================================================================
+   Layout chrome — sidebar width & dashboard hero full-span
+   ========================================================================= */
+
+/* Sidebar width is now controlled by sidebarWidth() in PrincipalPanelProvider.
+   We only tighten internal padding/typography here. */
+.fi-sidebar-nav .fi-sidebar-group-label { font-size: .68rem; letter-spacing: .08em; }
+.fi-sidebar-nav .fi-sidebar-item-button { padding: .45rem .65rem; }
+.fi-sidebar-nav .fi-sidebar-item-label { font-size: .82rem; }
+.fi-sidebar-header { padding: .85rem 1rem; }
+
+/* Topbar — keep it flush, give it a subtle bottom border + shadow */
+.fi-topbar { padding-inline: 1.25rem; background: #fff; border-bottom: 1px solid var(--sp-border); }
+.fi-topbar nav { min-height: 56px; }
+
+/* Tighten main page horizontal padding so content gets more room */
+.fi-main { padding-inline: 1.5rem; padding-block: 1.5rem; max-width: 100%; }
+.fi-main-ctn { background: #f8fafc; }
+
+/* Force any widget marked .sp-hero (Principal hero) to span all dashboard cols */
+.fi-dashboard-page .fi-wi:has(.sp-hero),
+.fi-dashboard-page .fi-widgets-grid > .fi-wi:has(.sp-hero),
+.fi-widgets-grid > div:has(.sp-hero) {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+}
+
+/* Dashboard widget chrome — keep everything contained, no canvas bleed */
+.fi-dashboard-page .fi-wi,
+.fi-widgets-grid > .fi-wi { min-width: 0; }
+.fi-dashboard-page .fi-wi-chart,
+.fi-dashboard-page .fi-wi-chart canvas {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+.fi-wi-chart-content { overflow: hidden; }
+/* Make all widgets in the same dashboard row stretch to equal height */
+.fi-widgets-grid { align-items: stretch; }
+.fi-widgets-grid > .fi-wi { display: flex; }
+.fi-widgets-grid > .fi-wi > * { flex: 1; min-width: 0; }
+
+/* =========================================================================
+   Announcements page — professional polish
+   ========================================================================= */
+.sp-inbox-shell {
+    height: calc(100vh - 200px);
+    min-height: 560px;
+}
+/* List pane row hover/active state */
+.sp-ann-row {
+    display: block; width: 100%; text-align: left;
+    border: none; border-bottom: 1px solid #f1f5f9;
+    border-left: 3px solid transparent;
+    background: #fff; padding: .9rem 1rem; cursor: pointer;
+    transition: background .12s;
+}
+.sp-ann-row:hover { background: #f8fafc; }
+.sp-ann-row.is-active { background: #fff7ed; border-left-color: #dc2626; }
+.sp-ann-title { font-weight: 600; font-size: .88rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-ann-preview { margin: .3rem 0 .45rem; color: #6b7280; font-size: .78rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Reader action toolbar: collapse to icon-only buttons so they never wrap into 2 rows */
+.sp-ann-toolbar { display: flex; gap: .35rem; flex-shrink: 0; align-items: center; flex-wrap: nowrap; }
+.sp-ann-toolbar .fi-btn {
+    padding: .4rem .65rem !important;
+    font-size: .78rem !important;
+    min-height: 32px;
+}
+.sp-ann-toolbar .fi-btn .fi-btn-label { font-weight: 600; }
+
+/* Reader header tightening */
+.sp-ann-reader-h h1 { font-size: 1.5rem; font-weight: 700; color: #0f172a; line-height: 1.25; margin: 0; }
+.sp-ann-reader-h .sp-meta { margin-top: .5rem; color: #64748b; font-size: .825rem; }
+.sp-ann-reader-h .sp-tags { margin-top: .65rem; display: flex; flex-wrap: wrap; gap: .35rem; }
+
+/* List header */
+.sp-ann-list-h {
+    padding: 1rem 1.1rem .85rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; gap: .5rem;
+}
+.sp-ann-list-h h2 {
+    font-weight: 700; font-size: 1rem; color: #0f172a;
+    flex: 1; text-transform: capitalize; margin: 0;
+}
+.sp-ann-search {
+    width: 100%; padding: .55rem .75rem;
+    border: 1px solid #e5e7eb; border-radius: .5rem;
+    font-size: .82rem; outline: none;
+    background: #f8fafc;
+}
+.sp-ann-search:focus { background: #fff; border-color: #c7d2fe; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+
+/* Inbox shell: 3-col on desktop, collapses on tablet/mobile */
+.sp-inbox-shell {
+    display: grid;
+    grid-template-columns: 64px minmax(300px, 360px) 1fr;
+    background: #fff;
+    border: 1px solid var(--sp-border);
+    border-radius: var(--sp-radius);
+    overflow: hidden;
+    box-shadow: var(--sp-shadow);
+}
+@media (max-width: 1023px) {
+    .sp-inbox-shell { grid-template-columns: 56px 1fr; height: auto; min-height: 0; }
+    .sp-inbox-shell > section:last-child { display: none; }  /* hide reader until selected nav pattern */
+    .sp-inbox-shell.has-selection > section:last-child { display: flex; grid-column: 1 / -1; }
+    .sp-inbox-shell.has-selection > section:nth-child(2) { display: none; }
+}
+@media (max-width: 640px) {
+    .sp-inbox-shell { grid-template-columns: 1fr; }
+    .sp-inbox-shell > nav { flex-direction: row !important; overflow-x: auto; }
+}
+
+/* Folder rail */
+.sp-ann-rail {
+    background: #fafafa;
+    border-right: 1px solid var(--sp-border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: .85rem .35rem; gap: .35rem;
+}
+.sp-ann-rail-btn {
+    position: relative;
+    width: 44px; height: 44px;
+    border-radius: .55rem;
+    display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer;
+    background: transparent; color: #475569;
+    transition: background .12s, color .12s;
+}
+.sp-ann-rail-btn:hover { background: #f1f5f9; color: #0f172a; }
+.sp-ann-rail-btn.is-active { background: #fef2f2; color: #dc2626; }
+.sp-ann-rail-btn:focus-visible,
+.sp-ann-icon-btn:focus-visible,
+.sp-ann-row:focus-visible,
+.sp-btn:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+}
+.sp-ann-rail-btn > span {
+    position: absolute; top: 1px; right: 1px;
+    background: #dc2626; color: #fff;
+    font-size: .6rem; font-weight: 700;
+    border-radius: 9999px;
+    padding: 0 5px; min-width: 16px;
+    text-align: center; line-height: 14px;
+}
+
+.sp-ann-icon-btn {
+    background: transparent; border: none; cursor: pointer;
+    color: #64748b; padding: .35rem; border-radius: .35rem;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.sp-ann-icon-btn:hover { background: #f1f5f9; color: #0f172a; }
+
+/* Reader heading: safe wrap for very long titles */
+.sp-ann-reader-h h1 { word-break: break-word; }
+
+/* Hero button contrast bump (WCAG 3:1 on gradient) */
+.sp-hero a:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* =========================================================================
+   Dashboard Hero — professional welcome card
+   ========================================================================= */
+.sp-hero {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 1rem;
+    color: #fff;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(167,139,250,.35), transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(245,158,11,.25), transparent 50%),
+        linear-gradient(135deg, #312e81 0%, #4338ca 35%, #6d28d9 70%, #9333ea 100%);
+    box-shadow:
+        0 1px 2px rgba(15,23,42,.05),
+        0 20px 40px -20px rgba(67,56,202,.45),
+        inset 0 1px 0 rgba(255,255,255,.1);
+    isolation: isolate;
+}
+.sp-hero-bg {
+    position: absolute; inset: 0;
+    z-index: 0; pointer-events: none;
+}
+.sp-hero-bg svg { width: 100%; height: 100%; display: block; }
+
+.sp-hero-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.75rem 2rem;
+    flex-wrap: wrap;
+}
+
+.sp-hero-main { flex: 1; min-width: 280px; }
+
+.sp-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.78);
+    margin-bottom: .65rem;
+}
+.sp-hero-dot {
+    width: 7px; height: 7px; border-radius: 9999px;
+    background: #34d399;
+    box-shadow: 0 0 0 3px rgba(52,211,153,.25);
+    animation: sp-pulse 2s ease-in-out infinite;
+}
+@keyframes sp-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(52,211,153,.25); }
+    50%      { box-shadow: 0 0 0 6px rgba(52,211,153,.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sp-hero-dot { animation: none; }
+}
+
+.sp-hero-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+    letter-spacing: -.01em;
+    color: #fff;
+}
+.sp-hero-wave { display: inline-block; margin-left: .5rem; transform: translateY(-1px); }
+
+.sp-hero-subtitle {
+    margin: .35rem 0 1.35rem;
+    color: rgba(255,255,255,.78);
+    font-size: .9rem;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.sp-hero-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.sp-hero-stat { display: flex; flex-direction: column; gap: 2px; }
+.sp-hero-stat-val {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -.01em;
+}
+.sp-hero-stat-lbl {
+    font-size: .72rem;
+    color: rgba(255,255,255,.7);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+.sp-hero-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255,255,255,.18);
+}
+
+.sp-hero-actions {
+    display: flex;
+    gap: .55rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.sp-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .6rem 1rem;
+    border-radius: .6rem;
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #fff;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background .15s, border-color .15s, transform .1s;
+    white-space: nowrap;
+}
+.sp-hero-btn:hover {
+    background: rgba(255,255,255,.2);
+    border-color: rgba(255,255,255,.3);
+    color: #fff;
+}
+.sp-hero-btn:active { transform: translateY(1px); }
+.sp-hero-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+.sp-hero-btn-primary {
+    background: #fff;
+    color: #4338ca;
+    border-color: #fff;
+    box-shadow: 0 4px 12px -4px rgba(0,0,0,.25);
+}
+.sp-hero-btn-primary:hover {
+    background: #f8fafc;
+    color: #312e81;
+    border-color: #fff;
+}
+
+@media (max-width: 768px) {
+    .sp-hero-inner { padding: 1.25rem 1.25rem; gap: 1rem; }
+    .sp-hero-title { font-size: 1.4rem; }
+    .sp-hero-stats { gap: 1rem; }
+    .sp-hero-divider { display: none; }
+    .sp-hero-stat-val { font-size: 1.25rem; }
+}
+
+/* =========================================================
+   Yayasan Approval page
+   ========================================================= */
+.sp-yay-card { padding: 1.25rem 1.35rem; }
+.sp-yay-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.sp-yay-avatar {
+    width: 48px; height: 48px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #4338ca, #6366f1);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .95rem;
+    flex-shrink: 0;
+    letter-spacing: .02em;
+}
+.sp-yay-id { flex: 1 1 240px; min-width: 0; }
+.sp-yay-name { font-weight: 700; color: #0f172a; font-size: 1rem; line-height: 1.3; }
+.sp-yay-meta { font-size: .8rem; color: #64748b; margin-top: .15rem; }
+.sp-yay-pills { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+.sp-yay-actions {
+    display: flex; flex-wrap: wrap; gap: .4rem;
+    align-items: center;
+    margin-left: auto;
+}
+.sp-yay-divider {
+    border: 0; border-top: 1px solid #e2e8f0;
+    margin: 1rem 0;
+}
+.sp-yay-scores {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .85rem 1.25rem;
+}
+@media (min-width: 768px) {
+    .sp-yay-scores { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.sp-yay-score-lbl {
+    font-size: .68rem; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: .06em;
+    font-weight: 600;
+    margin-bottom: .2rem;
+}
+.sp-yay-score-val {
+    font-weight: 700; color: #0f172a; font-size: 1.15rem;
+    line-height: 1.1;
+}
+.sp-yay-score-val span { color: #94a3b8; font-weight: 500; font-size: .8rem; }
+.sp-yay-notes-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .85rem;
+}
+@media (min-width: 768px) {
+    .sp-yay-notes-grid { grid-template-columns: 1fr 1fr; }
+}
+.sp-yay-note {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: .55rem;
+    padding: .85rem 1rem;
+}
+.sp-yay-note-h {
+    font-size: .68rem; color: #475569;
+    text-transform: uppercase; letter-spacing: .06em;
+    font-weight: 700;
+    margin-bottom: .5rem;
+}
+.sp-yay-note-item { margin-top: .35rem; }
+.sp-yay-note-item p {
+    font-size: .85rem; color: #334155; line-height: 1.5; margin: 0;
+}
+.sp-yay-note-by {
+    font-size: .72rem; color: #94a3b8; margin-top: .25rem;
+}
+.sp-yay-note-empty {
+    font-size: .82rem; color: #64748b; line-height: 1.5; margin: 0;
+}
+
+@media (max-width: 640px) {
+    .sp-yay-actions { width: 100%; margin-left: 0; justify-content: flex-end; }
+}
+
+/* =========================================================
+   Receipt preview modal (Applications → Incoming)
+   ========================================================= */
+.sp-rcpt { display: flex; flex-direction: column; gap: 1rem; }
+.sp-rcpt-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: .75rem 1rem;
+    padding: .85rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: .55rem;
+}
+@media (min-width: 768px) {
+    .sp-rcpt-meta { grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
+.sp-rcpt-lbl {
+    font-size: .65rem; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: .06em;
+    font-weight: 700;
+}
+.sp-rcpt-val { font-weight: 700; color: #0f172a; font-size: .95rem; line-height: 1.25; margin-top: .15rem; }
+.sp-rcpt-sub { font-size: .76rem; color: #64748b; margin-top: .1rem; }
+
+.sp-rcpt-frame {
+    width: 100%;
+    height: 480px;
+    background: #0f172a;
+    border-radius: .6rem;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #1e293b;
+}
+.sp-rcpt-frame img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.sp-rcpt-frame iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+.sp-rcpt-fallback { text-align: center; color: #fff; padding: 2rem; }
+
+.sp-rcpt-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: .75rem; flex-wrap: wrap;
+}
+.sp-rcpt-link {
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .82rem; font-weight: 600; color: #4338ca;
+    text-decoration: none;
+}
+.sp-rcpt-link:hover { text-decoration: underline; }
+.sp-rcpt-hint { font-size: .78rem; color: #64748b; }
+
+/* =========================================================================
+   Student Onboarding — funnel CTAs, filters, stepper, gated actions
+   ========================================================================= */
+.sp-funnel {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--sp-gap);
+    margin-bottom: var(--sp-gap);
+}
+@media (max-width: 900px) { .sp-funnel { grid-template-columns: repeat(2, 1fr); } }
+.sp-funnel-cta {
+    display: flex; align-items: center; gap: .85rem;
+    padding: 1rem 1.1rem;
+    background: #fff;
+    border: 1px solid #e2e8f0; border-radius: var(--sp-radius);
+    cursor: pointer;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    text-align: left; min-height: 76px;
+}
+.sp-funnel-cta:hover { transform: translateY(-1px); border-color: var(--cta); box-shadow: 0 6px 18px -10px var(--cta); }
+.sp-funnel-cta.is-active {
+    border-color: var(--cta);
+    box-shadow: inset 0 0 0 1px var(--cta), 0 8px 22px -14px var(--cta);
+    background: color-mix(in srgb, var(--cta) 6%, #fff);
+}
+.sp-funnel-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: color-mix(in srgb, var(--cta) 14%, #fff);
+    color: var(--cta);
+    flex-shrink: 0;
+}
+.sp-funnel-body { display: flex; flex-direction: column; min-width: 0; }
+.sp-funnel-label { font-size: .82rem; font-weight: 600; color: #475569; letter-spacing: .02em; text-transform: uppercase; }
+.sp-funnel-count { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+
+/* Context banner */
+.sp-banner {
+    display: flex; gap: .75rem; align-items: flex-start;
+    padding: .85rem 1rem; margin-bottom: var(--sp-gap);
+    border-left: 4px solid var(--accent);
+}
+.sp-banner-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent); display: grid; place-items: center; flex-shrink: 0;
+}
+.sp-banner-body { font-size: .86rem; color: #334155; line-height: 1.45; }
+
+/* Filters bar */
+.sp-filters {
+    display: grid;
+    grid-template-columns: 1.5fr repeat(4, 1fr);
+    gap: .75rem;
+    padding: .85rem 1rem;
+    margin-bottom: var(--sp-gap);
+}
+@media (max-width: 1100px) { .sp-filters { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .sp-filters { grid-template-columns: repeat(2, 1fr); } }
+.sp-filter { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.sp-filter label { font-size: .72rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+.sp-filter input, .sp-filter select {
+    width: 100%;
+    padding: .5rem .65rem;
+    border: 1px solid #e2e8f0; border-radius: 8px;
+    background: #fff; color: #0f172a; font-size: .88rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.sp-filter input:focus, .sp-filter select:focus {
+    outline: none; border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+/* Onboarding rows */
+.sp-onb-list { display: flex; flex-direction: column; gap: var(--sp-gap); }
+.sp-onb-card { padding: 1rem 1.15rem; }
+.sp-onb-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+}
+.sp-onb-id { min-width: 0; flex: 1 1 360px; }
+.sp-onb-name {
+    font-size: 1.02rem; font-weight: 700; color: #0f172a;
+    display: flex; align-items: center; flex-wrap: wrap; gap: .5rem;
+}
+.sp-onb-meta {
+    margin-top: .3rem; font-size: .82rem; color: #64748b;
+    display: flex; flex-wrap: wrap; gap: .35rem .5rem; align-items: center;
+}
+.sp-onb-actions {
+    display: flex; gap: .4rem; flex-wrap: wrap; align-items: center;
+    flex-shrink: 0;
+}
+
+/* Stage stepper */
+.sp-stepper {
+    display: flex; align-items: center; gap: .25rem;
+    margin-top: 1rem; padding: .65rem .75rem;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+    overflow-x: auto;
+}
+.sp-step {
+    display: flex; align-items: center; gap: .4rem;
+    padding: .35rem .55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    font-size: .78rem; font-weight: 600;
+    flex-shrink: 0;
+}
+.sp-step + .sp-step::before {
+    content: ''; width: 16px; height: 1.5px; background: #cbd5e1;
+    margin-right: .25rem; flex-shrink: 0;
+}
+.sp-step-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+}
+.sp-step-done       { color: #047857; background: rgba(16,185,129,.10); }
+.sp-step-done .sp-step-dot { background: #10b981; }
+.sp-step-current    { color: #4338ca; background: rgba(99,102,241,.12); box-shadow: inset 0 0 0 1px rgba(99,102,241,.35); }
+.sp-step-current .sp-step-dot { background: #6366f1; position: relative; }
+.sp-step-pulse {
+    position: absolute; inset: -3px; border-radius: 50%;
+    border: 2px solid #6366f1; opacity: .6;
+    animation: spStepPulse 1.6s ease-out infinite;
+}
+@keyframes spStepPulse {
+    0%   { transform: scale(.7); opacity: .7; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+.sp-step-locked     { color: #94a3b8; background: #f1f5f9; }
+.sp-step-locked .sp-step-dot { background: #e2e8f0; }
+
+/* Hint line below stepper */
+.sp-step-hint {
+    display: flex; align-items: center; gap: .45rem;
+    margin-top: .55rem;
+    font-size: .8rem; color: #475569;
+    padding: .45rem .65rem;
+    background: rgba(99,102,241,.06);
+    border-left: 3px solid #6366f1;
+    border-radius: 6px;
+}
+.sp-step-hint-done {
+    background: rgba(16,185,129,.08);
+    border-left-color: #10b981; color: #065f46;
+}
+
+/* Stage action row — each button disabled until its step is the current step */
+.sp-step-actions {
+    display: flex; flex-wrap: wrap; gap: .4rem;
+    margin-top: .75rem;
+}
+.sp-step-btn-wrap.is-disabled {
+    opacity: .42;
+    pointer-events: none;
+    filter: grayscale(.5);
+}
+
+/* Live preview card on Enrollment Info page */
+.sp-info-preview { padding: 1.5rem 1.75rem; }
+.sp-info-eyebrow {
+    font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #6366f1; margin-bottom: .35rem;
+}
+.sp-info-h1 { font-size: 1.4rem; font-weight: 800; color: #0f172a; margin: 0 0 .35rem; }
+.sp-info-h3 { font-size: .98rem; font-weight: 700; color: #0f172a; margin: 0 0 .5rem; }
+.sp-info-intro { color: #475569; margin: 0 0 1.25rem; line-height: 1.55; }
+.sp-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 800px) { .sp-info-grid { grid-template-columns: 1fr; } }
+.sp-info-prose { font-size: .9rem; color: #334155; line-height: 1.6; }
+.sp-info-note {
+    margin-top: .65rem; padding: .55rem .75rem;
+    background: rgba(245,158,11,.10); border-left: 3px solid #f59e0b;
+    border-radius: 6px; color: #92400e; font-size: .82rem;
+}
+.sp-info-contact {
+    margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed #e2e8f0;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+    font-size: .85rem; color: #334155;
+}
+@media (max-width: 800px) { .sp-info-contact { grid-template-columns: repeat(2, 1fr); } }
+.sp-info-contact b { color: #0f172a; font-weight: 700; font-size: .78rem; letter-spacing: .02em; }
+
+/* =========================================================================
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ENROLLMENT STATUS CARD (Dashboard Widget)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sp-enrollment-status-card {
+    display: flex; flex-direction: column; gap: 1rem;
+}
+.sp-est-header {
+    display: flex; align-items: center; gap: 1rem;
+}
+.sp-est-icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+.sp-est-content {
+    flex: 1; display: flex; flex-direction: column; gap: .25rem;
+}
+.sp-est-status {
+    display: flex; align-items: center;
+}
+.sp-est-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: .25rem .75rem; border-radius: 6px;
+    font-size: .75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .025em;
+}
+.sp-est-badge--open {
+    background: #d1fae5; color: #065f46;
+}
+.sp-est-badge--closed {
+    background: #f3f4f6; color: #374151;
+}
+.sp-est-title {
+    font-size: 1rem; font-weight: 600; color: #0f172a;
+    margin: 0;
+}
+.sp-est-link {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .75rem 1rem; border-radius: 8px;
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    font-size: .875rem; font-weight: 600; color: #4f46e5;
+    text-decoration: none; transition: all .2s;
+}
+.sp-est-link:hover {
+    background: #f3f4f6; border-color: #d1d5db; transform: translateX(2px);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ENROLLMENT PERIODS LIST (Open Enrollment Page)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sp-enrollment-periods-list {
+    display: flex; flex-direction: column; gap: 1rem;
+}
+.sp-period-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 1.5rem; transition: all .2s;
+}
+.sp-period-card:hover {
+    border-color: #cbd5e1; box-shadow: 0 4px 6px -1px rgb(0 0 0 / .05);
+}
+.sp-period-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9;
+}
+.sp-period-info {
+    flex: 1; display: flex; flex-direction: column; gap: .5rem;
+}
+.sp-period-name {
+    font-size: 1.125rem; font-weight: 700; color: #0f172a; margin: 0;
+}
+.sp-period-meta {
+    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    font-size: .875rem; color: #64748b;
+}
+.sp-period-separator {
+    color: #cbd5e1;
+}
+.sp-period-status {
+    flex-shrink: 0;
+}
+.sp-period-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: .375rem .875rem; border-radius: 6px;
+    font-size: .75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .025em;
+}
+.sp-status--draft {
+    background: #f3f4f6; color: #6b7280;
+}
+.sp-status--open {
+    background: #d1fae5; color: #065f46;
+}
+.sp-status--closed {
+    background: #fee2e2; color: #991b1b;
+}
+.sp-period-dates {
+    display: flex; flex-wrap: wrap; gap: 1.5rem;
+    margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9;
+}
+.sp-period-date-item {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .875rem; color: #475569;
+}
+.sp-period-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem; margin-bottom: 1rem;
+}
+.sp-period-stat {
+    display: flex; flex-direction: column; gap: .25rem;
+}
+.sp-period-stat-label {
+    font-size: .75rem; color: #64748b; text-transform: uppercase;
+    letter-spacing: .025em;
+}
+.sp-period-stat-value {
+    font-size: 1.5rem; font-weight: 700; color: #0f172a;
+}
+.sp-period-actions {
+    display: flex; flex-wrap: wrap; gap: .75rem;
+    padding-top: 1rem; border-top: 1px solid #f1f5f9;
+}
+@media (max-width: 640px) {
+    .sp-period-card {
+        padding: 1rem;
+    }
+    .sp-period-header {
+        flex-direction: column; align-items: flex-start; gap: 1rem;
+    }
+    .sp-period-dates {
+        flex-direction: column; gap: .75rem;
+    }
+    .sp-period-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ─── Open-Enrollment per-unit CTAs + VA scheme card ─────────────────── */
+.sp-unit-cta-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:.75rem; }
+.sp-unit-cta { display:flex; flex-direction:column; align-items:flex-start; gap:.25rem;
+  padding:.875rem 1rem; background:#fff; border:1px solid #e5e7eb; border-radius:.625rem;
+  cursor:pointer; transition:all .15s ease; text-align:left; text-decoration:none; }
+.sp-unit-cta:hover { border-color:#a5b4fc; background:#eef2ff; }
+.sp-unit-cta--active { border-color:#4f46e5; background:#eef2ff; box-shadow:0 0 0 3px rgba(79,70,229,.15); }
+.sp-unit-cta__label { font-weight:600; color:#1f2937; font-size:.95rem; }
+.sp-unit-cta__digit { font-size:.7rem; color:#6b7280; font-family:ui-monospace,monospace; }
+.sp-unit-cta--active .sp-unit-cta__label { color:#3730a3; }
+
+.sp-va-info { font-size:.875rem; color:#374151; }
+.sp-va-info__grid { display:grid; grid-template-columns:1fr; gap:1.25rem; }
+@media (min-width: 768px) { .sp-va-info__grid { grid-template-columns:1.4fr 1fr; } }
+.sp-va-info h4 { font-weight:600; color:#111827; margin-bottom:.5rem; font-size:.875rem; }
+.sp-va-info__code { font-family:ui-monospace,monospace; font-size:1.05rem;
+  background:#f9fafb; padding:.625rem .875rem; border-radius:.375rem; border:1px solid #e5e7eb;
+  display:inline-flex; gap:.375rem; flex-wrap:wrap; }
+.sp-va-info__code code { background:transparent; padding:0; }
+.sp-va-info__code-unit { color:#4f46e5; font-weight:700; }
+.sp-va-info__code-purpose { color:#dc2626; font-weight:700; }
+.sp-va-info__list { margin:.625rem 0 0; padding-left:1.125rem; line-height:1.6; }
+.sp-va-info__list li { margin-bottom:.125rem; }
+.sp-va-info__example { margin-top:.75rem; font-size:.8125rem; color:#6b7280; }
+.sp-va-info__example code { background:#fef3c7; color:#92400e; padding:.125rem .375rem; border-radius:.25rem; }
+.sp-va-info__fee { font-size:1.5rem; font-weight:700; color:#059669; margin:.25rem 0; }
+.sp-va-info__note { font-size:.8125rem; color:#6b7280; line-height:1.5; }
+.sp-va-info__note a { color:#4f46e5; text-decoration:underline; }
+
+.sp-va-accounts { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:.75rem; }
+.sp-va-account { padding:.875rem 1rem; background:#fff; border:1px solid #e5e7eb; border-radius:.5rem; }
+.sp-va-account__head { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.5rem; }
+.sp-va-account__prefix { font-family:ui-monospace,monospace; font-size:.8125rem; color:#4338ca;
+  background:#eef2ff; padding:.125rem .5rem; border-radius:.25rem; }
+.sp-va-account__bank { font-size:.875rem; color:#111827; font-weight:500; }
+.sp-va-account__name { font-size:.75rem; color:#6b7280; margin-top:.125rem; }
+.sp-empty-mini { font-size:.875rem; color:#6b7280; padding:.75rem 0; }
+.sp-empty-mini a { color:#4f46e5; text-decoration:underline; margin-left:.25rem; }
+
+/* ─── Per-unit snapshot grid (Open Enrollment landing) ───────────────── */
+.sp-unit-snapshots { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:.75rem; }
+.sp-unit-snapshot { padding:.875rem 1rem; background:#fff; border:1px solid #e5e7eb; border-radius:.625rem; }
+.sp-unit-snapshot--filled { border-color:#a5b4fc; background:#fafaff; }
+.sp-unit-snapshot--empty { border-style:dashed; }
+.sp-unit-snapshot__head { display:flex; justify-content:space-between; align-items:center; margin-bottom:.375rem; }
+.sp-unit-snapshot__label { font-weight:700; color:#1f2937; font-size:.95rem; }
+.sp-unit-snapshot__digit { font-size:.7rem; color:#6366f1; font-family:ui-monospace,monospace; }
+.sp-unit-snapshot__headline { font-size:.8125rem; color:#374151; line-height:1.4; margin:.125rem 0; }
+.sp-unit-snapshot__meta { font-size:.7rem; color:#6b7280; margin-top:.25rem; }
+.sp-unit-snapshot__empty { font-size:.75rem; color:#9ca3af; font-style:italic; }

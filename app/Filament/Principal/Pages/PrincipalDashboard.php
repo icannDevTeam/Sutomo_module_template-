@@ -4,10 +4,10 @@ namespace App\Filament\Principal\Pages;
 
 use App\Filament\Principal\Widgets\AcademicMonitoring;
 use App\Filament\Principal\Widgets\EnrollmentKpis;
+use App\Filament\Principal\Widgets\EnrollmentStatusCard;
 use App\Filament\Principal\Widgets\EnrollmentTrendChart;
 use App\Filament\Principal\Widgets\EscalationsList;
 use App\Filament\Principal\Widgets\FinanceVisibility;
-use App\Filament\Principal\Widgets\PrincipalHero;
 use App\Filament\Principal\Widgets\TeacherOps;
 use App\Filament\Principal\Widgets\UpcomingActivities;
 use Filament\Pages\Dashboard as BaseDashboard;
@@ -30,7 +30,7 @@ class PrincipalDashboard extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            PrincipalHero::class,
+            EnrollmentStatusCard::class,
             EnrollmentKpis::class,
             AcademicMonitoring::class,
             TeacherOps::class,

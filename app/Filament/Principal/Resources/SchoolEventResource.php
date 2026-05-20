@@ -24,7 +24,7 @@ class SchoolEventResource extends Resource
             Forms\Components\TextInput::make('code')->required(),
             Forms\Components\TextInput::make('title')->required()->columnSpanFull(),
             Forms\Components\Select::make('category')->options(SchoolEvent::CATEGORIES)->required(),
-            Forms\Components\Select::make('campus')->options(['sd'=>'SD','smp'=>'SMP','sma'=>'SMA','int'=>'International'])->required(),
+            Forms\Components\Select::make('campus')->label('Unit')->options(\App\Support\SchoolDirectory::unitOptions())->required(),
             Forms\Components\DatePicker::make('starts_at')->required(),
             Forms\Components\DatePicker::make('ends_at'),
             Forms\Components\TextInput::make('pic')->label('Person in Charge'),

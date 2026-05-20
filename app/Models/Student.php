@@ -11,13 +11,14 @@ class Student extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'dob'                  => 'date',
-        'enrolled_at'          => 'date',
-        'books_issued_at'      => 'date',
-        'account_activated_at' => 'date',
-        'first_attendance_at'  => 'date',
-        'meta'                 => 'array',
-        'gpa'                  => 'decimal:2',
+        'dob'                    => 'date',
+        'enrolled_at'            => 'date',
+        'books_issued_at'        => 'date',
+        'account_activated_at'   => 'date',
+        'first_attendance_at'    => 'date',
+        'attendance_days_count'  => 'integer',
+        'meta'                   => 'array',
+        'gpa'                    => 'decimal:2',
     ];
 
     public const ONBOARDING_STEPS = [

@@ -5,10 +5,14 @@ namespace Database\Seeders;
 use App\Models\Application;
 use App\Models\AuditLog;
 use App\Models\BehaviorLog;
+use App\Models\BookPackage;
 use App\Models\Candidate;
 use App\Models\Deposit;
+use App\Models\EbookPack;
+use App\Models\EbookPlatform;
 use App\Models\EnrollmentPeriod;
 use App\Models\Interview;
+use App\Models\PaymentAccount;
 use App\Models\ProcurementRequest;
 use App\Models\SchoolClass;
 use App\Models\SchoolEvent;
@@ -31,6 +35,7 @@ class DatabaseSeeder extends Seeder
         $this->seedInterviews();
         $this->seedAudit();
         $this->seedPrincipalModule();
+        $this->seedEnrollmentCatalog();
     }
 
     private function seedVacancies(): void
@@ -187,18 +192,24 @@ class DatabaseSeeder extends Seeder
             'pass_threshold' => 70, 'fail_threshold' => 50,
             'exam_starts_at' => now()->addDays(20)->setTime(8,0), 'exam_venue' => 'Aula Sutomo 1 — Lt. 3',
             'exam_instructions' => 'Bawa kartu ujian, alat tulis, dan kalkulator. Datang 30 menit sebelum mulai.',
+            'observation_start_date' => now()->subDays(2)->toDateString(), 'observation_days' => 5,
+            'application_fee' => 300000, 'payment_expiry_hours' => 24,
         ]);
         EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SMP'], [
             'campus' => 'smp', 'unit' => 'SMP', 'opens_at' => '2026-04-01', 'closes_at' => '2026-07-15', 'status' => 'open', 'quota' => 140,
             'pass_threshold' => 68, 'fail_threshold' => 48,
             'exam_starts_at' => now()->addDays(22)->setTime(8,0), 'exam_venue' => 'Aula Sutomo 2 — Lt. 2',
             'exam_instructions' => 'Bawa kartu ujian dan alat tulis. Datang 30 menit lebih awal.',
+            'observation_start_date' => now()->subDays(3)->toDateString(), 'observation_days' => 5,
+            'application_fee' => 300000, 'payment_expiry_hours' => 24,
         ]);
         EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SD'], [
             'campus' => 'sd', 'unit' => 'SD', 'opens_at' => '2026-03-15', 'closes_at' => '2026-07-31', 'status' => 'open', 'quota' => 180,
             'pass_threshold' => 65, 'fail_threshold' => 45,
             'exam_starts_at' => now()->addDays(15)->setTime(9,0), 'exam_venue' => 'Ruang Asesmen SD',
             'exam_instructions' => 'Wawancara singkat dan tes psikomotor. Wajib didampingi orang tua.',
+            'observation_start_date' => now()->subDays(4)->toDateString(), 'observation_days' => 5,
+            'application_fee' => 300000, 'payment_expiry_hours' => 24,
         ]);
 
         $classDefs = [
@@ -260,23 +271,50 @@ class DatabaseSeeder extends Seeder
         $methods = array_keys(Application::PAYMENT_METHODS);
         $religionList = $religions;
         $ethnicityList = ['Jawa','Sunda','Tionghoa','Batak','Minang','Melayu','Bali'];
-        $periodsByCampus = [
+        $periodsByUnit = [
             'sma' => EnrollmentPeriod::where('campus','sma')->first()?->id,
             'smp' => EnrollmentPeriod::where('campus','smp')->first()?->id,
             'sd'  => EnrollmentPeriod::where('campus','sd')->first()?->id,
-            'int' => EnrollmentPeriod::where('campus','sma')->first()?->id,
+            'tk'  => EnrollmentPeriod::where('campus','sd')->first()?->id,
+            'playgroup'   => EnrollmentPeriod::where('campus','sd')->first()?->id,
+            'pre_nursery' => EnrollmentPeriod::where('campus','sd')->first()?->id,
+        ];
+        // Sutomo demo distribution: realistic mix across the 3 physical campuses & 6 units.
+        // Sutomo 1 (CMP-001 Thamrin, CMP-002 Bintang) runs the full Pre-Nursery..SMA spectrum.
+        // Sutomo 2 (CMP-003 Brayan) is younger — Pre-Nursery..SMP only.
+        $sutomoMix = [
+            // [unit slug, physical campus code]
+            ['sd', 'CMP-001'], ['sd', 'CMP-001'], ['sd', 'CMP-002'], ['sd', 'CMP-003'],
+            ['smp','CMP-001'], ['smp','CMP-002'], ['smp','CMP-003'],
+            ['sma','CMP-001'], ['sma','CMP-002'],
+            ['tk', 'CMP-001'], ['tk', 'CMP-002'], ['tk', 'CMP-003'],
+            ['playgroup',   'CMP-002'], ['playgroup',   'CMP-003'],
+            ['pre_nursery', 'CMP-001'], ['pre_nursery', 'CMP-003'],
+        ];
+        $gradeByUnit = [
+            'pre_nursery' => 'PN', 'playgroup' => 'PG', 'tk' => fn() => 'TK-' . fake()->numberBetween(1, 2),
+            'sd' => fn() => (string) fake()->numberBetween(1, 6),
+            'smp' => fn() => (string) fake()->numberBetween(7, 9),
+            'sma' => fn() => (string) fake()->numberBetween(10, 12),
         ];
         for ($i = 1; $i <= 35; $i++) {
             $status = $i <= 28 ? $pipeline[array_rand($pipeline)] : $extra[array_rand($extra)];
-            $campus = fake()->randomElement(['sd','smp','sma','int']);
+            [$unitSlug, $campusCode] = $sutomoMix[array_rand($sutomoMix)];
+            $grade = $gradeByUnit[$unitSlug];
+            if (is_callable($grade)) $grade = $grade();
             $paid = fake()->boolean(70);
             $paymentStatus = $paid ? 'paid' : 'pending';
             $hasReceipt = $paid && fake()->boolean(70);
+            // Age range matched to unit so the dossier looks coherent.
+            $ageRange = match ($unitSlug) {
+                'pre_nursery' => [2, 3], 'playgroup' => [3, 4], 'tk' => [4, 6],
+                'sd' => [6, 12], 'smp' => [12, 15], 'sma' => [15, 18],
+            };
             Application::create([
                 'code' => 'APP-' . str_pad((string)$i, 4, '0', STR_PAD_LEFT),
                 'name' => $firstNames[array_rand($firstNames)].' '.$lastNames[array_rand($lastNames)],
                 'gender' => fake()->randomElement(['M','F']),
-                'dob' => now()->subYears(fake()->numberBetween(6,16))->toDateString(),
+                'dob' => now()->subYears(fake()->numberBetween($ageRange[0], $ageRange[1]))->toDateString(),
                 'birthplace' => fake()->randomElement(['Medan','Jakarta','Surabaya','Bandung','Pematangsiantar']),
                 'nisn' => fake()->numerify('##########'),
                 'religion' => fake()->randomElement($religionList),
@@ -289,14 +327,17 @@ class DatabaseSeeder extends Seeder
                 'parent_email' => fake()->safeEmail(),
                 'parent_occupation' => fake()->randomElement(['Wiraswasta','PNS','Karyawan Swasta','Dokter','Guru','Ibu Rumah Tangga']),
                 'current_school' => fake()->randomElement(['SD Tarakanita','SMP Pelita','SMA Cita Buana','SD Mardi Yuana','SMP Kanisius','SD IPEKA']),
-                'campus' => $campus, 'unit' => strtoupper($campus),
-                'grade' => (string) fake()->numberBetween(1, 12),
-                'stream' => $campus === 'sma' ? fake()->randomElement(['ipa','ips']) : null,
-                'enrollment_period_id' => $periodsByCampus[$campus] ?? null,
-                'applicant_type' => fake()->randomElement(['new','new','new','transfer','sibling','returning']),
+                // `campus` column stores the UNIT slug (matches existing app semantics + FeeSchedule).
+                // `unit` column stores the PHYSICAL campus code (CMP-001..003).
+                'campus' => $unitSlug,
+                'unit'   => $campusCode,
+                'grade' => $grade,
+                'stream' => $unitSlug === 'sma' ? fake()->randomElement(['ipa','ips']) : null,
+                'enrollment_period_id' => $periodsByUnit[$unitSlug] ?? null,
+                'applicant_type' => fake()->randomElement(['new','new','new','new','existing','existing','returning']),
                 'is_teacher_child' => fake()->boolean(10),
                 'is_existing_student' => fake()->boolean(25),
-                'existing_unit' => fake()->boolean(25) ? fake()->randomElement(['sd','smp','sma']) : null,
+                'existing_unit' => fake()->boolean(25) ? fake()->randomElement(['tk','sd','smp','sma']) : null,
                 'orphan_status' => fake()->randomElement(['none','none','none','none','none','yatim','piatu']),
                 'status' => $status,
                 'applied_at' => now()->subDays(fake()->numberBetween(1, 55))->toDateString(),
@@ -310,9 +351,79 @@ class DatabaseSeeder extends Seeder
                 'invoice_no' => $paid ? 'INV-2026-' . str_pad((string)$i, 5, '0', STR_PAD_LEFT) : null,
                 'receipt_file' => $hasReceipt ? 'receipts/sample-receipt.pdf' : null,
                 'waitlisted' => $status === 'waitlisted',
+                'meta' => [
+                    'documents' => fake()->randomElements([
+                        'applications/docs/akta-lahir.pdf',
+                        'applications/docs/kartu-keluarga.pdf',
+                        'applications/docs/rapor-terakhir.pdf',
+                        'applications/docs/pas-foto.jpg',
+                        'applications/docs/surat-keterangan-sekolah.pdf',
+                        'applications/docs/ijazah.pdf',
+                    ], fake()->numberBetween(2, 5)),
+                ],
             ]);
         }
 
+        // Onboarding-stage demo data — give the Onboarding Flow page rich content.
+        // Each accepted/observing app gets devfee+books+class meta; observing apps
+        // also get a partially-filled 5-day attendance grid marked by Sutomo teachers.
+        $teacherNames = ['Ibu Lisa Wijaya', 'Pak Hendra Tan', 'Ibu Mei Chen', 'Pak Bagus Saputra'];
+        $onboardingApps = Application::whereIn('status', ['accepted','dev_fee','books','class_assigned','observing','id_issued','tuition','activated'])->get();
+        foreach ($onboardingApps as $oa) {
+            $m = $oa->meta ?? [];
+            $unitLabel = strtoupper($oa->campus ?? 'X');
+            $m['devfee'] = ['paid_at' => now()->subDays(fake()->numberBetween(10, 25))->toIso8601String(), 'amount' => 5_000_000];
+            $m['books']  = ['bought_at' => now()->subDays(fake()->numberBetween(7, 15))->toIso8601String(), 'amount' => 1_500_000];
+            $m['class']  = [
+                'label'   => "{$unitLabel}-{$oa->grade}-A",
+                'teacher' => $teacherNames[array_rand($teacherNames)],
+                'assigned_at' => now()->subDays(fake()->numberBetween(5, 10))->toIso8601String(),
+            ];
+
+            // Observation: use the period's window so the cohort shares dates.
+            $seedObs = in_array($oa->status, ['observing','id_issued','tuition','activated'], true)
+                || ($oa->status === 'class_assigned' && fake()->boolean(60));
+
+            if ($seedObs) {
+                $teacher = $teacherNames[array_rand($teacherNames)];
+                $period = $oa->enrollment_period_id ? EnrollmentPeriod::find($oa->enrollment_period_id) : null;
+                if ($period && $period->observation_start_date) {
+                    $cursor = \Illuminate\Support\Carbon::parse($period->observation_start_date);
+                    $totalDays = max(3, (int) ($period->observation_days ?? 5));
+                } else {
+                    $cursor = now()->subDays(fake()->numberBetween(2, 6))->startOfDay();
+                    while ($cursor->isWeekend()) $cursor->subDay();
+                    $totalDays = 5;
+                }
+
+                $days = [];
+                $daysMarked = match ($oa->status) {
+                    'observing'     => fake()->numberBetween(2, 4), // in progress
+                    default         => $totalDays,                   // complete
+                };
+                for ($d = 0; $d < $totalDays; $d++) {
+                    while ($cursor->isWeekend()) $cursor->addDay();
+                    $dateKey = $cursor->toDateString();
+                    if ($d < $daysMarked) {
+                        $present = fake()->boolean(82);
+                        $days[$dateKey] = [
+                            'present' => $present,
+                            'by'      => $teacher,
+                            'at'      => $cursor->copy()->setTime(8, fake()->numberBetween(0, 30))->toIso8601String(),
+                        ];
+                    } else {
+                        $days[$dateKey] = ['present' => null, 'by' => null, 'at' => null];
+                    }
+                    $cursor->addDay();
+                }
+                $m['observation'] = [
+                    'start_date' => array_key_first($days),
+                    'days'       => $days,
+                ];
+            }
+            $oa->meta = $m;
+            $oa->save();
+        }
         $allStudents = Student::all();
         for ($i = 1; $i <= 22; $i++) {
             $student = $allStudents->random();
@@ -410,6 +521,189 @@ class DatabaseSeeder extends Seeder
                 'improvements' => $score && $score < 80 ? 'Improve classroom management and pacing.' : null,
                 'training_recommended' => $status === 'training' ? fake()->randomElement(['Classroom management','Differentiated instruction','Tech integration']) : null,
             ]);
+        }
+    }
+
+    /* ----------------------------------------------------------------
+     | Book + e-Book catalog (Phase Y)
+     | Seeds packages, payment accounts, ebook platforms and packs so
+     | Principal → Onboarding modals have real data to pick from.
+     ---------------------------------------------------------------- */
+    private function seedEnrollmentCatalog(): void
+    {
+        $year = '2026/2027';
+
+        // ---- Payment accounts: one per campus, books purpose ----
+        $accounts = [
+            ['campus'=>'CMP-001','bank_name'=>'BCA',    'account_no'=>'0123456789','account_name'=>'Yayasan Sutomo — Buku Pelajaran (Thamrin)','va_prefix'=>'88810'],
+            ['campus'=>'CMP-002','bank_name'=>'Mandiri','account_no'=>'1230099887','account_name'=>'Yayasan Sutomo — Buku Pelajaran (Sutomo 2)','va_prefix'=>'88820'],
+            ['campus'=>'CMP-003','bank_name'=>'BNI',    'account_no'=>'9988776655','account_name'=>'Yayasan Sutomo — Buku Pelajaran (Brayan)','va_prefix'=>'88830'],
+        ];
+        foreach ($accounts as $row) {
+            PaymentAccount::firstOrCreate(
+                ['campus' => $row['campus'], 'purpose' => 'books'],
+                array_merge($row, ['purpose' => 'books', 'is_active' => true])
+            );
+        }
+
+        // ---- Book packages: one per (unit, representative grade) ----
+        $packages = [
+            ['unit'=>'pre_nursery','grade'=>'PN',  'name'=>'Pre-Nursery — Paket Aktivitas', 'items'=>[
+                ['title'=>'Activity Book Level A','qty'=>1,'unit_price'=>120000],
+                ['title'=>'Crayons & Tracing Pack','qty'=>1,'unit_price'=>85000],
+            ]],
+            ['unit'=>'playgroup','grade'=>'PG',    'name'=>'Playgroup — Paket Belajar', 'items'=>[
+                ['title'=>'Playgroup Workbook','qty'=>1,'unit_price'=>140000],
+                ['title'=>'Story Kit (5 buku)','qty'=>1,'unit_price'=>175000],
+            ]],
+            ['unit'=>'tk','grade'=>'TK-1',          'name'=>'TK-A — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Tematik TK-A','qty'=>1,'unit_price'=>180000],
+                ['title'=>'Bahasa & Angka','qty'=>1,'unit_price'=>165000],
+                ['title'=>'Buku Mewarnai','qty'=>1,'unit_price'=>75000],
+            ]],
+            ['unit'=>'tk','grade'=>'TK-2',          'name'=>'TK-B — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Tematik TK-B','qty'=>1,'unit_price'=>195000],
+                ['title'=>'Pra-Membaca & Pra-Menulis','qty'=>1,'unit_price'=>170000],
+                ['title'=>'Buku Mewarnai Advanced','qty'=>1,'unit_price'=>85000],
+            ]],
+            ['unit'=>'sd','grade'=>'1',             'name'=>'SD Grade 1 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Kelas 1 — Erlangga','qty'=>1,'unit_price'=>95000],
+                ['title'=>'Bahasa Indonesia Kelas 1','qty'=>1,'unit_price'=>87000],
+                ['title'=>'English Time 1','qty'=>1,'unit_price'=>165000],
+                ['title'=>'Tematik Terpadu Kelas 1','qty'=>1,'unit_price'=>140000],
+            ]],
+            ['unit'=>'sd','grade'=>'4',             'name'=>'SD Grade 4 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Kelas 4','qty'=>1,'unit_price'=>105000],
+                ['title'=>'IPA Kelas 4','qty'=>1,'unit_price'=>110000],
+                ['title'=>'IPS Kelas 4','qty'=>1,'unit_price'=>98000],
+                ['title'=>'English Time 4','qty'=>1,'unit_price'=>180000],
+            ]],
+            ['unit'=>'sd','grade'=>'6',             'name'=>'SD Grade 6 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Kelas 6','qty'=>1,'unit_price'=>120000],
+                ['title'=>'IPA Kelas 6','qty'=>1,'unit_price'=>118000],
+                ['title'=>'IPS Kelas 6','qty'=>1,'unit_price'=>108000],
+                ['title'=>'English Time 6','qty'=>1,'unit_price'=>195000],
+                ['title'=>'Persiapan US/USP','qty'=>1,'unit_price'=>145000],
+            ]],
+            ['unit'=>'smp','grade'=>'7',            'name'=>'SMP Grade 7 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Kelas 7','qty'=>1,'unit_price'=>135000],
+                ['title'=>'IPA Terpadu Kelas 7','qty'=>1,'unit_price'=>140000],
+                ['title'=>'IPS Terpadu Kelas 7','qty'=>1,'unit_price'=>128000],
+                ['title'=>'Mandarin 入门','qty'=>1,'unit_price'=>165000],
+                ['title'=>'English Headway 1','qty'=>1,'unit_price'=>210000],
+            ]],
+            ['unit'=>'smp','grade'=>'9',            'name'=>'SMP Grade 9 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Kelas 9','qty'=>1,'unit_price'=>148000],
+                ['title'=>'IPA Kelas 9','qty'=>1,'unit_price'=>152000],
+                ['title'=>'IPS Kelas 9','qty'=>1,'unit_price'=>138000],
+                ['title'=>'Mandarin HSK 2','qty'=>1,'unit_price'=>178000],
+                ['title'=>'Persiapan UN/UNBK','qty'=>1,'unit_price'=>175000],
+            ]],
+            ['unit'=>'sma','grade'=>'10',           'name'=>'SMA Grade 10 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Wajib Kelas 10','qty'=>1,'unit_price'=>165000],
+                ['title'=>'Fisika Kelas 10','qty'=>1,'unit_price'=>168000],
+                ['title'=>'Kimia Kelas 10','qty'=>1,'unit_price'=>168000],
+                ['title'=>'Biologi Kelas 10','qty'=>1,'unit_price'=>162000],
+                ['title'=>'English Cambridge IGCSE Y10','qty'=>1,'unit_price'=>295000],
+            ]],
+            ['unit'=>'sma','grade'=>'11',           'name'=>'SMA Grade 11 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Peminatan Kelas 11','qty'=>1,'unit_price'=>178000],
+                ['title'=>'Fisika Kelas 11','qty'=>1,'unit_price'=>182000],
+                ['title'=>'Kimia Kelas 11','qty'=>1,'unit_price'=>178000],
+                ['title'=>'IB Math AA SL Y1','qty'=>1,'unit_price'=>340000],
+            ]],
+            ['unit'=>'sma','grade'=>'12',           'name'=>'SMA Grade 12 — Paket Buku 2026/2027', 'items'=>[
+                ['title'=>'Matematika Peminatan Kelas 12','qty'=>1,'unit_price'=>190000],
+                ['title'=>'Fisika Kelas 12','qty'=>1,'unit_price'=>192000],
+                ['title'=>'Persiapan SNBT','qty'=>1,'unit_price'=>225000],
+                ['title'=>'IB Math AA SL Y2','qty'=>1,'unit_price'=>360000],
+            ]],
+        ];
+        foreach ($packages as $p) {
+            BookPackage::firstOrCreate(
+                ['unit' => $p['unit'], 'grade' => $p['grade'], 'school_year' => $year],
+                ['name' => $p['name'], 'items' => $p['items'], 'is_active' => true]
+            );
+        }
+
+        // ---- e-Book platforms ----
+        $platforms = [
+            ['name'=>'Quipper',          'base_url'=>'https://learn.quipper.com'],
+            ['name'=>'Ruangguru',        'base_url'=>'https://ruangguru.com'],
+            ['name'=>'Pijar Sekolah',    'base_url'=>'https://pijarsekolah.id'],
+            ['name'=>'Google Classroom', 'base_url'=>'https://classroom.google.com'],
+            ['name'=>'Khan Academy',     'base_url'=>'https://khanacademy.org'],
+            ['name'=>'Cambridge GO',     'base_url'=>'https://cambridge.org/go'],
+        ];
+        $platformIds = [];
+        foreach ($platforms as $pl) {
+            $platformIds[$pl['name']] = EbookPlatform::firstOrCreate(
+                ['name' => $pl['name']],
+                array_merge($pl, ['is_active' => true])
+            )->id;
+        }
+
+        // ---- e-Book packs per cohort ----
+        $packs = [
+            ['unit'=>'pre_nursery','grade'=>'PN','default'=>'Google Classroom','name'=>'Pre-Nursery — Digital Library', 'items'=>[
+                ['title'=>'Story Time Videos','platform_id'=>$platformIds['Google Classroom'],'url'=>'https://classroom.google.com/c/pn-stories','login_hint'=>'class code: pn26'],
+            ]],
+            ['unit'=>'playgroup','grade'=>'PG','default'=>'Google Classroom','name'=>'Playgroup — Digital Library', 'items'=>[
+                ['title'=>'Phonics Songs','platform_id'=>$platformIds['Google Classroom'],'url'=>'https://classroom.google.com/c/pg-phonics','login_hint'=>'class code: pg26'],
+                ['title'=>'Number Play','platform_id'=>$platformIds['Khan Academy'],'url'=>'https://khanacademy.org/kids','login_hint'=>'shared login'],
+            ]],
+            ['unit'=>'tk','grade'=>'TK-1','default'=>'Pijar Sekolah','name'=>'TK-A — Digital Library', 'items'=>[
+                ['title'=>'Tematik TK-A (digital)','platform_id'=>$platformIds['Pijar Sekolah'],'url'=>'https://pijarsekolah.id/tk-a','login_hint'=>'parent account'],
+            ]],
+            ['unit'=>'tk','grade'=>'TK-2','default'=>'Pijar Sekolah','name'=>'TK-B — Digital Library', 'items'=>[
+                ['title'=>'Tematik TK-B (digital)','platform_id'=>$platformIds['Pijar Sekolah'],'url'=>'https://pijarsekolah.id/tk-b','login_hint'=>'parent account'],
+            ]],
+            ['unit'=>'sd','grade'=>'1','default'=>'Quipper','name'=>'SD Grade 1 — Digital Library', 'items'=>[
+                ['title'=>'Matematika 1 — Quipper','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/sd1-mat','login_hint'=>'NIS sebagai username'],
+                ['title'=>'Bahasa Indonesia 1','platform_id'=>$platformIds['Ruangguru'],'url'=>'https://ruangguru.com/sd1-bind','login_hint'=>null],
+            ]],
+            ['unit'=>'sd','grade'=>'4','default'=>'Quipper','name'=>'SD Grade 4 — Digital Library', 'items'=>[
+                ['title'=>'Matematika 4','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/sd4-mat','login_hint'=>'NIS'],
+                ['title'=>'IPA 4','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/sd4-ipa','login_hint'=>'NIS'],
+                ['title'=>'English Time 4','platform_id'=>$platformIds['Cambridge GO'],'url'=>'https://cambridge.org/go/sd4','login_hint'=>'activation code per buku'],
+            ]],
+            ['unit'=>'sd','grade'=>'6','default'=>'Quipper','name'=>'SD Grade 6 — Digital Library', 'items'=>[
+                ['title'=>'Matematika 6','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/sd6-mat','login_hint'=>'NIS'],
+                ['title'=>'Persiapan US/USP','platform_id'=>$platformIds['Ruangguru'],'url'=>'https://ruangguru.com/sd6-usp','login_hint'=>null],
+            ]],
+            ['unit'=>'smp','grade'=>'7','default'=>'Quipper','name'=>'SMP Grade 7 — Digital Library', 'items'=>[
+                ['title'=>'Matematika 7','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/smp7-mat','login_hint'=>'NIS'],
+                ['title'=>'IPA Terpadu 7','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/smp7-ipa','login_hint'=>'NIS'],
+                ['title'=>'Mandarin 入门','platform_id'=>$platformIds['Ruangguru'],'url'=>'https://ruangguru.com/smp7-mandarin','login_hint'=>null],
+            ]],
+            ['unit'=>'smp','grade'=>'9','default'=>'Quipper','name'=>'SMP Grade 9 — Digital Library', 'items'=>[
+                ['title'=>'Matematika 9','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/smp9-mat','login_hint'=>'NIS'],
+                ['title'=>'Persiapan UN/UNBK','platform_id'=>$platformIds['Ruangguru'],'url'=>'https://ruangguru.com/smp9-un','login_hint'=>null],
+            ]],
+            ['unit'=>'sma','grade'=>'10','default'=>'Cambridge GO','name'=>'SMA Grade 10 — Digital Library', 'items'=>[
+                ['title'=>'IGCSE Maths Y10','platform_id'=>$platformIds['Cambridge GO'],'url'=>'https://cambridge.org/go/sma10-math','login_hint'=>'activation code'],
+                ['title'=>'Fisika 10','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/sma10-fisika','login_hint'=>'NIS'],
+                ['title'=>'Kimia 10','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/sma10-kimia','login_hint'=>'NIS'],
+            ]],
+            ['unit'=>'sma','grade'=>'11','default'=>'Cambridge GO','name'=>'SMA Grade 11 — Digital Library', 'items'=>[
+                ['title'=>'IB Math AA SL Y1','platform_id'=>$platformIds['Cambridge GO'],'url'=>'https://cambridge.org/go/ib-aa-y1','login_hint'=>'activation code'],
+                ['title'=>'Fisika 11','platform_id'=>$platformIds['Quipper'],'url'=>'https://learn.quipper.com/sma11-fisika','login_hint'=>'NIS'],
+            ]],
+            ['unit'=>'sma','grade'=>'12','default'=>'Cambridge GO','name'=>'SMA Grade 12 — Digital Library', 'items'=>[
+                ['title'=>'IB Math AA SL Y2','platform_id'=>$platformIds['Cambridge GO'],'url'=>'https://cambridge.org/go/ib-aa-y2','login_hint'=>'activation code'],
+                ['title'=>'Persiapan SNBT','platform_id'=>$platformIds['Ruangguru'],'url'=>'https://ruangguru.com/sma12-snbt','login_hint'=>null],
+            ]],
+        ];
+        foreach ($packs as $p) {
+            EbookPack::firstOrCreate(
+                ['unit' => $p['unit'], 'grade' => $p['grade'], 'school_year' => $year],
+                [
+                    'name' => $p['name'],
+                    'items' => $p['items'],
+                    'default_platform_id' => $platformIds[$p['default']] ?? null,
+                    'is_active' => true,
+                ]
+            );
         }
     }
 }

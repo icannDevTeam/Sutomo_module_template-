@@ -15,7 +15,7 @@ class EnrollmentKpis extends BaseWidget
     protected function getStats(): array
     {
         $totalApps = Application::count();
-        $accepted  = Application::whereIn('status', ['accepted','dev_fee','books','class_assigned','observing','id_issued','tuition','activated'])->count();
+        $accepted  = Application::whereIn('status', Application::ONBOARDING_STATUSES)->count();
         $activated = Application::where('status', 'activated')->count();
         $waitlist  = Application::where('waitlisted', true)->count();
         $conv      = $totalApps > 0 ? round(($activated / $totalApps) * 100) : 0;

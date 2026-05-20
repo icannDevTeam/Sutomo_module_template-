@@ -24,7 +24,7 @@ class ProcurementRequestResource extends Resource
             Forms\Components\TextInput::make('code')->required(),
             Forms\Components\TextInput::make('title')->required()->columnSpanFull(),
             Forms\Components\Select::make('category')->options(ProcurementRequest::CATEGORIES)->required(),
-            Forms\Components\Select::make('campus')->options(['sd'=>'SD','smp'=>'SMP','sma'=>'SMA','int'=>'International'])->required(),
+            Forms\Components\Select::make('campus')->label('Unit')->options(\App\Support\SchoolDirectory::unitOptions())->required(),
             Forms\Components\TextInput::make('amount')->numeric()->prefix('Rp'),
             Forms\Components\DatePicker::make('needed_by'),
             Forms\Components\TextInput::make('requested_by'),

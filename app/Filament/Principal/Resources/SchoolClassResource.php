@@ -24,7 +24,7 @@ class SchoolClassResource extends Resource
         return $form->schema([
             Forms\Components\TextInput::make('code')->required(),
             Forms\Components\TextInput::make('name')->required(),
-            Forms\Components\Select::make('campus')->options(['sd'=>'SD','smp'=>'SMP','sma'=>'SMA','int'=>'International'])->required(),
+            Forms\Components\Select::make('campus')->label('Unit')->options(\App\Support\SchoolDirectory::unitOptions())->required(),
             Forms\Components\TextInput::make('grade')->required(),
             Forms\Components\Select::make('stream')->options(['ipa'=>'IPA','ips'=>'IPS','umum'=>'Umum']),
             Forms\Components\TextInput::make('room'),
@@ -40,7 +40,8 @@ class SchoolClassResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('code')->searchable(),
                 Tables\Columns\TextColumn::make('name')->searchable()->weight('bold'),
-                Tables\Columns\TextColumn::make('campus')->badge(),
+                Tables\Columns\TextColumn::make('campus')->label('Unit')->badge()
+                    ->formatStateUsing(fn ($state) => \App\Support\SchoolDirectory::unitLabel($state) ?? '—'),
                 Tables\Columns\TextColumn::make('grade'),
                 Tables\Columns\TextColumn::make('stream')->badge(),
                 Tables\Columns\TextColumn::make('room'),
@@ -49,7 +50,7 @@ class SchoolClassResource extends Resource
                 Tables\Columns\TextColumn::make('capacity'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('campus')->options(['sd'=>'SD','smp'=>'SMP','sma'=>'SMA','int'=>'International']),
+                Tables\Filters\SelectFilter::make('campus')->label('Unit')->options(\App\Support\SchoolDirectory::unitOptions()),
             ])
             ->actions([Tables\Actions\EditAction::make()]);
     }
