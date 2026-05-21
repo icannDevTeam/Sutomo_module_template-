@@ -10,7 +10,7 @@ class AcademicProgress extends Page
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar-square';
     protected static ?string $navigationGroup = 'Academics';
     protected static ?string $title = 'Academic Progress & Report Cards';
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
     protected static string $view = 'filament.principal.pages.academic-progress';
 
     public function getViewData(): array

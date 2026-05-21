@@ -3,6 +3,7 @@
 namespace App\Filament\Principal\Pages;
 
 use App\Filament\Principal\Widgets\AcademicMonitoring;
+use App\Filament\Principal\Widgets\ActivePlanning;
 use App\Filament\Principal\Widgets\AnnouncementsTicker;
 use App\Filament\Principal\Widgets\EnrollmentKpis;
 use App\Filament\Principal\Widgets\EnrollmentStatusCard;
@@ -35,6 +36,7 @@ class PrincipalDashboard extends BaseDashboard
             EnrollmentStatusCard::class,
             EnrollmentKpis::class,
             AcademicMonitoring::class,
+            ActivePlanning::class,
             TeacherOps::class,
             EnrollmentTrendChart::class,
             FinanceVisibility::class,

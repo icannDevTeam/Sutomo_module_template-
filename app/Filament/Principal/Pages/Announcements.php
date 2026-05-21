@@ -87,19 +87,7 @@ class Announcements extends Page implements HasForms, HasActions
             ->label('Create announcement')
             ->icon('heroicon-o-plus')
             ->color('danger')
-            ->modalHeading('New Announcement')
-            ->modalSubmitActionLabel('Save Draft')
-            ->form($this->announcementFormSchema())
-            ->action(function (array $data) {
-                Announcement::create($this->buildPayload($data, 'draft'));
-                Notification::make()->title('Saved as draft')->success()->send();
-            })
-            ->extraModalFooterActions(fn (Action $action) => [
-                $action->makeModalSubmitAction('publish', ['_publish' => true])
-                    ->label('Publish now')
-                    ->color('success')
-                    ->icon('heroicon-o-paper-airplane'),
-            ]);
+            ->url(fn () => CreateAnnouncement::getUrl());
     }
 
     public function editAction(): Action
@@ -108,16 +96,7 @@ class Announcements extends Page implements HasForms, HasActions
             ->label('Edit')
             ->icon('heroicon-o-pencil-square')
             ->color('gray')
-            ->fillForm(function (array $arguments) {
-                $a = Announcement::find($arguments['id'] ?? 0);
-                return $a ? $a->only(['title','body','author_name','author_role','audiences','channels','category','pinned','scheduled_at']) : [];
-            })
-            ->form($this->announcementFormSchema())
-            ->action(function (array $arguments, array $data) {
-                $a = Announcement::findOrFail($arguments['id']);
-                $a->update($this->buildPayload($data, $a->status));
-                Notification::make()->title('Announcement updated')->success()->send();
-            });
+            ->url(fn (array $arguments) => CreateAnnouncement::getUrl(['record' => $arguments['id'] ?? 0]));
     }
 
     public function publishAction(): Action

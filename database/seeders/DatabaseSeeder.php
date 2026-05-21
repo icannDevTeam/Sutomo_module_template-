@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
         $this->seedAudit();
         $this->seedPrincipalModule();
         $this->seedEnrollmentCatalog();
+        $this->call(TimetableSeeder::class);
     }
 
     private function seedVacancies(): void
@@ -132,7 +133,7 @@ class DatabaseSeeder extends Seeder
             ['code'=>'TCH-2026-002','employee_no'=>'EMP-2026-002','name'=>'Novita Putri, S.S','gender'=>'F','dob'=>'1992-06-15','email'=>'novita.putri@sutomo.sch.id','phone'=>'+62 815-3344-5566','subject'=>'Mandarin','dept'=>'Languages','campus'=>'smp','status'=>'contract','employment'=>'full-time','joined_at'=>'2026-02-01','tenure'=>'3m','contract'=>'1-yr Contract','contract_end'=>'2027-01-31','education'=>'S.S Chinese Literature — UI','certifications'=>['HSK 6','TCSOL'],'languages'=>['Indonesian','English','Mandarin'],'city'=>'Jakarta','rating'=>4.5,'last_review'=>'2026-04-12'],
             ['code'=>'TCH-2024-027','employee_no'=>'EMP-2019-021','name'=>'Hendra Wijoyo, S.Pd','gender'=>'M','dob'=>'1987-02-25','email'=>'hendra.w@sutomo.sch.id','phone'=>'+62 812-7777-8888','subject'=>'PE & Health','dept'=>'Physical Education','campus'=>'sd','status'=>'permanent','employment'=>'full-time','joined_at'=>'2019-07-01','tenure'=>'6y 10m','contract'=>'Permanent','education'=>'S.Pd Physical Education — UNJ','certifications'=>['First Aid','Coaching Cert.'],'languages'=>['Indonesian','English'],'city'=>'Jakarta','rating'=>4.6,'last_review'=>'2025-11-30'],
             ['code'=>'TCH-2023-014','employee_no'=>'EMP-2014-007','name'=>'Sri Mulyani, M.Pd','gender'=>'F','dob'=>'1978-12-03','email'=>'sri.mulyani@sutomo.sch.id','phone'=>'+62 819-1010-2020','subject'=>'Bahasa Indonesia','dept'=>'Languages','campus'=>'smp','status'=>'permanent','employment'=>'full-time','joined_at'=>'2014-07-01','tenure'=>'11y 10m','contract'=>'Permanent — Senior','education'=>'M.Pd Bahasa Indonesia — UNJ','certifications'=>['Serdik','Kurikulum Merdeka Trainer'],'languages'=>['Indonesian','English'],'city'=>'Jakarta','rating'=>4.8,'last_review'=>'2025-12-10'],
-            ['code'=>'TCH-2020-009','employee_no'=>'EMP-2010-003','name'=>'Drs. Budi Santoso','gender'=>'M','dob'=>'1972-04-18','email'=>'budi.santoso@sutomo.sch.id','phone'=>'+62 812-4040-5050','subject'=>'School Leadership','dept'=>'Administration','campus'=>'sma','status'=>'permanent','employment'=>'full-time','joined_at'=>'2010-07-01','tenure'=>'15y 10m','contract'=>'Permanent — Principal SMA','education'=>'Drs. Education Management — UPI','certifications'=>['Cambridge School Leader','Asesor BAN-SM'],'languages'=>['Indonesian','English'],'city'=>'Jakarta','rating'=>4.9,'last_review'=>'2025-12-20'],
+            ['code'=>'TCH-2020-009','employee_no'=>'EMP-2010-003','name'=>'Pak Dwi','gender'=>'M','dob'=>'1972-04-18','email'=>'dwi@sutomo.sch.id','phone'=>'+62 812-4040-5050','subject'=>'School Leadership','dept'=>'Administration','campus'=>'sma','status'=>'permanent','employment'=>'full-time','joined_at'=>'2010-07-01','tenure'=>'15y 10m','contract'=>'Permanent — Principal SMA','education'=>'Drs. Education Management — UPI','certifications'=>['Cambridge School Leader','Asesor BAN-SM'],'languages'=>['Indonesian','English'],'city'=>'Jakarta','rating'=>4.9,'last_review'=>'2025-12-20'],
             ['code'=>'TCH-2022-011','employee_no'=>'EMP-2017-018','name'=>'Lia Kartika, S.Pd','gender'=>'F','dob'=>'1989-08-30','email'=>'lia.kartika@sutomo.sch.id','phone'=>'+62 813-6060-7070','subject'=>'English','dept'=>'Languages','campus'=>'smp','status'=>'permanent','employment'=>'full-time','joined_at'=>'2017-07-01','tenure'=>'8y 10m','contract'=>'Permanent','education'=>'S.Pd English Education — UNJ','certifications'=>['TEFL','CELTA'],'languages'=>['Indonesian','English'],'city'=>'Jakarta','rating'=>4.7,'last_review'=>'2025-12-05'],
             ['code'=>'TCH-2021-004','employee_no'=>'EMP-2016-011','name'=>'Agus Pranoto, S.Si','gender'=>'M','dob'=>'1986-01-09','email'=>'agus.pranoto@sutomo.sch.id','phone'=>'+62 811-3535-2424','subject'=>'Biology','dept'=>'Science','campus'=>'sma','status'=>'permanent','employment'=>'full-time','joined_at'=>'2016-07-01','tenure'=>'9y 10m','contract'=>'Permanent','education'=>'S.Si Biology — UGM','certifications'=>['Serdik','BNSP Lab Assessor'],'languages'=>['Indonesian','English'],'city'=>'Yogyakarta','rating'=>4.6,'last_review'=>'2025-12-12'],
             ['code'=>'TCH-2025-018','employee_no'=>'EMP-2025-018','name'=>'Felicia Tan, B.Ed','gender'=>'F','dob'=>'1995-05-21','email'=>'felicia.tan@sutomo.sch.id','phone'=>'+62 812-9090-1212','subject'=>'Primary Class Teacher','dept'=>'Primary','campus'=>'sd','status'=>'probation','employment'=>'full-time','joined_at'=>'2025-08-01','tenure'=>'9m','contract'=>'Probation (90 days extended)','contract_end'=>'2026-08-01','education'=>'B.Ed Primary — NIE Singapore','certifications'=>['IB PYP Cat. 1'],'languages'=>['Indonesian','English','Mandarin'],'city'=>'Jakarta','rating'=>4.3,'last_review'=>'2026-04-20'],
@@ -149,9 +150,9 @@ class DatabaseSeeder extends Seeder
     private function seedInterviews(): void
     {
         $rows = [
-            ['code'=>'INT-301','candidate'=>'C-1005','scheduled_date'=>'2026-05-16','scheduled_time'=>'09:30','room'=>'Meeting Room A','panel'=>['Drs. Budi Santoso','Maria Hartanto','Sri Lestari'],'type'=>'Panel Interview','status'=>'scheduled'],
-            ['code'=>'INT-302','candidate'=>'C-1004','scheduled_date'=>'2026-05-17','scheduled_time'=>'11:00','room'=>'Meeting Room B','panel'=>['Drs. Budi Santoso','Maria Hartanto'],'type'=>'Micro-Teaching','status'=>'scheduled'],
-            ['code'=>'INT-303','candidate'=>'C-1002','scheduled_date'=>'2026-05-04','scheduled_time'=>'10:00','room'=>'Meeting Room A','panel'=>['Drs. Budi Santoso','HoD English'],'type'=>'Final Panel','status'=>'completed','recommendation'=>'Strong Hire'],
+            ['code'=>'INT-301','candidate'=>'C-1005','scheduled_date'=>'2026-05-16','scheduled_time'=>'09:30','room'=>'Meeting Room A','panel'=>['Pak Dwi','Maria Hartanto','Sri Lestari'],'type'=>'Panel Interview','status'=>'scheduled'],
+            ['code'=>'INT-302','candidate'=>'C-1004','scheduled_date'=>'2026-05-17','scheduled_time'=>'11:00','room'=>'Meeting Room B','panel'=>['Pak Dwi','Maria Hartanto'],'type'=>'Micro-Teaching','status'=>'scheduled'],
+            ['code'=>'INT-303','candidate'=>'C-1002','scheduled_date'=>'2026-05-04','scheduled_time'=>'10:00','room'=>'Meeting Room A','panel'=>['Pak Dwi','HoD English'],'type'=>'Final Panel','status'=>'completed','recommendation'=>'Strong Hire'],
         ];
         foreach ($rows as $r) {
             $cid = Candidate::where('code',$r['candidate'])->value('id');
@@ -163,7 +164,7 @@ class DatabaseSeeder extends Seeder
     private function seedAudit(): void
     {
         $rows = [
-            ['occurred_at'=>'2026-05-14 16:42','user_name'=>'Drs. Budi Santoso','role'=>'Principal','action'=>'override.score','target'=>'C-1001','from_value'=>'87','to_value'=>'90','note'=>'Adjusted micro-teaching score after panel review.'],
+            ['occurred_at'=>'2026-05-14 16:42','user_name'=>'Pak Dwi','role'=>'Principal','action'=>'override.score','target'=>'C-1001','from_value'=>'87','to_value'=>'90','note'=>'Adjusted micro-teaching score after panel review.'],
             ['occurred_at'=>'2026-05-14 14:08','user_name'=>'Sri Lestari','role'=>'HR','action'=>'stage.move','target'=>'C-1003','from_value'=>'psycho','to_value'=>'medical','note'=>'Psycho cleared — moved forward.'],
             ['occurred_at'=>'2026-05-14 11:30','user_name'=>'Hendra Wijaya','role'=>'Finance','action'=>'deposit.verify','target'=>'C-1004','from_value'=>'pending','to_value'=>'verified','note'=>'Bank slip matched.'],
             ['occurred_at'=>'2026-05-13 17:20','user_name'=>'Dr. Tanto Halim','role'=>'Yayasan','action'=>'approval.grant','target'=>'C-1001','from_value'=>'pending','to_value'=>'approved','note'=>'OPL track authorized.'],
@@ -184,7 +185,7 @@ class DatabaseSeeder extends Seeder
     {
         \App\Models\User::firstOrCreate(
             ['email' => 'principal@sutomo.sch.id'],
-            ['name' => 'Drs. Budi Santoso', 'password' => bcrypt('password'), 'role' => 'principal', 'campus' => 'sma']
+            ['name' => 'Pak Dwi', 'password' => bcrypt('password'), 'role' => 'principal', 'campus' => 'sma']
         );
 
         EnrollmentPeriod::firstOrCreate(['name' => 'TA 2026/2027 — SMA'], [
@@ -513,7 +514,7 @@ class DatabaseSeeder extends Seeder
             SupervisiEvaluation::create([
                 'teacher_id' => $tid,
                 'scheduled_at' => now()->subDays(fake()->numberBetween(-30, 60))->toDateString(),
-                'evaluator' => fake()->randomElement(['Drs. Budi Santoso','Maria Hartanto']),
+                'evaluator' => fake()->randomElement(['Pak Dwi','Maria Hartanto']),
                 'round' => 'Q' . fake()->numberBetween(1, 4),
                 'score' => $score,
                 'status' => $status,
