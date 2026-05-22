@@ -3,3 +3,4 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/sutomosc/sutomoschool
     - /bin/bash $DEPLOYPATH/deploy.sh
+
