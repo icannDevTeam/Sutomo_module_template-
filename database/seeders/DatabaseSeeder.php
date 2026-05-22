@@ -37,6 +37,8 @@ class DatabaseSeeder extends Seeder
         $this->seedPrincipalModule();
         $this->seedEnrollmentCatalog();
         $this->call(TimetableSeeder::class);
+        $this->call(AnnouncementSeeder::class);
+        $this->call(UnitPlanSeeder::class);
     }
 
     private function seedVacancies(): void
