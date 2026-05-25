@@ -24,6 +24,8 @@ class Teacher extends Model
         'awards'          => 'array',
         'initiatives'     => 'array',
         'rating'          => 'float',
+        'bank_account_no' => 'encrypted',
+        'tax_id_npwp'     => 'encrypted',
     ];
 
     public const STATUSES = [
@@ -197,6 +199,23 @@ class Teacher extends Model
         $count = (int) (clone $q)->count();
         $last = (clone $q)->orderByDesc('occurred_at')->value('occurred_at');
         return ['count' => $count, 'last' => $last];
+    }
+
+    public function compensations(): HasMany
+    {
+        return $this->hasMany(TeacherCompensation::class)->orderByDesc('effective_from');
+    }
+
+    public function currentCompensation(): ?TeacherCompensation
+    {
+        return $this->compensations()
+            ->where('effective_from', '<=', now())
+            ->orderByDesc('effective_from')->first();
+    }
+
+    public function sensitiveApprovalRequests(): HasMany
+    {
+        return $this->hasMany(SensitiveApprovalRequest::class, 'target_teacher_id');
     }
 
     /** Avatar URL accessor — falls back to a tiny initials data-uri-free placeholder path. */

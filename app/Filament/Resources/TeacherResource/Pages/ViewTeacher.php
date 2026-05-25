@@ -17,6 +17,7 @@ use App\Models\TeacherTraining;
 use App\Models\VoluntaryRequest;
 use App\Services\Timetable\TeacherSchedule;
 use App\Support\TeacherWarnings;
+use Illuminate\Support\Facades\Auth;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Tabs;
 use Filament\Infolists\Components\TextEntry;
@@ -53,6 +54,18 @@ class ViewTeacher extends ViewRecord
                 ViewEntry::make('warnings')
                     ->view('filament.principal.teacher.warnings')
                     ->viewData(fn ($record) => ['warnings' => TeacherWarnings::for($record)]),
+            ]),
+
+            Section::make('Quick Actions')->schema([
+                ViewEntry::make('quick_actions')
+                    ->view('filament.principal.teacher.quick-actions')
+                    ->viewData(fn ($record) => ['teacher' => $record]),
+                ViewEntry::make('renewal')
+                    ->view('filament.principal.teacher.renewal-card')
+                    ->viewData(fn ($record) => ['teacher' => $record]),
+                ViewEntry::make('ai_summary')
+                    ->view('filament.principal.teacher.ai-summary')
+                    ->viewData(fn ($record) => ['summary' => \App\Support\TeacherSummary::generate($record)]),
             ]),
 
             Tabs::make('Profile')->columnSpanFull()->tabs([
@@ -406,6 +419,48 @@ class ViewTeacher extends ViewRecord
                                 ]),
                         ]),
                     ]),
+
+                Tabs\Tab::make('Compensation')
+                    ->icon('heroicon-o-banknotes')
+                    ->visible(fn () => Auth::user()?->can('viewSensitive', Teacher::class) ?? false)
+                    ->schema([
+                        Section::make('Salary & Benefits')->schema([
+                            ViewEntry::make('comp_history')
+                                ->view('filament.principal.teacher.compensation-history')
+                                ->viewData(fn ($record) => [
+                                    'current' => $record->currentCompensation(),
+                                    'history' => $record->compensations()->get(),
+                                ]),
+                        ]),
+                        Section::make('Pending Sensitive Requests')->collapsible()->schema([
+                            ViewEntry::make('pending_reqs')
+                                ->view('filament.principal.teacher.sensitive-requests')
+                                ->viewData(fn ($record) => [
+                                    'requests' => $record->sensitiveApprovalRequests()
+                                        ->whereIn('status', ['pending_first', 'pending_second'])
+                                        ->orderByDesc('created_at')->get(),
+                                ]),
+                        ]),
+                    ]),
+
+                Tabs\Tab::make('Activity')->icon('heroicon-o-bolt')->schema([
+                    Section::make('Recent activity (last 20)')->schema([
+                        ViewEntry::make('feed')
+                            ->view('filament.principal.teacher.activity-feed')
+                            ->viewData(fn ($record) => ['events' => \App\Support\TeacherActivityFeed::for($record)]),
+                    ]),
+                ]),
+
+                Tabs\Tab::make('Audit Trail')->icon('heroicon-o-document-magnifying-glass')->schema([
+                    Section::make('Audit log')->schema([
+                        ViewEntry::make('audit')
+                            ->view('filament.principal.teacher.audit-trail')
+                            ->viewData(fn ($record) => [
+                                'logs' => \App\Models\AuditLog::where('target', 'Teacher:'.$record->id)
+                                    ->orderByDesc('occurred_at')->limit(100)->get(),
+                            ]),
+                    ]),
+                ]),
             ]),
         ]);
     }

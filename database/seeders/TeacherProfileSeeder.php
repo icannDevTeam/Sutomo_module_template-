@@ -279,6 +279,51 @@ class TeacherProfileSeeder extends Seeder
                     'summary'        => 'Discussed progress, behaviour update; parent satisfied.',
                 ]);
             }
+
+            // 11. Compensation (1 current record per teacher)
+            \App\Models\TeacherCompensation::create([
+                'teacher_id'     => $t->id,
+                'base_salary'    => 4000000 + ($i * 250000),
+                'allowances'     => ['transport' => 500000, 'meal' => 300000, 'role' => 200000 + $i * 50000],
+                'currency'       => 'IDR',
+                'effective_from' => now()->subMonths(rand(3, 18))->startOfMonth(),
+                'notes'          => 'Initial package on file.',
+            ]);
+        }
+
+        // 12. Sample sensitive approval requests (3 across pipeline)
+        $sample = $teachers->take(3);
+        if ($sample->count() >= 3) {
+            \App\Models\SensitiveApprovalRequest::create([
+                'requester_id'      => 1,
+                'target_teacher_id' => $sample[0]->id,
+                'action_type'       => 'salary_change',
+                'payload'           => ['base_salary' => 6500000, 'allowances' => ['transport' => 600000], 'effective_from' => now()->addMonth()->toDateString(), 'notes' => 'Annual raise'],
+                'reason'            => 'Annual performance increase.',
+                'status'            => 'pending_first',
+            ]);
+            \App\Models\SensitiveApprovalRequest::create([
+                'requester_id'        => 1,
+                'target_teacher_id'   => $sample[1]->id,
+                'action_type'         => 'title_demotion',
+                'payload'             => ['title' => 'guru'],
+                'reason'              => 'Workload rebalancing.',
+                'status'              => 'pending_second',
+                'first_approver_id'   => 1,
+                'first_approved_at'   => now()->subDay(),
+            ]);
+            \App\Models\SensitiveApprovalRequest::create([
+                'requester_id'        => 1,
+                'target_teacher_id'   => $sample[2]->id,
+                'action_type'         => 'contract_terminate',
+                'payload'             => ['contract_end' => now()->addMonths(2)->toDateString()],
+                'reason'              => 'Contract not renewed; mutual agreement.',
+                'status'              => 'approved',
+                'first_approver_id'   => 1,
+                'first_approved_at'   => now()->subDays(3),
+                'second_approver_id'  => 1,
+                'second_approved_at'  => now()->subDays(2),
+            ]);
         }
     }
 }
