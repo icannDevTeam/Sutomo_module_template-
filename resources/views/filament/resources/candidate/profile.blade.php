@@ -56,30 +56,17 @@
 
         {{-- STAGE STEPPER --}}
         <div class="mt-5 -mx-2 px-2 overflow-x-auto">
-            <div class="flex items-center gap-1 min-w-max">
+            <div class="sp-stage-strip">
                 @foreach ($stages as $i => $s)
                     @php $done = $i < $currentIdx; $active = $i === $currentIdx; @endphp
-                    <div class="flex items-center shrink-0">
-                        <div class="flex items-center gap-1.5">
-                            <div @class([
-                                'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold',
-                                'bg-primary-600 text-white sp-stage-active' => $active,
-                                'bg-emerald-500 text-white' => $done,
-                                'bg-gray-200 text-gray-500 dark:bg-white/10 dark:text-gray-400' => !$active && !$done,
-                            ])>{{ $i + 1 }}</div>
-                            <span @class([
-                                'text-xs whitespace-nowrap',
-                                'font-semibold text-gray-900 dark:text-white' => $active,
-                                'text-gray-500 dark:text-gray-400' => !$active,
-                            ])>{{ $stageLabels[$s] }}</span>
-                        </div>
-                        @if (!$loop->last)
-                            <div @class([
-                                'mx-2 h-px w-6 shrink-0',
-                                'bg-emerald-500' => $done,
-                                'bg-gray-300 dark:bg-white/10' => !$done,
-                            ])></div>
-                        @endif
+                    <div @class([
+                        'sp-stage-pill',
+                        'sp-stage-pill--done'     => $done,
+                        'sp-stage-pill--active'   => $active,
+                        'sp-stage-pill--upcoming' => !$done && !$active,
+                    ])>
+                        <span class="sp-stage-num">{{ $i + 1 }}</span>
+                        <span class="sp-stage-label">{{ $stageLabels[$s] }}</span>
                     </div>
                 @endforeach
             </div>
@@ -137,14 +124,14 @@
 
                         <div>
                             <div class="sp-cand-block-h">Internal notes ({{ count($notes) }})</div>
-                            <div class="space-y-2">
+                            <div class="sp-cand-notes-grid">
                                 @forelse ($notes as $n)
-                                    <div class="rounded-lg bg-gray-50 dark:bg-white/5 p-3">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ $n['who'] }}</span>
-                                            <span class="text-[10px] text-gray-400">{{ $n['when'] }}</span>
+                                    <div class="sp-cand-sticky">
+                                        <div class="sp-cand-sticky-head">
+                                            <span class="sp-cand-sticky-who">{{ $n['who'] }}</span>
+                                            <span class="sp-cand-sticky-when">{{ $n['when'] }}</span>
                                         </div>
-                                        <div class="text-sm text-gray-700 dark:text-gray-300">{{ $n['text'] }}</div>
+                                        <div class="sp-cand-sticky-text">{{ $n['text'] }}</div>
                                     </div>
                                 @empty
                                     <div class="text-sm text-gray-400">No notes yet.</div>
