@@ -3,7 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TeacherResource\Pages;
+use App\Models\SchoolClass;
 use App\Models\Teacher;
+use App\Models\TeacherTag;
 use App\Support\CsvExporter;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -23,15 +25,64 @@ class TeacherResource extends Resource
     {
         return $form->schema([
             Forms\Components\Section::make('Identity')->columns(2)->schema([
+                Forms\Components\FileUpload::make('avatar_path')
+                    ->label('Avatar')
+                    ->image()
+                    ->avatar()
+                    ->disk('public')
+                    ->directory('teachers/avatars')
+                    ->imageEditor()
+                    ->maxSize(4096)
+                    ->acceptedFileTypes(['image/png','image/jpeg','image/webp'])
+                    ->preserveFilenames(false)
+                    ->columnSpanFull(),
                 Forms\Components\TextInput::make('code')->required(),
                 Forms\Components\TextInput::make('employee_no'),
                 Forms\Components\TextInput::make('name')->required()->columnSpanFull(),
+                Forms\Components\Select::make('title')
+                    ->options(Teacher::TITLES)
+                    ->default('teacher')
+                    ->required(),
                 Forms\Components\Select::make('gender')->options(['M' => 'Male', 'F' => 'Female']),
                 Forms\Components\DatePicker::make('dob')->label('Date of Birth'),
                 Forms\Components\TextInput::make('email')->email(),
-                Forms\Components\TextInput::make('phone')->tel(),
+                Forms\Components\TextInput::make('phone')->tel()
+                    ->helperText('Indonesian numbers auto-normalize to +62…'),
                 Forms\Components\TextInput::make('city'),
             ]),
+            Forms\Components\Section::make('Emergency Contact')->columns(3)->schema([
+                Forms\Components\TextInput::make('emergency_contact_name')->label('Name'),
+                Forms\Components\TextInput::make('emergency_contact_relation')->label('Relation')
+                    ->datalist(['Spouse','Parent','Sibling','Child','Friend','Other']),
+                Forms\Components\TextInput::make('emergency_contact_phone')->label('Phone')->tel(),
+            ]),
+            Forms\Components\Section::make('Tags')
+                ->description('Pin tags for quick filtering (e.g. "Trainer", "Bilingual", "Senior Mentor")')
+                ->schema([
+                    Forms\Components\Select::make('tags')
+                        ->label('Teacher Tags')
+                        ->relationship('tags', 'name')
+                        ->multiple()
+                        ->preload()
+                        ->createOptionForm([
+                            Forms\Components\TextInput::make('name')->required()->unique('teacher_tags','name'),
+                            Forms\Components\TextInput::make('color')->placeholder('#6366f1')->maxLength(16),
+                        ]),
+                ]),
+            Forms\Components\Section::make('Homeroom Assignments')
+                ->description('Classes where this teacher is the homeroom teacher')
+                ->schema([
+                    Forms\Components\Select::make('homeroom_class_ids')
+                        ->label('Homeroom Classes')
+                        ->multiple()
+                        ->options(fn () => SchoolClass::orderBy('code')->pluck('code','id'))
+                        ->searchable()
+                        ->preload()
+                        ->dehydrated()
+                        ->afterStateHydrated(function ($component, ?Teacher $record) {
+                            $component->state($record?->homeroomClasses()->pluck('school_classes.id')->all() ?? []);
+                        }),
+                ]),
             Forms\Components\Section::make('Employment')->columns(2)->schema([
                 Forms\Components\TextInput::make('subject'),
                 Forms\Components\TextInput::make('dept')->label('Department'),
@@ -51,8 +102,6 @@ class TeacherResource extends Resource
                 Forms\Components\Textarea::make('education')->columnSpanFull(),
                 Forms\Components\TagsInput::make('certifications'),
                 Forms\Components\TagsInput::make('languages'),
-                Forms\Components\TextInput::make('rating')->numeric()->step(0.1)->suffix('/5'),
-                Forms\Components\DatePicker::make('last_review'),
             ]),
             Forms\Components\Section::make('Recognition & Initiatives')->columns(2)->schema([
                 Forms\Components\TagsInput::make('awards')->placeholder('Add award + year'),
@@ -70,8 +119,17 @@ class TeacherResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('code')->searchable()->fontFamily('mono'),
+                Tables\Columns\ImageColumn::make('avatar_path')
+                    ->label('')
+                    ->circular()
+                    ->disk('public')
+                    ->defaultImageUrl(url('/images/avatar-placeholder.svg'))
+                    ->size(36),
                 Tables\Columns\TextColumn::make('name')->searchable()->weight('bold')
                     ->description(fn ($record) => $record->subject . ' · ' . strtoupper($record->campus ?? '')),
+                Tables\Columns\TextColumn::make('title')->badge()
+                    ->formatStateUsing(fn ($state) => Teacher::TITLES[$state] ?? ($state ?: '—'))
+                    ->color(fn ($state) => Teacher::TITLE_COLORS[$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->formatStateUsing(fn ($state) => Teacher::STATUSES[$state] ?? $state)
                     ->color(fn ($state) => match ($state) {
@@ -80,7 +138,6 @@ class TeacherResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('employment')->badge()->color('gray'),
                 Tables\Columns\TextColumn::make('tenure'),
-                Tables\Columns\TextColumn::make('rating')->numeric(1)->alignCenter()->icon('heroicon-m-star')->iconColor('warning'),
                 Tables\Columns\TextColumn::make('joined_at')->date('M Y')->sortable(),
             ])
             ->filters([

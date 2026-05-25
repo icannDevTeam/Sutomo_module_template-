@@ -9,6 +9,8 @@ use App\Models\TeacherDocument;
 use App\Models\TeacherLeave;
 use App\Models\TeacherTraining;
 use App\Models\VoluntaryRequest;
+use App\Services\Timetable\TeacherSchedule;
+use App\Support\TeacherWarnings;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Tabs;
 use Filament\Infolists\Components\TextEntry;
@@ -23,15 +25,29 @@ class ViewTeacher extends ViewRecord
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Section::make()
-                ->schema([
-                    TextEntry::make('name')->size('lg')->weight('bold')->columnSpan(2),
-                    TextEntry::make('code')->label('Code'),
-                    TextEntry::make('subject')->placeholder('—'),
-                    TextEntry::make('campus')->formatStateUsing(fn ($state) => strtoupper((string) $state))->placeholder('—'),
-                    TextEntry::make('status')->badge()
-                        ->formatStateUsing(fn ($state) => Teacher::STATUSES[$state] ?? $state),
-                ])->columns(5),
+            Section::make()->schema([
+                ViewEntry::make('header')
+                    ->view('filament.principal.teacher.header')
+                    ->viewData(fn ($record) => [
+                        'record' => $record,
+                        'tags'   => $record->tags()->orderBy('name')->get(),
+                    ]),
+            ]),
+
+            Section::make()->schema([
+                ViewEntry::make('status_banner')
+                    ->view('filament.principal.teacher.status-banner')
+                    ->viewData(fn ($record) => [
+                        'teacher' => $record,
+                        'current' => TeacherSchedule::for($record)->currentSlot(),
+                    ]),
+            ]),
+
+            Section::make('Active Warnings')->collapsible()->schema([
+                ViewEntry::make('warnings')
+                    ->view('filament.principal.teacher.warnings')
+                    ->viewData(fn ($record) => ['warnings' => TeacherWarnings::for($record)]),
+            ]),
 
             Tabs::make('Profile')->columnSpanFull()->tabs([
 
@@ -39,10 +55,24 @@ class ViewTeacher extends ViewRecord
                     Section::make('Identity')->columns(3)->schema([
                         TextEntry::make('employee_no')->label('Employee No.')->placeholder('—'),
                         TextEntry::make('dob')->label('Date of Birth')->date('d M Y')->placeholder('—'),
-                        TextEntry::make('gender')->formatStateUsing(fn ($state) => $state === 'M' ? 'Male' : ($state === 'F' ? 'Female' : '—')),
+                        TextEntry::make('gender')->formatStateUsing(fn ($s) => $s === 'M' ? 'Male' : ($s === 'F' ? 'Female' : '—')),
                         TextEntry::make('email')->placeholder('—')->copyable(),
                         TextEntry::make('phone')->placeholder('—'),
                         TextEntry::make('city')->placeholder('—'),
+                    ]),
+
+                    Section::make('Emergency Contact')->schema([
+                        ViewEntry::make('emergency')
+                            ->view('filament.principal.teacher.emergency-contact')
+                            ->viewData(fn ($record) => ['record' => $record]),
+                    ]),
+
+                    Section::make('Homeroom Classes')->schema([
+                        ViewEntry::make('homerooms')
+                            ->view('filament.principal.teacher.homeroom-classes')
+                            ->viewData(fn ($record) => [
+                                'classes' => $record->homeroomClasses()->orderBy('code')->get(),
+                            ]),
                     ]),
 
                     Section::make('Contract Snapshot')->columns(3)->schema([
@@ -51,7 +81,9 @@ class ViewTeacher extends ViewRecord
                         TextEntry::make('contract_end')->date('d M Y')->placeholder('—'),
                         TextEntry::make('tenure')->placeholder('—'),
                         TextEntry::make('employment')->badge()->color('gray'),
-                        TextEntry::make('rating')->numeric(1)->suffix(' /5')->placeholder('—'),
+                        TextEntry::make('title')->badge()
+                            ->formatStateUsing(fn ($s) => Teacher::TITLES[$s] ?? ($s ?: '—'))
+                            ->color(fn ($s) => Teacher::TITLE_COLORS[$s] ?? 'gray'),
                     ]),
 
                     Section::make('Children Tuition Quota')
@@ -101,20 +133,53 @@ class ViewTeacher extends ViewRecord
                         ]),
                 ]),
 
+                Tabs\Tab::make('Schedule')->icon('heroicon-o-calendar')->schema([
+                    Section::make('Classes I Teach')->schema([
+                        ViewEntry::make('classes_taught')
+                            ->view('filament.principal.teacher.classes-taught')
+                            ->viewData(fn ($record) => ['classes' => TeacherSchedule::for($record)->classesTaught()]),
+                    ]),
+
+                    Section::make('Weekly Timetable')->schema([
+                        ViewEntry::make('timetable_grid')
+                            ->view('filament.principal.teacher.timetable-grid')
+                            ->viewData(fn ($record) => ['grid' => TeacherSchedule::for($record)->weekly()]),
+                    ]),
+
+                    Section::make('Workload')->schema([
+                        ViewEntry::make('workload_meter')
+                            ->view('filament.principal.teacher.workload-meter')
+                            ->viewData(function ($record) {
+                                $dutyHours = DutyAssignment::where('teacher_id', $record->id)
+                                    ->whereIn('status', ['assigned','accepted'])
+                                    ->where('recurrence', 'weekly')
+                                    ->count();
+                                return [
+                                    'workload'  => TeacherSchedule::for($record)->workload(),
+                                    'dutyHours' => $dutyHours,
+                                ];
+                            }),
+                    ]),
+
+                    Section::make('Department Peers')
+                        ->description('Same department — candidates for substitute cover')
+                        ->collapsible()
+                        ->schema([
+                            ViewEntry::make('peers')
+                                ->view('filament.principal.teacher.department-peers')
+                                ->viewData(fn ($record) => ['peers' => TeacherSchedule::for($record)->departmentPeers()]),
+                        ]),
+                ]),
+
                 Tabs\Tab::make('Career & Contract')->icon('heroicon-o-briefcase')->schema([
                     Section::make('Current Contract')->columns(3)->schema([
                         TextEntry::make('contract')->placeholder('—'),
                         TextEntry::make('joined_at')->date('d M Y')->placeholder('—'),
                         TextEntry::make('contract_end')->date('d M Y')->placeholder('—'),
                         TextEntry::make('status')->badge()
-                            ->formatStateUsing(fn ($state) => Teacher::STATUSES[$state] ?? $state),
+                            ->formatStateUsing(fn ($s) => Teacher::STATUSES[$s] ?? $s),
                         TextEntry::make('employment')->badge()->color('gray'),
                         TextEntry::make('dept')->label('Department')->placeholder('—'),
-                    ]),
-
-                    Section::make('Reviews')->columns(2)->schema([
-                        TextEntry::make('rating')->numeric(1)->suffix(' /5')->placeholder('—'),
-                        TextEntry::make('last_review')->date('d M Y')->placeholder('—'),
                     ]),
 
                     Section::make('Leave History')
@@ -191,38 +256,27 @@ class ViewTeacher extends ViewRecord
         ]);
     }
 
-    protected static function leaveStats($record): array
+    protected static function leaveStats(Teacher $teacher): array
     {
-        $base = TeacherLeave::where('teacher_id', $record->id);
+        $all = TeacherLeave::where('teacher_id', $teacher->id)->get();
         return [
-            'total'    => (clone $base)->count(),
-            'approved' => (clone $base)->where('status', 'approved')->count(),
-            'pending'  => (clone $base)->where('status', 'pending')->count(),
-            'rejected' => (clone $base)->where('status', 'rejected')->count(),
-            'days_used_year' => (clone $base)
-                ->where('status', 'approved')
-                ->whereYear('starts_at', now()->year)
-                ->get()
-                ->sum(fn ($l) => max(1, $l->starts_at->diffInDays($l->ends_at) + 1)),
+            'total'    => $all->count(),
+            'pending'  => $all->where('status', 'pending')->count(),
+            'approved' => $all->where('status', 'approved')->count(),
+            'days'     => $all->where('status', 'approved')->sum(fn ($l) => max(1, $l->starts_at->diffInDays($l->ends_at) + 1)),
         ];
     }
 
-    protected static function leaveSummary($record): string
+    protected static function leaveSummary(Teacher $teacher): string
     {
-        $s = static::leaveStats($record);
-        return "{$s['days_used_year']} days used in " . now()->year
-            . " · {$s['pending']} pending · {$s['approved']} approved · {$s['rejected']} rejected";
+        $s = static::leaveStats($teacher);
+        return "{$s['total']} total · {$s['approved']} approved ({$s['days']} days) · {$s['pending']} pending";
     }
 
-    protected static function trainingSummary($record): string
+    protected static function trainingSummary(Teacher $teacher): string
     {
-        $rows = TeacherTraining::where('teacher_id', $record->id);
-        $count = (clone $rows)->count();
-        $hours = (clone $rows)->where('status', 'completed')->sum('hours');
-        $yearHours = (clone $rows)
-            ->where('status', 'completed')
-            ->whereYear('ends_on', now()->year)
-            ->sum('hours');
-        return "{$count} sessions · {$hours} PD hours total · {$yearHours} hours in " . now()->year;
+        $tr = TeacherTraining::where('teacher_id', $teacher->id)->get();
+        $hours = $tr->sum('hours');
+        return $tr->count().' trainings · '.number_format($hours, 1).' hours';
     }
 }
