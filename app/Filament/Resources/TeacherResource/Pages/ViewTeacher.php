@@ -74,7 +74,7 @@ class ViewTeacher extends ViewRecord
                     Section::make('Identity')->columns(3)->schema([
                         TextEntry::make('employee_no')->label('Employee No.')->placeholder('—'),
                         TextEntry::make('dob')->label('Date of Birth')->date('d M Y')->placeholder('—'),
-                        TextEntry::make('gender')->formatStateUsing(fn ($s) => $s === 'M' ? 'Male' : ($s === 'F' ? 'Female' : '—')),
+                        TextEntry::make('gender')->formatStateUsing(fn ($state) => $state === 'M' ? 'Male' : ($state === 'F' ? 'Female' : '—')),
                         TextEntry::make('email')->placeholder('—')->copyable(),
                         TextEntry::make('phone')->placeholder('—'),
                         TextEntry::make('city')->placeholder('—'),
@@ -101,8 +101,8 @@ class ViewTeacher extends ViewRecord
                         TextEntry::make('tenure')->placeholder('—'),
                         TextEntry::make('employment')->badge()->color('gray'),
                         TextEntry::make('title')->badge()
-                            ->formatStateUsing(fn ($s) => Teacher::TITLES[$s] ?? ($s ?: '—'))
-                            ->color(fn ($s) => Teacher::TITLE_COLORS[$s] ?? 'gray'),
+                            ->formatStateUsing(fn ($state) => Teacher::TITLES[$state] ?? ($state ?: '—'))
+                            ->color(fn ($state) => Teacher::TITLE_COLORS[$state] ?? 'gray'),
                     ]),
 
                     Section::make('Children Tuition Quota')
@@ -261,7 +261,7 @@ class ViewTeacher extends ViewRecord
                         TextEntry::make('joined_at')->date('d M Y')->placeholder('—'),
                         TextEntry::make('contract_end')->date('d M Y')->placeholder('—'),
                         TextEntry::make('status')->badge()
-                            ->formatStateUsing(fn ($s) => Teacher::STATUSES[$s] ?? $s),
+                            ->formatStateUsing(fn ($state) => Teacher::STATUSES[$state] ?? $state),
                         TextEntry::make('employment')->badge()->color('gray'),
                         TextEntry::make('dept')->label('Department')->placeholder('—'),
                     ]),
@@ -489,11 +489,17 @@ class ViewTeacher extends ViewRecord
     protected static function leaveStats(Teacher $teacher): array
     {
         $all = TeacherLeave::where('teacher_id', $teacher->id)->get();
+        $year = now()->year;
+        $daysYear = $all->where('status', 'approved')
+            ->filter(fn ($l) => optional($l->starts_at)->year === $year)
+            ->sum(fn ($l) => max(1, $l->starts_at->diffInDays($l->ends_at) + 1));
         return [
-            'total'    => $all->count(),
-            'pending'  => $all->where('status', 'pending')->count(),
-            'approved' => $all->where('status', 'approved')->count(),
-            'days'     => $all->where('status', 'approved')->sum(fn ($l) => max(1, $l->starts_at->diffInDays($l->ends_at) + 1)),
+            'total'          => $all->count(),
+            'pending'        => $all->where('status', 'pending')->count(),
+            'approved'       => $all->where('status', 'approved')->count(),
+            'rejected'       => $all->where('status', 'rejected')->count(),
+            'days'           => $all->where('status', 'approved')->sum(fn ($l) => max(1, $l->starts_at->diffInDays($l->ends_at) + 1)),
+            'days_used_year' => (int) $daysYear,
         ];
     }
 
