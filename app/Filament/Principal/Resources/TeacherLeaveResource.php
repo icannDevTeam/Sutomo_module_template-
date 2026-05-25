@@ -17,8 +17,19 @@ class TeacherLeaveResource extends Resource
     protected static ?string $model = TeacherLeave::class;
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
     protected static ?string $navigationLabel = 'Teacher Leaves';
-    protected static ?string $navigationGroup = 'Teachers';
+    protected static ?string $navigationGroup = 'Approvals';
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = TeacherLeave::where('status', 'pending')->count();
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
 
     public static function form(Form $form): Form
     {

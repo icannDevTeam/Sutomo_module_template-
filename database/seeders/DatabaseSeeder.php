@@ -39,6 +39,8 @@ class DatabaseSeeder extends Seeder
         $this->call(TimetableSeeder::class);
         $this->call(AnnouncementSeeder::class);
         $this->call(UnitPlanSeeder::class);
+        $this->call(TeacherApprovalsSeeder::class);
+        $this->call(TeacherProfileSeeder::class);
     }
 
     private function seedVacancies(): void

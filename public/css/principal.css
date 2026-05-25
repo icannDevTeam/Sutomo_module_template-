@@ -3125,3 +3125,173 @@
     .sp-tt2__popover, .fi-topbar, .fi-sidebar, .fi-header { display: none !important; }
     .sp-tt2__printall { display: flex !important; }
 }
+
+/* ===== Phase 1 — Leave history & approval polish ===== */
+.sp-leave-history { display:flex; flex-direction:column; gap:1rem; }
+
+.sp-leave-summary { display:flex; flex-wrap:wrap; gap:.5rem; }
+.sp-leave-summary__chip {
+    display:flex; align-items:baseline; gap:.4rem;
+    padding:.55rem .8rem; border-radius:.6rem;
+    background:#f1f5f9; border:1px solid #e2e8f0;
+    font-size:.78rem; color:#475569;
+}
+.sp-leave-summary__num { font-size:1.1rem; font-weight:700; color:#0f172a; }
+.sp-leave-summary__lbl { color:#64748b; }
+.sp-leave-summary__chip--total    { background:linear-gradient(135deg,#eef2ff,#e0e7ff); border-color:#c7d2fe; }
+.sp-leave-summary__chip--total .sp-leave-summary__num { color:#4338ca; }
+.sp-leave-summary__chip--pending  { background:#fffbeb; border-color:#fde68a; }
+.sp-leave-summary__chip--pending .sp-leave-summary__num { color:#b45309; }
+.sp-leave-summary__chip--approved { background:#ecfdf5; border-color:#a7f3d0; }
+.sp-leave-summary__chip--approved .sp-leave-summary__num { color:#047857; }
+.sp-leave-summary__chip--rejected { background:#fef2f2; border-color:#fecaca; }
+.sp-leave-summary__chip--rejected .sp-leave-summary__num { color:#b91c1c; }
+
+.sp-leave-empty {
+    padding:1.5rem; text-align:center; color:#94a3b8;
+    background:#f8fafc; border:1px dashed #e2e8f0; border-radius:.6rem;
+}
+
+.sp-leave-list { display:flex; flex-direction:column; gap:.5rem; }
+.sp-leave-row {
+    display:grid; grid-template-columns:64px 1fr auto; gap:.9rem;
+    padding:.75rem .9rem; border-radius:.55rem;
+    background:#fff; border:1px solid #e2e8f0;
+    transition:border-color .15s, transform .15s;
+}
+.sp-leave-row:hover { border-color:#c7d2fe; transform:translateX(2px); }
+.sp-leave-row--pending  { border-left:4px solid #f59e0b; }
+.sp-leave-row--approved { border-left:4px solid #10b981; }
+.sp-leave-row--rejected { border-left:4px solid #ef4444; opacity:.78; }
+
+.sp-leave-row__date {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:#f8fafc; border-radius:.4rem; padding:.3rem;
+}
+.sp-leave-row__day { font-size:1.15rem; font-weight:700; color:#0f172a; line-height:1; }
+.sp-leave-row__mon { font-size:.65rem; color:#64748b; text-transform:uppercase; letter-spacing:.04em; margin-top:.15rem; }
+
+.sp-leave-row__body { display:flex; flex-direction:column; gap:.15rem; min-width:0; }
+.sp-leave-row__title { font-weight:600; color:#0f172a; font-size:.88rem; }
+.sp-leave-row__days  { color:#64748b; font-weight:400; }
+.sp-leave-row__meta  { font-size:.74rem; color:#64748b; }
+.sp-leave-row__reason {
+    font-size:.78rem; color:#475569; margin-top:.25rem;
+    padding:.3rem .5rem; background:#f8fafc; border-radius:.35rem;
+    border-left:2px solid #cbd5e1;
+}
+
+.sp-leave-row__status { display:flex; flex-direction:column; align-items:flex-end; gap:.2rem; }
+.sp-leave-badge {
+    display:inline-flex; padding:.2rem .55rem; border-radius:9999px;
+    font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+}
+.sp-leave-badge--pending  { background:#fef3c7; color:#92400e; }
+.sp-leave-badge--approved { background:#d1fae5; color:#065f46; }
+.sp-leave-badge--rejected { background:#fee2e2; color:#991b1b; }
+.sp-leave-row__decider { font-size:.65rem; color:#94a3b8; }
+
+/* ===== Phase 3 — Teacher profile tabs ===== */
+.sp-teacher-empty {
+    padding:1rem; text-align:center; color:#94a3b8;
+    background:#f8fafc; border:1px dashed #e2e8f0; border-radius:.5rem;
+    font-size:.85rem;
+}
+
+.sp-teacher-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+.sp-teacher-chip {
+    display:inline-flex; align-items:center;
+    padding:.3rem .7rem; border-radius:9999px;
+    font-size:.78rem; font-weight:500;
+    background:#f1f5f9; color:#334155; border:1px solid #e2e8f0;
+}
+.sp-teacher-chip--award { background:linear-gradient(135deg,#fef3c7,#fde68a); border-color:#fcd34d; color:#92400e; }
+.sp-teacher-chip--init  { background:linear-gradient(135deg,#ddd6fe,#c4b5fd); border-color:#a78bfa; color:#5b21b6; }
+.sp-teacher-chip--cert  { background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
+.sp-teacher-chip--lang  { background:#dbeafe; border-color:#93c5fd; color:#1e40af; }
+
+/* Children quota */
+.sp-quota { display:flex; flex-direction:column; gap:.6rem; }
+.sp-quota__top { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.sp-quota__num { font-size:1.5rem; font-weight:700; color:#0f172a; }
+.sp-quota__lbl { color:#64748b; font-size:.85rem; margin-left:.4rem; }
+.sp-quota__badge { padding:.25rem .6rem; border-radius:9999px; font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+.sp-quota__badge--ok   { background:#d1fae5; color:#065f46; }
+.sp-quota__badge--full { background:#fee2e2; color:#991b1b; }
+.sp-quota__bar { height:6px; background:#e2e8f0; border-radius:9999px; overflow:hidden; }
+.sp-quota__bar-fill { height:100%; background:linear-gradient(90deg,#4f46e5,#7c3aed); transition:width .3s; }
+.sp-quota__list { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.3rem; }
+.sp-quota__chip { display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:.4rem; font-size:.78rem; }
+.sp-quota__name { font-weight:600; color:#0f172a; }
+.sp-quota__grade { font-size:.7rem; padding:.1rem .4rem; background:#e0e7ff; color:#4338ca; border-radius:.3rem; }
+
+/* Duty list */
+.sp-duty-list { display:flex; flex-direction:column; gap:.4rem; }
+.sp-duty-row {
+    display:grid; grid-template-columns:52px 1fr auto; gap:.7rem; align-items:center;
+    padding:.55rem .75rem; background:#fff; border:1px solid #e2e8f0; border-radius:.5rem;
+}
+.sp-duty-row--pending   { border-left:3px solid #f59e0b; }
+.sp-duty-row--accepted  { border-left:3px solid #0ea5e9; }
+.sp-duty-row--declined  { border-left:3px solid #ef4444; opacity:.78; }
+.sp-duty-row--completed { border-left:3px solid #10b981; }
+.sp-duty-row__date { display:flex; flex-direction:column; align-items:center; background:#f8fafc; border-radius:.35rem; padding:.25rem; }
+.sp-duty-row__day { font-weight:700; color:#0f172a; line-height:1; }
+.sp-duty-row__mon { font-size:.6rem; color:#64748b; text-transform:uppercase; }
+.sp-duty-row__title { font-weight:600; color:#0f172a; font-size:.85rem; }
+.sp-duty-row__meta  { font-size:.72rem; color:#64748b; }
+
+/* Training list */
+.sp-train-list { display:flex; flex-direction:column; gap:.45rem; }
+.sp-train-row {
+    display:grid; grid-template-columns:130px 1fr auto; gap:.7rem; align-items:center;
+    padding:.55rem .8rem; background:#fff; border:1px solid #e2e8f0; border-radius:.5rem;
+}
+.sp-train-row__cat {
+    padding:.3rem .5rem; font-size:.7rem; font-weight:700; text-align:center;
+    border-radius:.35rem; text-transform:uppercase; letter-spacing:.04em;
+}
+.sp-train-row__cat--pedagogy   { background:#dbeafe; color:#1e40af; }
+.sp-train-row__cat--subject    { background:#ddd6fe; color:#5b21b6; }
+.sp-train-row__cat--leadership { background:#fef3c7; color:#92400e; }
+.sp-train-row__cat--wellness   { background:#d1fae5; color:#065f46; }
+.sp-train-row__cat--tech       { background:#cffafe; color:#155e75; }
+.sp-train-row__title { font-weight:600; color:#0f172a; font-size:.88rem; }
+.sp-train-row__meta  { font-size:.72rem; color:#64748b; }
+.sp-train-row__notes { font-size:.75rem; color:#475569; margin-top:.25rem; padding:.25rem .5rem; background:#f8fafc; border-radius:.3rem; border-left:2px solid #cbd5e1; }
+
+/* Voluntary list */
+.sp-vol-list { display:flex; flex-direction:column; gap:.45rem; }
+.sp-vol-row {
+    display:grid; grid-template-columns:1fr auto; gap:.7rem;
+    padding:.6rem .8rem; background:#fff; border:1px solid #e2e8f0; border-radius:.5rem;
+}
+.sp-vol-row--pending  { border-left:3px solid #f59e0b; }
+.sp-vol-row--approved { border-left:3px solid #10b981; }
+.sp-vol-row--declined { border-left:3px solid #ef4444; opacity:.78; }
+.sp-vol-row__title { font-weight:600; color:#0f172a; font-size:.88rem; }
+.sp-vol-row__meta { font-size:.72rem; color:#64748b; }
+.sp-vol-row__reason, .sp-vol-row__note {
+    font-size:.78rem; color:#475569; margin-top:.3rem;
+    padding:.3rem .5rem; background:#f8fafc; border-radius:.3rem; border-left:2px solid #cbd5e1;
+}
+
+/* Documents list */
+.sp-doc-list { display:flex; flex-direction:column; gap:.45rem; }
+.sp-doc-row {
+    display:grid; grid-template-columns:140px 1fr auto; gap:.7rem; align-items:center;
+    padding:.6rem .8rem; background:#fff; border:1px solid #e2e8f0; border-radius:.5rem;
+}
+.sp-doc-row--pending  { border-left:3px solid #f59e0b; }
+.sp-doc-row--verified { border-left:3px solid #10b981; }
+.sp-doc-row--rejected { border-left:3px solid #ef4444; opacity:.78; }
+.sp-doc-row__type {
+    padding:.3rem .5rem; font-size:.7rem; font-weight:700; text-align:center;
+    background:#f1f5f9; color:#334155; border-radius:.35rem; text-transform:uppercase; letter-spacing:.04em;
+}
+.sp-doc-row__title { font-weight:600; color:#0f172a; font-size:.88rem; }
+.sp-doc-row__meta { font-size:.72rem; color:#64748b; }
+.sp-doc-row__note { font-size:.75rem; color:#475569; margin-top:.3rem; padding:.3rem .5rem; background:#fef9c3; border-radius:.3rem; border-left:2px solid #f59e0b; }
+.sp-doc-row__right { display:flex; flex-direction:column; align-items:flex-end; gap:.25rem; }
+.sp-doc-row__link { font-size:.7rem; color:#4338ca; text-decoration:none; }
+.sp-doc-row__link:hover { text-decoration:underline; }

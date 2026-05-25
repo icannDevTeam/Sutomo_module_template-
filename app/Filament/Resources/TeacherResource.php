@@ -54,6 +54,14 @@ class TeacherResource extends Resource
                 Forms\Components\TextInput::make('rating')->numeric()->step(0.1)->suffix('/5'),
                 Forms\Components\DatePicker::make('last_review'),
             ]),
+            Forms\Components\Section::make('Recognition & Initiatives')->columns(2)->schema([
+                Forms\Components\TagsInput::make('awards')->placeholder('Add award + year'),
+                Forms\Components\TagsInput::make('initiatives')->placeholder('Add initiative'),
+                Forms\Components\TextInput::make('children_quota')
+                    ->label('Children tuition quota')
+                    ->numeric()->minValue(0)->maxValue(10)
+                    ->helperText('Max children allowed under teacher tuition benefit.'),
+            ]),
         ]);
     }
 
@@ -127,6 +135,7 @@ class TeacherResource extends Resource
         return [
             'index'  => Pages\ListTeachers::route('/'),
             'create' => Pages\CreateTeacher::route('/create'),
+            'view'   => Pages\ViewTeacher::route('/{record}'),
             'edit'   => Pages\EditTeacher::route('/{record}/edit'),
         ];
     }

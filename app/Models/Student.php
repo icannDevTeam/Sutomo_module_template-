@@ -21,6 +21,12 @@ class Student extends Model
         'gpa'                    => 'decimal:2',
     ];
 
+    public function parentTeacher(): BelongsTo
+    {
+        return $this->belongsTo(Teacher::class, 'parent_teacher_id');
+    }
+
+
     public const ONBOARDING_STEPS = [
         'accepted'      => 'Accepted',
         'temp_id'       => 'Temporary ID',
