@@ -34,12 +34,14 @@ if (($data['ref'] ?? '') !== $BRANCH) {
     exit("ignored (branch " . ($data['ref'] ?? 'unknown') . ")\n");
 }
 
-// Fire and forget — run deploy in background so GitHub doesn't time out.
+// Fire and forget — run deploy in background, fully detached from Apache.
+// nohup + redirected stdin/out/err + & + disown ensures suPHP/Apache doesn't reap it.
+@file_put_contents($LOG_FILE, "\n[" . date('c') . "] webhook trigger (push " . substr(($data['after'] ?? ''), 0, 7) . ")\n", FILE_APPEND);
 $cmd = sprintf(
-    '/bin/bash %s >> %s 2>&1 &',
+    'nohup /bin/bash %s >> %s 2>&1 < /dev/null &',
     escapeshellarg($DEPLOY_SCRIPT),
     escapeshellarg($LOG_FILE)
 );
-exec($cmd);
+shell_exec($cmd);
 
 echo "deploy triggered\n";
