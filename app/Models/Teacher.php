@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class Teacher extends Model
@@ -89,6 +91,112 @@ class Teacher extends Model
     public function homeroomClasses(): HasMany
     {
         return $this->hasMany(SchoolClass::class, 'homeroom_teacher_id');
+    }
+
+    // ===== Phase 3: credentials =====
+    public function formalCertifications(): HasMany
+    {
+        return $this->hasMany(TeacherCertification::class);
+    }
+
+    public function clearances(): HasMany
+    {
+        return $this->hasMany(TeacherClearance::class);
+    }
+
+    public function cpdHoursForYear(?string $academicYear = null): int
+    {
+        $q = $this->trainings();
+        if ($academicYear) {
+            // crude AY filter: 'YYYY/YYYY' → year between starts_on year span
+            [$y1, $y2] = array_pad(explode('/', $academicYear), 2, null);
+            if ($y1) {
+                $start = Carbon::create((int) $y1, 7, 1);
+                $end   = $y2 ? Carbon::create((int) $y2, 6, 30) : (clone $start)->addYear();
+                $q->whereBetween('starts_on', [$start, $end]);
+            }
+        }
+        return (int) $q->sum('hours_certified');
+    }
+
+    // ===== Phase 4: substitutes / mentor / attendance / employment =====
+    public function preferredSubstitutes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+                self::class,
+                'teacher_substitutes',
+                'teacher_id',
+                'substitute_teacher_id'
+            )
+            ->withPivot(['rank','note'])
+            ->withTimestamps()
+            ->orderBy('teacher_substitutes.rank');
+    }
+
+    public function mentor(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'mentor_id');
+    }
+
+    public function mentees(): HasMany
+    {
+        return $this->hasMany(self::class, 'mentor_id');
+    }
+
+    public function attendance(): HasMany
+    {
+        return $this->hasMany(TeacherAttendance::class);
+    }
+
+    public function employmentEvents(): HasMany
+    {
+        return $this->hasMany(TeacherEmploymentEvent::class);
+    }
+
+    /** Suggest substitutes: not self, not already pinned, active, same campus, ranked by subject/dept match. */
+    public static function suggestSubstitutes(Teacher $teacher, int $limit = 5)
+    {
+        $pinned = $teacher->preferredSubstitutes()->pluck('teachers.id')->all();
+        $exclude = array_merge($pinned, [$teacher->id]);
+
+        return self::query()
+            ->whereNotIn('id', $exclude)
+            ->where('status', '!=', 'alumni')
+            ->when($teacher->campus, fn ($q) => $q->where('campus', $teacher->campus))
+            ->selectRaw('*, (CASE WHEN subject = ? THEN 3 WHEN dept = ? THEN 2 ELSE 1 END) AS match_score', [$teacher->subject, $teacher->dept])
+            ->orderByDesc('match_score')
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
+    }
+
+    // ===== Phase 6: growth & feedback =====
+    public function observations(): HasMany
+    {
+        return $this->hasMany(TeacherObservation::class);
+    }
+
+    public function goals(): HasMany
+    {
+        return $this->hasMany(TeacherGoal::class);
+    }
+
+    public function journalEntries(): HasMany
+    {
+        return $this->hasMany(TeacherJournalEntry::class);
+    }
+
+    public function parentCommunications(): HasMany
+    {
+        return $this->hasMany(ParentCommunication::class);
+    }
+
+    public function parentCommSummary(): array
+    {
+        $q = $this->parentCommunications();
+        $count = (int) (clone $q)->count();
+        $last = (clone $q)->orderByDesc('occurred_at')->value('occurred_at');
+        return ['count' => $count, 'last' => $last];
     }
 
     /** Avatar URL accessor — falls back to a tiny initials data-uri-free placeholder path. */

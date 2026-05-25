@@ -111,6 +111,83 @@ class TeacherResource extends Resource
                     ->numeric()->minValue(0)->maxValue(10)
                     ->helperText('Max children allowed under teacher tuition benefit.'),
             ]),
+
+            Forms\Components\Section::make('Mentorship')->columns(2)->schema([
+                Forms\Components\Select::make('mentor_id')
+                    ->label('Mentor')
+                    ->relationship('mentor', 'name', fn ($query, $get, $record) => $query->when($record, fn ($q) => $q->whereKeyNot($record->id)))
+                    ->searchable()->preload()
+                    ->helperText('Senior teacher who mentors this person.'),
+            ])->collapsed(),
+
+            Forms\Components\Section::make('Formal Certifications')
+                ->description('Official credentials (gov-approved or international). Use loose Tags for informal notes.')
+                ->collapsed()
+                ->schema([
+                    Forms\Components\Repeater::make('formalCertifications')
+                        ->relationship()
+                        ->columns(3)
+                        ->defaultItems(0)
+                        ->collapsible()->collapsed()
+                        ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
+                        ->schema([
+                            Forms\Components\TextInput::make('name')->required()->columnSpan(2),
+                            Forms\Components\Toggle::make('is_government_approved')->label('Govt Approved'),
+                            Forms\Components\TextInput::make('issuer'),
+                            Forms\Components\TextInput::make('country')->default('ID')->maxLength(2),
+                            Forms\Components\TextInput::make('accreditation_no')->label('Accreditation #'),
+                            Forms\Components\DatePicker::make('issued_at'),
+                            Forms\Components\DatePicker::make('expires_at'),
+                            Forms\Components\FileUpload::make('file_path')
+                                ->disk('public')->directory('teachers/certs')
+                                ->maxSize(8192)
+                                ->acceptedFileTypes(['application/pdf','image/png','image/jpeg'])
+                                ->columnSpan(3),
+                            Forms\Components\Textarea::make('notes')->rows(2)->columnSpanFull(),
+                        ]),
+                ]),
+
+            Forms\Components\Section::make('Clearances')
+                ->description('Criminal record, child protection, medical, etc.')
+                ->collapsed()
+                ->schema([
+                    Forms\Components\Repeater::make('clearances')
+                        ->relationship()
+                        ->columns(3)
+                        ->defaultItems(0)
+                        ->collapsible()->collapsed()
+                        ->itemLabel(fn (array $state): ?string => isset($state['type']) ? (\App\Models\TeacherClearance::TYPES[$state['type']] ?? $state['type']) : null)
+                        ->schema([
+                            Forms\Components\Select::make('type')->options(\App\Models\TeacherClearance::TYPES)->required(),
+                            Forms\Components\Select::make('status')->options(\App\Models\TeacherClearance::STATUSES)->default('valid'),
+                            Forms\Components\TextInput::make('issuer'),
+                            Forms\Components\DatePicker::make('issued_at'),
+                            Forms\Components\DatePicker::make('expires_at'),
+                            Forms\Components\FileUpload::make('file_path')
+                                ->disk('public')->directory('teachers/clearances')
+                                ->maxSize(8192)
+                                ->columnSpan(3),
+                            Forms\Components\Textarea::make('notes')->rows(2)->columnSpanFull(),
+                        ]),
+                ]),
+
+            Forms\Components\Section::make('Preferred Substitutes')
+                ->description('Ranked list of preferred teachers to cover this teacher’s lessons. Stored as a pivot — managed via the Substitutes tab on the View page.')
+                ->collapsed()
+                ->schema([
+                    Forms\Components\Select::make('preferred_substitute_ids')
+                        ->multiple()
+                        ->options(fn ($record) => Teacher::query()
+                            ->when($record, fn ($q) => $q->whereKeyNot($record->id))
+                            ->orderBy('name')->pluck('name', 'id'))
+                        ->searchable()
+                        ->afterStateHydrated(function ($component, $state, $record) {
+                            if ($record && empty($state)) {
+                                $component->state($record->preferredSubstitutes()->pluck('teachers.id')->all());
+                            }
+                        })
+                        ->dehydrated(true),
+                ]),
         ]);
     }
 

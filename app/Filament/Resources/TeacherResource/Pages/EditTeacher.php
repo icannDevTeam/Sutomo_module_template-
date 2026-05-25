@@ -11,13 +11,15 @@ class EditTeacher extends EditRecord
 {
     protected static string $resource = TeacherResource::class;
 
-    /** Stash the multi-select before save (it isn't a real DB column). */
+    /** Stash multi-selects before save (they aren't real DB columns). */
     protected array $homeroomClassIds = [];
+    protected array $preferredSubIds = [];
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $this->homeroomClassIds = array_map('intval', $data['homeroom_class_ids'] ?? []);
-        unset($data['homeroom_class_ids']);
+        $this->preferredSubIds  = array_map('intval', $data['preferred_substitute_ids'] ?? []);
+        unset($data['homeroom_class_ids'], $data['preferred_substitute_ids']);
         return $data;
     }
 
@@ -34,6 +36,13 @@ class EditTeacher extends EditRecord
             SchoolClass::whereIn('id', $chosen)
                 ->update(['homeroom_teacher_id' => $teacherId]);
         }
+
+        // Sync preferred substitutes pivot (auto-rank by selection order: 1,2,3...)
+        $syncPayload = [];
+        foreach ($this->preferredSubIds as $i => $subId) {
+            $syncPayload[$subId] = ['rank' => min(3, $i + 1)];
+        }
+        $this->record->preferredSubstitutes()->sync($syncPayload);
     }
 
     protected function getHeaderActions(): array

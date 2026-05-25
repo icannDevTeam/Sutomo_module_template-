@@ -4,9 +4,15 @@ namespace App\Filament\Resources\TeacherResource\Pages;
 
 use App\Filament\Resources\TeacherResource;
 use App\Models\DutyAssignment;
+use App\Models\ParentCommunication;
 use App\Models\Teacher;
+use App\Models\TeacherAttendance;
 use App\Models\TeacherDocument;
+use App\Models\TeacherEmploymentEvent;
+use App\Models\TeacherGoal;
+use App\Models\TeacherJournalEntry;
 use App\Models\TeacherLeave;
+use App\Models\TeacherObservation;
 use App\Models\TeacherTraining;
 use App\Models\VoluntaryRequest;
 use App\Services\Timetable\TeacherSchedule;
@@ -131,6 +137,19 @@ class ViewTeacher extends ViewRecord
                                         ->orderByDesc('starts_at')->limit(10)->get(),
                                 ]),
                         ]),
+
+                    Section::make('Parent Communications')
+                        ->collapsible()
+                        ->schema([
+                            ViewEntry::make('parent_comms')
+                                ->view('filament.principal.teacher.parent-comms')
+                                ->viewData(fn ($record) => [
+                                    'summary' => $record->parentCommSummary(),
+                                    'recent'  => ParentCommunication::with('student')
+                                        ->where('teacher_id', $record->id)
+                                        ->orderByDesc('occurred_at')->limit(10)->get(),
+                                ]),
+                        ]),
                 ]),
 
                 Tabs\Tab::make('Schedule')->icon('heroicon-o-calendar')->schema([
@@ -171,6 +190,58 @@ class ViewTeacher extends ViewRecord
                         ]),
                 ]),
 
+                Tabs\Tab::make('Substitutes')->icon('heroicon-o-arrow-path-rounded-square')->schema([
+                    Section::make('Substitute Pool')->schema([
+                        ViewEntry::make('subs')
+                            ->view('filament.principal.teacher.substitutes-list')
+                            ->viewData(fn ($record) => [
+                                'pinned'    => $record->preferredSubstitutes()->get(),
+                                'suggested' => Teacher::suggestSubstitutes($record),
+                            ]),
+                    ]),
+                ]),
+
+                Tabs\Tab::make('Attendance')->icon('heroicon-o-check-badge')->schema([
+                    Section::make('This Month')->schema([
+                        ViewEntry::make('att_summary')
+                            ->view('filament.principal.teacher.attendance-summary')
+                            ->viewData(function ($record) {
+                                $start = now()->startOfMonth();
+                                $rows  = TeacherAttendance::where('teacher_id', $record->id)
+                                    ->where('date', '>=', $start)->get();
+                                $p = $rows->where('status','present')->count();
+                                $l = $rows->where('status','late')->count();
+                                $a = $rows->where('status','absent')->count();
+                                $v = $rows->where('status','leave')->count();
+                                $base = $p + $l + $a;
+                                return ['summary' => [
+                                    'present' => $p, 'late' => $l, 'absent' => $a, 'leave' => $v,
+                                    'rate'    => $base ? round(($p / $base) * 100) : 0,
+                                ]];
+                            }),
+                    ]),
+
+                    Section::make('Last 30 Days')->schema([
+                        ViewEntry::make('att_cal')
+                            ->view('filament.principal.teacher.attendance-calendar')
+                            ->viewData(function ($record) {
+                                $rows = TeacherAttendance::where('teacher_id', $record->id)
+                                    ->where('date', '>=', now()->subDays(30))
+                                    ->orderBy('date')->get(['date','status']);
+                                return ['days' => $rows->map(fn ($r) => ['date' => $r->date, 'status' => $r->status])->all()];
+                            }),
+                    ]),
+
+                    Section::make('Log (last 20)')->collapsible()->schema([
+                        ViewEntry::make('att_log')
+                            ->view('filament.principal.teacher.attendance-log')
+                            ->viewData(fn ($record) => [
+                                'logs' => TeacherAttendance::where('teacher_id', $record->id)
+                                    ->orderByDesc('date')->limit(20)->get(),
+                            ]),
+                    ]),
+                ]),
+
                 Tabs\Tab::make('Career & Contract')->icon('heroicon-o-briefcase')->schema([
                     Section::make('Current Contract')->columns(3)->schema([
                         TextEntry::make('contract')->placeholder('—'),
@@ -194,15 +265,51 @@ class ViewTeacher extends ViewRecord
                                     'summary' => static::leaveStats($record),
                                 ]),
                         ]),
+
+                    Section::make('Mentorship')->collapsible()->schema([
+                        ViewEntry::make('mentorship')
+                            ->view('filament.principal.teacher.mentorship')
+                            ->viewData(fn ($record) => [
+                                'mentor'  => $record->mentor,
+                                'mentees' => $record->mentees()->orderBy('name')->get(),
+                            ]),
+                    ]),
+
+                    Section::make('Employment History')->collapsible()->schema([
+                        ViewEntry::make('employment_events')
+                            ->view('filament.principal.teacher.employment-timeline')
+                            ->viewData(fn ($record) => [
+                                'events' => TeacherEmploymentEvent::where('teacher_id', $record->id)
+                                    ->orderByDesc('event_date')->get(),
+                            ]),
+                    ]),
                 ]),
 
                 Tabs\Tab::make('Development')->icon('heroicon-o-academic-cap')->schema([
-                    Section::make('Certifications')->collapsible()->schema([
+                    Section::make('🇮🇩 Formal Certifications')->collapsible()->schema([
+                        ViewEntry::make('formal_certs')
+                            ->view('filament.principal.teacher.certifications-list')
+                            ->viewData(fn ($record) => [
+                                'certifications' => $record->formalCertifications()->orderByDesc('issued_at')->get(),
+                            ]),
+                    ]),
+
+                    Section::make('CPD Hours Tracker')->schema([
+                        ViewEntry::make('cpd')
+                            ->view('filament.principal.teacher.cpd-tracker')
+                            ->viewData(function ($record) {
+                                $ay    = (now()->month >= 7 ? now()->year.'/'.(now()->year+1) : (now()->year-1).'/'.now()->year);
+                                $hours = $record->cpdHoursForYear($ay);
+                                return ['hours' => $hours, 'target' => 40, 'academicYear' => $ay];
+                            }),
+                    ]),
+
+                    Section::make('Quick credential tags')->collapsible()->schema([
                         ViewEntry::make('certifications')
                             ->view('filament.principal.teacher.chip-list')
                             ->viewData(fn ($record) => [
                                 'items' => $record->certifications ?? [],
-                                'empty' => 'No certifications recorded.',
+                                'empty' => 'No quick tags recorded.',
                                 'class' => 'sp-teacher-chip--cert',
                             ]),
                     ]),
@@ -226,6 +333,39 @@ class ViewTeacher extends ViewRecord
                                 ]),
                         ]),
 
+                    Section::make('Observations (recent 5)')->collapsible()->schema([
+                        ViewEntry::make('observations')
+                            ->view('filament.principal.teacher.observations-list')
+                            ->viewData(fn ($record) => [
+                                'observations' => TeacherObservation::with('observer')
+                                    ->where('teacher_id', $record->id)
+                                    ->orderByDesc('observed_at')->limit(5)->get(),
+                            ]),
+                    ]),
+
+                    Section::make('Goals')->collapsible()->schema([
+                        ViewEntry::make('goals')
+                            ->view('filament.principal.teacher.goals-list')
+                            ->viewData(fn ($record) => [
+                                'goals' => TeacherGoal::where('teacher_id', $record->id)
+                                    ->orderBy('status')->orderBy('target_date')->get(),
+                            ]),
+                    ]),
+
+                    Section::make('Self-Reflection Journal (last 3, private)')->collapsible()->collapsed()->schema([
+                        ViewEntry::make('journal')
+                            ->view('filament.principal.teacher.journal-list')
+                            ->viewData(fn ($record) => [
+                                'entries' => TeacherJournalEntry::where('teacher_id', $record->id)
+                                    ->orderByDesc('entry_date')->limit(3)->get(),
+                            ]),
+                    ]),
+
+                    Section::make('Student Feedback')->collapsible()->collapsed()->schema([
+                        ViewEntry::make('survey')
+                            ->view('filament.principal.teacher.survey-placeholder'),
+                    ]),
+
                     Section::make('Voluntary Requests')
                         ->collapsible()
                         ->schema([
@@ -243,6 +383,20 @@ class ViewTeacher extends ViewRecord
                         ->where('status', 'pending')->count() ?: null)
                     ->badgeColor('warning')
                     ->schema([
+                        Section::make('Expiry Dashboard')->schema([
+                            ViewEntry::make('expiry')
+                                ->view('filament.principal.teacher.expiry-dashboard')
+                                ->viewData(fn ($record) => ['buckets' => static::expiryBuckets($record)]),
+                        ]),
+
+                        Section::make('Clearances')->collapsible()->schema([
+                            ViewEntry::make('clearances')
+                                ->view('filament.principal.teacher.clearances-list')
+                                ->viewData(fn ($record) => [
+                                    'clearances' => $record->clearances()->orderBy('type')->get(),
+                                ]),
+                        ]),
+
                         Section::make('Uploaded Documents')->schema([
                             ViewEntry::make('docs')
                                 ->view('filament.principal.teacher.documents-list')
@@ -254,6 +408,27 @@ class ViewTeacher extends ViewRecord
                     ]),
             ]),
         ]);
+    }
+
+    protected static function expiryBuckets(Teacher $teacher): array
+    {
+        $today = now()->startOfDay();
+        $items = collect();
+
+        // Aggregate from documents + clearances + certifications
+        $items = $items->merge(TeacherDocument::where('teacher_id', $teacher->id)->whereNotNull('expires_at')->pluck('expires_at'));
+        $items = $items->merge($teacher->clearances()->whereNotNull('expires_at')->pluck('expires_at'));
+        $items = $items->merge($teacher->formalCertifications()->whereNotNull('expires_at')->pluck('expires_at'));
+
+        $b = ['expired' => 0, '30' => 0, '60' => 0, '90' => 0];
+        foreach ($items as $d) {
+            $days = $today->diffInDays($d, false);
+            if ($days < 0)       $b['expired']++;
+            elseif ($days <= 30) $b['30']++;
+            elseif ($days <= 60) $b['60']++;
+            elseif ($days <= 90) $b['90']++;
+        }
+        return $b;
     }
 
     protected static function leaveStats(Teacher $teacher): array
