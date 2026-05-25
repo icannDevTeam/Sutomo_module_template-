@@ -28,9 +28,9 @@ class ViewTeacher extends ViewRecord
                     TextEntry::make('name')->size('lg')->weight('bold')->columnSpan(2),
                     TextEntry::make('code')->label('Code'),
                     TextEntry::make('subject')->placeholder('—'),
-                    TextEntry::make('campus')->formatStateUsing(fn ($s) => strtoupper((string) $s))->placeholder('—'),
+                    TextEntry::make('campus')->formatStateUsing(fn ($state) => strtoupper((string) $state))->placeholder('—'),
                     TextEntry::make('status')->badge()
-                        ->formatStateUsing(fn ($s) => Teacher::STATUSES[$s] ?? $s),
+                        ->formatStateUsing(fn ($state) => Teacher::STATUSES[$state] ?? $state),
                 ])->columns(5),
 
             Tabs::make('Profile')->columnSpanFull()->tabs([
@@ -39,7 +39,7 @@ class ViewTeacher extends ViewRecord
                     Section::make('Identity')->columns(3)->schema([
                         TextEntry::make('employee_no')->label('Employee No.')->placeholder('—'),
                         TextEntry::make('dob')->label('Date of Birth')->date('d M Y')->placeholder('—'),
-                        TextEntry::make('gender')->formatStateUsing(fn ($s) => $s === 'M' ? 'Male' : ($s === 'F' ? 'Female' : '—')),
+                        TextEntry::make('gender')->formatStateUsing(fn ($state) => $state === 'M' ? 'Male' : ($state === 'F' ? 'Female' : '—')),
                         TextEntry::make('email')->placeholder('—')->copyable(),
                         TextEntry::make('phone')->placeholder('—'),
                         TextEntry::make('city')->placeholder('—'),
@@ -107,7 +107,7 @@ class ViewTeacher extends ViewRecord
                         TextEntry::make('joined_at')->date('d M Y')->placeholder('—'),
                         TextEntry::make('contract_end')->date('d M Y')->placeholder('—'),
                         TextEntry::make('status')->badge()
-                            ->formatStateUsing(fn ($s) => Teacher::STATUSES[$s] ?? $s),
+                            ->formatStateUsing(fn ($state) => Teacher::STATUSES[$state] ?? $state),
                         TextEntry::make('employment')->badge()->color('gray'),
                         TextEntry::make('dept')->label('Department')->placeholder('—'),
                     ]),

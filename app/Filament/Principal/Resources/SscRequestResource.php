@@ -5,8 +5,10 @@ namespace App\Filament\Principal\Resources;
 use App\Filament\Principal\Resources\SscRequestResource\Pages;
 use App\Models\SscRequest;
 use App\Models\Student;
+use App\Support\CsvExporter;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -52,7 +54,55 @@ class SscRequestResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->options(SscRequest::STATUSES),
                 Tables\Filters\SelectFilter::make('type')->options(SscRequest::TYPES),
             ])
-            ->actions([Tables\Actions\EditAction::make()]);
+            ->actions([
+                Tables\Actions\Action::make('view')
+                    ->label('View')->icon('heroicon-o-eye')->color('gray')
+                    ->modalHeading(fn ($record) => 'Request · ' . $record->code)
+                    ->modalWidth('3xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close')
+                    ->modalContent(fn ($record) => view('filament.principal.ssc.ssc-detail', ['record' => $record]))
+                    ->extraModalFooterActions(fn ($record) => $record->status === 'pending' ? [
+                        Tables\Actions\Action::make('approveInModal')
+                            ->label('Approve')->icon('heroicon-o-check')->color('success')
+                            ->requiresConfirmation()
+                            ->action(function ($record) {
+                                $record->update(['status' => 'approved']);
+                                Notification::make()->title('Request approved')->success()->send();
+                            })
+                            ->cancelParentActionOnSuccess(),
+                        Tables\Actions\Action::make('rejectInModal')
+                            ->label('Reject')->icon('heroicon-o-x-mark')->color('danger')
+                            ->form([Forms\Components\Textarea::make('notes')->label('Rejection reason')->required()])
+                            ->action(function ($record, array $data) {
+                                $record->update([
+                                    'status' => 'rejected',
+                                    'notes'  => $data['notes'],
+                                ]);
+                                Notification::make()->title('Request rejected')->warning()->send();
+                            })
+                            ->cancelParentActionOnSuccess(),
+                    ] : []),
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('exportCsv')
+                    ->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
+                    ->action(fn ($records) => CsvExporter::download(
+                        $records,
+                        [
+                            'Code'      => 'code',
+                            'Student'   => fn ($r) => $r->student?->name ?? '',
+                            'Type'      => fn ($r) => SscRequest::TYPES[$r->type] ?? $r->type,
+                            'Priority'  => 'priority',
+                            'Status'    => fn ($r) => SscRequest::STATUSES[$r->status] ?? $r->status,
+                            'Requested' => fn ($r) => optional($r->requested_at)->format('Y-m-d'),
+                            'Notes'     => 'notes',
+                        ],
+                        CsvExporter::filename('ssc-requests'),
+                    )),
+                Tables\Actions\DeleteBulkAction::make(),
+            ]);
     }
 
     public static function getPages(): array

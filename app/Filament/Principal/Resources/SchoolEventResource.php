@@ -4,6 +4,7 @@ namespace App\Filament\Principal\Resources;
 
 use App\Filament\Principal\Resources\SchoolEventResource\Pages;
 use App\Models\SchoolEvent;
+use App\Support\CsvExporter;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -53,7 +54,36 @@ class SchoolEventResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->options(SchoolEvent::STATUSES),
                 Tables\Filters\SelectFilter::make('category')->options(SchoolEvent::CATEGORIES),
             ])
-            ->actions([Tables\Actions\EditAction::make()]);
+            ->actions([
+                Tables\Actions\Action::make('view')
+                    ->label('View')->icon('heroicon-o-eye')->color('gray')
+                    ->modalHeading(fn ($record) => 'Event · ' . $record->code)
+                    ->modalWidth('3xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close')
+                    ->modalContent(fn ($record) => view('filament.principal.event.event-detail', ['record' => $record])),
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('exportCsv')
+                    ->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
+                    ->action(fn ($records) => CsvExporter::download(
+                        $records,
+                        [
+                            'Code'         => 'code',
+                            'Title'        => 'title',
+                            'Category'     => fn ($r) => SchoolEvent::CATEGORIES[$r->category] ?? $r->category,
+                            'Unit'         => 'campus',
+                            'Starts'       => fn ($r) => optional($r->starts_at)->format('Y-m-d'),
+                            'Ends'         => fn ($r) => optional($r->ends_at)->format('Y-m-d'),
+                            'PIC'          => 'pic',
+                            'Participants' => 'participants',
+                            'Status'       => fn ($r) => SchoolEvent::STATUSES[$r->status] ?? $r->status,
+                        ],
+                        CsvExporter::filename('school-events'),
+                    )),
+                Tables\Actions\DeleteBulkAction::make(),
+            ]);
     }
 
     public static function getPages(): array

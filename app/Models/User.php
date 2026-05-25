@@ -23,6 +23,8 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'role',
+        'campus',
     ];
 
     /**
@@ -48,8 +50,23 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    /**
+     * Panel access roles.
+     * Admin role is granted everywhere by default for backward compatibility
+     * during the role-system rollout. Tighten further once spatie/permissions
+     * lands (see /memories/session/teacher-enrichment-plan.md Phase 5).
+     */
+    public const PRINCIPAL_ROLES = ['principal', 'vice_principal', 'unit_head', 'hr', 'admin', 'superadmin'];
+    public const ADMIN_ROLES     = ['admin', 'superadmin'];
+
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        $role = $this->role ?? 'teacher';
+
+        return match ($panel->getId()) {
+            'principal' => in_array($role, self::PRINCIPAL_ROLES, true),
+            'admin'     => in_array($role, self::ADMIN_ROLES, true),
+            default     => false,
+        };
     }
 }

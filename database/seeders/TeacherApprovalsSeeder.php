@@ -123,33 +123,73 @@ class TeacherApprovalsSeeder extends Seeder
         ];
         $locations = ['Main Gate', 'Cafeteria', 'Bus Bay', 'Lobby', 'Off-site', 'Hall A', 'Auditorium', 'Library'];
         $now = Carbon::now();
+        $currentAY = DutyAssignment::currentAcademicYear();
+        // derive a "previous AY" string by shifting one year back
+        [$ay1, $ay2] = explode('/', $currentAY);
+        $prevAY = ((int) $ay1 - 1) . '/' . ((int) $ay2 - 1);
+
+        // weekday recurring duties (current AY)
+        $weeklyDayPools = [
+            [1, 3, 5],    // Mon/Wed/Fri
+            [2, 4],       // Tue/Thu
+            [1, 2, 3, 4, 5], // Whole week
+            [6],          // Saturday
+            [5],          // Friday
+        ];
 
         foreach ($teachers->take(15) as $i => $t) {
+            $isWeekly = $i % 3 === 0;
             $start = $now->copy()->addDays(rand(1, 14))->setHour(7 + $i % 8)->setMinute(0);
             DutyAssignment::create([
-                'teacher_id'   => $t->id,
-                'title'        => $titles[$i % count($titles)],
-                'location'     => $locations[$i % count($locations)],
-                'starts_at'    => $start,
-                'ends_at'      => $start->copy()->addHours(2),
-                'assigned_by'  => 'Principal Hartono',
-                'status'       => 'pending',
+                'teacher_id'    => $t->id,
+                'title'         => $titles[$i % count($titles)],
+                'location'      => $locations[$i % count($locations)],
+                'starts_at'     => $start,
+                'ends_at'       => $start->copy()->addHours(2),
+                'recurrence'    => $isWeekly ? 'weekly' : 'once',
+                'days_of_week'  => $isWeekly ? $weeklyDayPools[$i % count($weeklyDayPools)] : null,
+                'academic_year' => $currentAY,
+                'assigned_by'   => 'Principal Hartono',
+                'status'        => 'pending',
             ]);
         }
 
-        // historical mix
+        // historical mix — current AY
         foreach ($teachers->take(6) as $i => $t) {
             $start = $now->copy()->subDays(rand(3, 30))->setHour(8);
+            $isWeekly = $i % 2 === 0;
             DutyAssignment::create([
                 'teacher_id'    => $t->id,
                 'title'         => $titles[($i + 2) % count($titles)],
                 'location'      => $locations[$i % count($locations)],
                 'starts_at'     => $start,
                 'ends_at'       => $start->copy()->addHours(2),
+                'recurrence'    => $isWeekly ? 'weekly' : 'once',
+                'days_of_week'  => $isWeekly ? $weeklyDayPools[($i + 1) % count($weeklyDayPools)] : null,
+                'academic_year' => $currentAY,
                 'assigned_by'   => 'Principal Hartono',
                 'status'        => ['accepted', 'declined', 'completed'][$i % 3],
                 'responded_at'  => $start->copy()->subDays(2),
                 'decline_reason'=> $i % 3 === 1 ? 'Schedule conflict with parent meeting.' : null,
+            ]);
+        }
+
+        // previous AY history
+        foreach ($teachers->take(8) as $i => $t) {
+            $start = $now->copy()->subMonths(rand(8, 14))->setHour(8);
+            $isWeekly = $i % 2 === 1;
+            DutyAssignment::create([
+                'teacher_id'    => $t->id,
+                'title'         => $titles[($i + 4) % count($titles)],
+                'location'      => $locations[$i % count($locations)],
+                'starts_at'     => $start,
+                'ends_at'       => $start->copy()->addHours(2),
+                'recurrence'    => $isWeekly ? 'weekly' : 'once',
+                'days_of_week'  => $isWeekly ? $weeklyDayPools[$i % count($weeklyDayPools)] : null,
+                'academic_year' => $prevAY,
+                'assigned_by'   => 'Principal Sutomo',
+                'status'        => 'completed',
+                'responded_at'  => $start->copy()->subDays(3),
             ]);
         }
     }

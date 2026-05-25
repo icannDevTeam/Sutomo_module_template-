@@ -5,6 +5,7 @@ namespace App\Filament\Principal\Resources;
 use App\Filament\Principal\Resources\VoluntaryRequestResource\Pages;
 use App\Models\Teacher;
 use App\Models\VoluntaryRequest;
+use App\Support\CsvExporter;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -54,8 +55,8 @@ class VoluntaryRequestResource extends Resource
                 Tables\Columns\TextColumn::make('reason')->limit(60)->placeholder('—')->toggleable(),
                 Tables\Columns\TextColumn::make('submitted_at')->dateTime('d M Y')->placeholder('—'),
                 Tables\Columns\TextColumn::make('status')->badge()
-                    ->formatStateUsing(fn ($s) => VoluntaryRequest::STATUSES[$s] ?? $s)
-                    ->color(fn ($s) => VoluntaryRequest::STATUS_COLORS[$s] ?? 'gray'),
+                    ->formatStateUsing(fn ($state) => VoluntaryRequest::STATUSES[$state] ?? $state)
+                    ->color(fn ($state) => VoluntaryRequest::STATUS_COLORS[$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('decided_by')->placeholder('—')->toggleable(),
             ])
             ->filters([
@@ -88,6 +89,24 @@ class VoluntaryRequestResource extends Resource
                         ]);
                         Notification::make()->title('Request declined')->warning()->send();
                     }),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('exportCsv')
+                    ->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
+                    ->action(fn ($records) => CsvExporter::download(
+                        $records,
+                        [
+                            'Teacher'   => fn ($r) => $r->teacher?->name ?? '',
+                            'Type'      => 'type',
+                            'Title'     => 'title',
+                            'Status'    => fn ($r) => VoluntaryRequest::STATUSES[$r->status] ?? $r->status,
+                            'Decided By' => 'decided_by',
+                            'Decided At' => fn ($r) => optional($r->decided_at)->format('Y-m-d H:i'),
+                            'Note'      => 'decision_note',
+                        ],
+                        CsvExporter::filename('voluntary-requests'),
+                    )),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
