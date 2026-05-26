@@ -85,8 +85,7 @@ class TeacherLeaveResource extends Resource
                                     'decided_at' => now(),
                                 ]);
                                 Notification::make()->title('Leave approved')->success()->send();
-                            })
-                            ->cancelParentActionOnSuccess(),
+                            }),
                         Tables\Actions\Action::make('rejectInModal')
                             ->label('Reject')->icon('heroicon-o-x-mark')->color('danger')
                             ->requiresConfirmation()
@@ -97,8 +96,7 @@ class TeacherLeaveResource extends Resource
                                     'decided_at' => now(),
                                 ]);
                                 Notification::make()->title('Leave rejected')->warning()->send();
-                            })
-                            ->cancelParentActionOnSuccess(),
+                            }),
                     ] : []),
                 Tables\Actions\Action::make('printLetter')
                     ->label('Print Letter')->icon('heroicon-o-printer')->color('gray')

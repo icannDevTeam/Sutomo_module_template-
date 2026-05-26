@@ -69,8 +69,7 @@ class SscRequestResource extends Resource
                             ->action(function ($record) {
                                 $record->update(['status' => 'approved']);
                                 Notification::make()->title('Request approved')->success()->send();
-                            })
-                            ->cancelParentActionOnSuccess(),
+                            }),
                         Tables\Actions\Action::make('rejectInModal')
                             ->label('Reject')->icon('heroicon-o-x-mark')->color('danger')
                             ->form([Forms\Components\Textarea::make('notes')->label('Rejection reason')->required()])
@@ -80,8 +79,7 @@ class SscRequestResource extends Resource
                                     'notes'  => $data['notes'],
                                 ]);
                                 Notification::make()->title('Request rejected')->warning()->send();
-                            })
-                            ->cancelParentActionOnSuccess(),
+                            }),
                     ] : []),
                 Tables\Actions\EditAction::make(),
             ])

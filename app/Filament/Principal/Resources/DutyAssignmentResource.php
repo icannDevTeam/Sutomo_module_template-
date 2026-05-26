@@ -137,8 +137,7 @@ class DutyAssignmentResource extends Resource
                             ->action(function ($record) {
                                 $record->update(['status' => 'completed']);
                                 Notification::make()->title('Duty marked completed')->success()->send();
-                            })
-                            ->cancelParentActionOnSuccess(),
+                            }),
                     ] : []),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('printBriefing')

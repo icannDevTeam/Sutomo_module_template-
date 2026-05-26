@@ -102,8 +102,7 @@ class TeacherDocumentResource extends Resource
                                     'verified_at' => now(),
                                 ]);
                                 Notification::make()->title('Document verified')->success()->send();
-                            })
-                            ->cancelParentActionOnSuccess(),
+                            }),
                         Tables\Actions\Action::make('rejectInModal')
                             ->label('Reject')
                             ->icon('heroicon-o-x-mark')
@@ -117,8 +116,7 @@ class TeacherDocumentResource extends Resource
                                     'note'        => $data['note'],
                                 ]);
                                 Notification::make()->title('Document rejected')->warning()->send();
-                            })
-                            ->cancelParentActionOnSuccess(),
+                            }),
                     ] : []),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('verify')->icon('heroicon-o-check-badge')->color('success')
