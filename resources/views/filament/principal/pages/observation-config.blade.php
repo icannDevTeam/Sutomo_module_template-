@@ -1,101 +1,153 @@
 <x-filament-panels::page>
-    <div class="space-y-4">
-        <div class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900">
-            <div class="hidden md:grid grid-cols-12 gap-3 px-4 py-2 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500 dark:border-white/10 dark:text-gray-400">
-                <div class="col-span-1"></div>
-                <div class="col-span-3">Key</div>
-                <div class="col-span-3">Label</div>
-                <div class="col-span-2">Weight</div>
-                <div class="col-span-1 text-center">Active</div>
-                <div class="col-span-2 text-right">Actions</div>
+    <div class="space-y-6">
+        {{-- Header callout --}}
+        <div class="rounded-xl border border-primary-100 bg-primary-50/60 p-4 dark:border-primary-500/20 dark:bg-primary-500/5">
+            <div class="flex items-start gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-300">
+                    <x-heroicon-o-clipboard-document-check class="size-5" />
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Observation Criteria</h3>
+                    <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
+                        Configure the dimensions observers will score (1–5). Toggle a criterion off to retire it without losing history.
+                    </p>
+                </div>
+                <div class="hidden sm:flex flex-col items-end text-xs text-gray-500 dark:text-gray-400">
+                    <span class="text-lg font-bold text-gray-700 dark:text-gray-200">{{ collect($criteria)->where('active', true)->count() }}</span>
+                    <span>active</span>
+                </div>
             </div>
+        </div>
 
+        {{-- Criteria list --}}
+        <div class="space-y-3">
             @forelse($criteria as $i => $row)
-                <div class="grid grid-cols-12 gap-3 items-start px-4 py-3 border-b border-gray-100 dark:border-white/5">
-                    <div class="col-span-1 flex items-center text-gray-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-                        </svg>
+                @php $isActive = (bool) ($row['active'] ?? true); @endphp
+                <div @class([
+                    'group rounded-xl border bg-white shadow-sm transition hover:shadow-md dark:bg-gray-900',
+                    'border-gray-200 dark:border-white/10' => $isActive,
+                    'border-gray-200/60 bg-gray-50/50 dark:border-white/5 dark:bg-white/[0.02] opacity-75' => ! $isActive,
+                ])>
+                    {{-- Row header --}}
+                    <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-2.5 dark:border-white/5">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <div class="flex size-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-xs font-bold text-gray-600 dark:bg-white/10 dark:text-gray-300">
+                                {{ $i + 1 }}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                                    {{ $row['label'] ?: 'Untitled criterion' }}
+                                </div>
+                                <div class="truncate text-xs text-gray-500 dark:text-gray-400">
+                                    <code class="rounded bg-gray-100 px-1 py-0.5 text-[10px] dark:bg-white/10">{{ $row['key'] }}</code>
+                                    <span class="mx-1 text-gray-300">·</span>
+                                    <span>weight {{ $row['weight'] ?? 5 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label @class([
+                                'inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs font-medium',
+                                'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' => $isActive,
+                                'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400' => ! $isActive,
+                            ])>
+                                <input type="checkbox"
+                                    wire:model.live="criteria.{{ $i }}.active"
+                                    class="size-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-white/10 dark:bg-white/5" />
+                                <span>{{ $isActive ? 'Active' : 'Inactive' }}</span>
+                            </label>
+                            <div class="mx-1 h-5 w-px bg-gray-200 dark:bg-white/10"></div>
+                            <button type="button" wire:click="moveUp({{ $i }})"
+                                @class(['p-1.5 rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200', 'opacity-30 cursor-not-allowed' => $i === 0])
+                                @disabled($i === 0) title="Move up">
+                                <x-heroicon-m-chevron-up class="size-4" />
+                            </button>
+                            <button type="button" wire:click="moveDown({{ $i }})"
+                                @class(['p-1.5 rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200', 'opacity-30 cursor-not-allowed' => $i === count($criteria) - 1])
+                                @disabled($i === count($criteria) - 1) title="Move down">
+                                <x-heroicon-m-chevron-down class="size-4" />
+                            </button>
+                            <button type="button" wire:click="removeRow({{ $i }})"
+                                wire:confirm="Remove this criterion? If it's referenced by existing observations it will be deactivated instead."
+                                class="rounded p-1.5 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
+                                title="Remove">
+                                <x-heroicon-m-trash class="size-4" />
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-span-12 md:col-span-3">
-                        <label class="text-xs font-medium text-gray-500 md:hidden dark:text-gray-400">Key</label>
-                        <input type="text"
-                            wire:model.defer="criteria.{{ $i }}.key"
-                            class="block w-full rounded-md border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-white" />
-                    </div>
-                    <div class="col-span-12 md:col-span-3">
-                        <label class="text-xs font-medium text-gray-500 md:hidden dark:text-gray-400">Label</label>
-                        <input type="text"
-                            wire:model.defer="criteria.{{ $i }}.label"
-                            class="block w-full rounded-md border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-white" />
-                        <input type="text"
-                            wire:model.defer="criteria.{{ $i }}.description"
-                            placeholder="Optional description"
-                            class="mt-1 block w-full rounded-md border-gray-200 bg-white text-xs text-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-300" />
-                    </div>
-                    <div class="col-span-6 md:col-span-2">
-                        <label class="text-xs font-medium text-gray-500 md:hidden dark:text-gray-400">Weight</label>
-                        <input type="number" min="1" max="100"
-                            wire:model.defer="criteria.{{ $i }}.weight"
-                            class="block w-full rounded-md border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-white" />
-                    </div>
-                    <div class="col-span-3 md:col-span-1 flex md:justify-center pt-2">
-                        <input type="checkbox"
-                            wire:model.defer="criteria.{{ $i }}.active"
-                            class="size-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5" />
-                    </div>
-                    <div class="col-span-3 md:col-span-2 flex items-center justify-end gap-1">
-                        <button type="button" wire:click="moveUp({{ $i }})"
-                            class="p-1.5 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-                            title="Move up">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-                            </svg>
-                        </button>
-                        <button type="button" wire:click="moveDown({{ $i }})"
-                            class="p-1.5 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-                            title="Move down">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                        </button>
-                        <button type="button" wire:click="removeRow({{ $i }})"
-                            wire:confirm="Remove this criterion?"
-                            class="p-1.5 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10"
-                            title="Remove">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                            </svg>
-                        </button>
+
+                    {{-- Edit fields --}}
+                    <div class="grid grid-cols-1 gap-3 px-4 py-3 md:grid-cols-12">
+                        <div class="md:col-span-3">
+                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Key</label>
+                            <input type="text"
+                                wire:model.live.debounce.500ms="criteria.{{ $i }}.key"
+                                placeholder="engagement"
+                                class="block w-full rounded-lg border-gray-300 bg-white font-mono text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                            <p class="mt-1 text-[11px] text-gray-400">Slug (a–z, _).</p>
+                        </div>
+                        <div class="md:col-span-5">
+                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Label</label>
+                            <input type="text"
+                                wire:model.live.debounce.500ms="criteria.{{ $i }}.label"
+                                placeholder="Engagement"
+                                class="block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                            <p class="mt-1 text-[11px] text-gray-400">Shown in observation form.</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Weight</label>
+                            <input type="number" min="1" max="100"
+                                wire:model.defer="criteria.{{ $i }}.weight"
+                                class="block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                            <p class="mt-1 text-[11px] text-gray-400">For weighted avg.</p>
+                        </div>
+                        <div class="md:col-span-12">
+                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Description <span class="text-gray-400">(optional)</span></label>
+                            <input type="text"
+                                wire:model.defer="criteria.{{ $i }}.description"
+                                placeholder="What this criterion measures (e.g. 'Student attention and active participation')"
+                                class="block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                        </div>
                     </div>
                 </div>
             @empty
-                <div class="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No criteria configured. Click "Add criterion" below to start.
+                <div class="rounded-xl border-2 border-dashed border-gray-300 bg-white p-10 text-center dark:border-white/10 dark:bg-gray-900">
+                    <x-heroicon-o-clipboard-document-list class="mx-auto size-10 text-gray-400" />
+                    <h3 class="mt-3 text-sm font-semibold text-gray-900 dark:text-white">No criteria yet</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Add at least one dimension observers can score.</p>
                 </div>
             @endforelse
         </div>
 
-        <div>
-            <button type="button" wire:click="addRow"
-                class="inline-flex items-center gap-1.5 rounded-md border border-dashed border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/5">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Add criterion
-            </button>
-        </div>
+        {{-- Add button --}}
+        <button type="button" wire:click="addRow"
+            class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-600 transition hover:border-primary-400 hover:bg-primary-50/50 hover:text-primary-700 dark:border-white/10 dark:text-gray-300 dark:hover:border-primary-500/40 dark:hover:bg-primary-500/5 dark:hover:text-primary-300">
+            <x-heroicon-m-plus class="size-4" />
+            Add criterion
+        </button>
     </div>
 
-    <div class="sticky bottom-0 left-0 right-0 mt-6 -mx-6 -mb-6 border-t border-gray-200 bg-white px-6 py-3 dark:border-white/10 dark:bg-gray-900">
-        <div class="flex justify-end">
-            <button type="button" wire:click="save"
-                class="inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-                Save changes
-            </button>
+    {{-- Sticky save bar --}}
+    <div class="sticky bottom-0 left-0 right-0 mt-6 -mx-6 -mb-6 border-t border-gray-200 bg-white/95 px-6 py-3 backdrop-blur dark:border-white/10 dark:bg-gray-900/95">
+        <div class="flex items-center justify-between gap-3">
+            <p class="hidden text-xs text-gray-500 sm:block dark:text-gray-400">
+                Inactive criteria stay in history but won't appear on new observations.
+            </p>
+            <div class="ml-auto flex items-center gap-2">
+                <button type="button" wire:click="mount" wire:loading.attr="disabled"
+                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/5">
+                    Reset
+                </button>
+                <button type="button" wire:click="save" wire:loading.attr="disabled"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-60">
+                    <svg wire:loading wire:target="save" class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <x-heroicon-m-check wire:loading.remove wire:target="save" class="size-4" />
+                    Save changes
+                </button>
+            </div>
         </div>
     </div>
 </x-filament-panels::page>
