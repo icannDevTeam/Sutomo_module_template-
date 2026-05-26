@@ -18,7 +18,7 @@ class SscRequestResource extends Resource
     protected static ?string $model = SscRequest::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-check';
     protected static ?string $navigationLabel = 'SSC Requests';
-    protected static ?string $navigationGroup = 'Approvals';
+    protected static ?string $navigationGroup = 'SSC';
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form

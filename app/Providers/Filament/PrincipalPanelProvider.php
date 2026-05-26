@@ -53,7 +53,11 @@ class PrincipalPanelProvider extends PanelProvider
                 'Hiring',          // Teacher Recruitment (Vacancy / Candidate / Interview / Deposit / Pipeline / Assessments)
                 'People',          // Teacher Onboarding (Teacher master + OPL/Probation/Contract board)
                 'Approvals',
+                'SSC',
+                'CCA / ECA',
                 'Operations',
+                'Planning',
+                'Settings',
             ])
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('15rem')

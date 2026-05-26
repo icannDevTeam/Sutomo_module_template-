@@ -8,7 +8,7 @@ use Filament\Pages\Page;
 class CcaCatalog extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-trophy';
-    protected static ?string $navigationGroup = 'Operations';
+    protected static ?string $navigationGroup = 'CCA / ECA';
     protected static ?string $title = 'CCA / ECA Catalog';
     protected static ?int $navigationSort = 2;
     protected static string $view = 'filament.principal.pages.cca-catalog';

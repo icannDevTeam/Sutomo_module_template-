@@ -42,6 +42,7 @@ class DatabaseSeeder extends Seeder
         $this->call(TeacherApprovalsSeeder::class);
         $this->call(TeacherProfileSeeder::class);
         $this->call(ObservationCriteriaSeeder::class);
+        $this->call(LetterOfIntentConfigSeeder::class);
         $this->call(PrincipalDemoSeeder::class);
     }
 

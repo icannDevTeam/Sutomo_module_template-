@@ -14,7 +14,14 @@ class ListLettersOfIntent extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [
+            Actions\CreateAction::make(),
+            Actions\Action::make('configure')
+                ->label('Configuration')
+                ->icon('heroicon-o-cog-6-tooth')
+                ->color('gray')
+                ->url(fn () => \App\Filament\Principal\Pages\LetterOfIntentConfig::getUrl()),
+        ];
     }
 
     public function getTabs(): array
