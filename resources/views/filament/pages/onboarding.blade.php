@@ -20,7 +20,9 @@
                     <tbody>
                         @forelse ($opl as $c)
                             <tr class="border-t border-gray-100 dark:border-white/5">
-                                <td class="py-2 font-semibold">{{ $c->name }}</td>
+                                <td class="py-2 font-semibold">
+                                    <a href="{{ url('/principal/opl-sessions/' . $c->id) }}" class="text-primary-600 hover:underline dark:text-primary-400">{{ $c->name }}</a>
+                                </td>
                                 <td class="text-gray-500">{{ $c->vacancy?->title }}</td>
                                 <td>{{ $c->meta['opl']['date'] ?? '—' }}</td>
                                 <td class="text-center"><x-filament::badge color="warning">In OPL</x-filament::badge></td>

@@ -73,14 +73,17 @@ class PrincipalPanelProvider extends PanelProvider
                 \App\Filament\Resources\InterviewResource::class,
                 \App\Filament\Resources\DepositResource::class,
                 \App\Filament\Resources\TeacherResource::class,
+                \App\Filament\Principal\Resources\LetterOfIntentResource::class,
             ])
             ->discoverPages(in: app_path('Filament/Principal/Pages'), for: 'App\\Filament\\Principal\\Pages')
             ->pages([
                 \App\Filament\Principal\Pages\PrincipalDashboard::class,
+                \App\Filament\Principal\Pages\SchedulePage::class,
                 \App\Filament\Pages\Pipeline::class,
                 \App\Filament\Pages\Assessments::class,
                 \App\Filament\Pages\YayasanApproval::class,
                 \App\Filament\Pages\Onboarding::class,
+                \App\Filament\Principal\Pages\OplSessionDetail::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Principal/Widgets'), for: 'App\\Filament\\Principal\\Widgets')
             ->middleware([

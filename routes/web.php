@@ -19,4 +19,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/print/duty-assignment/{record}', function (\App\Models\DutyAssignment $record) {
         return view('print.duty-briefing', ['record' => $record->load('teacher')]);
     })->name('duty-assignment.print');
+
+    Route::get('/observations/{observation}/print', function (\App\Models\TeacherObservation $observation) {
+        abort_unless(in_array(auth()->user()->role ?? '', \App\Models\User::PRINCIPAL_ROLES, true), 403);
+        return view('print.observation', ['o' => $observation->load(['teacher', 'observer', 'reviewer'])]);
+    })->name('observations.print');
 });

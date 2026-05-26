@@ -73,6 +73,54 @@
         </div>
     </x-filament::section>
 
+    {{-- ASSESSMENT SCORES --}}
+    @php
+        $scoreCards = [
+            ['label' => 'Written',     'value' => $c->score_written],
+            ['label' => 'Interview',   'value' => $c->score_interview],
+            ['label' => 'Micro-teach', 'value' => $c->score_micro],
+        ];
+        $colorFor = function ($s) {
+            if ($s === null) return ['bar' => 'bg-gray-300 dark:bg-white/10', 'text' => 'text-gray-400'];
+            if ($s >= 85) return ['bar' => 'bg-emerald-500', 'text' => 'text-emerald-600 dark:text-emerald-400'];
+            if ($s >= 70) return ['bar' => 'bg-indigo-500',  'text' => 'text-indigo-600 dark:text-indigo-400'];
+            if ($s >= 50) return ['bar' => 'bg-amber-500',   'text' => 'text-amber-600 dark:text-amber-400'];
+            return ['bar' => 'bg-rose-500', 'text' => 'text-rose-600 dark:text-rose-400'];
+        };
+        $vals = collect($scoreCards)->pluck('value')->filter(fn ($v) => $v !== null && $v !== '');
+        $avg = $vals->count() ? (int) round($vals->avg()) : null;
+    @endphp
+    <x-filament::section class="mt-4">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold text-gray-950 dark:text-white">Assessment Scores</h2>
+            <div class="text-sm text-gray-500">
+                Average:
+                <span class="font-bold text-lg {{ $avg !== null ? $colorFor($avg)['text'] : 'text-gray-400' }}">{{ $avg ?? '—' }}</span>
+                <span class="text-gray-400 text-xs">/ 100</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+            @foreach ($scoreCards as $sc)
+                @php
+                    $val = $sc['value'];
+                    $hasVal = $val !== null && $val !== '';
+                    $col = $colorFor($hasVal ? (int) $val : null);
+                    $width = $hasVal ? max(0, min(100, (int) $val)) : 0;
+                @endphp
+                <div class="rounded-lg bg-gray-50 dark:bg-white/5 p-4">
+                    <div class="text-xs uppercase font-bold text-gray-400 tracking-wider mb-2">{{ $sc['label'] }}</div>
+                    <div class="flex items-baseline gap-1 mb-2">
+                        <div class="font-bold text-3xl {{ $hasVal ? $col['text'] : 'text-gray-400' }} leading-none">{{ $hasVal ? $val : '—' }}</div>
+                        <div class="text-xs text-gray-400">/ 100</div>
+                    </div>
+                    <div class="h-2 bg-gray-100 dark:bg-white/10 rounded overflow-hidden">
+                        <div class="h-2 {{ $col['bar'] }} rounded" style="width: {{ $width }}%; {{ $hasVal ? '' : 'opacity:.4;' }}"></div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </x-filament::section>
+
     {{-- TABS --}}
     <div class="mt-4 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 overflow-hidden">
         <div class="flex gap-1 px-3 border-b border-gray-200 dark:border-white/10 overflow-x-auto">

@@ -15,6 +15,7 @@ use App\Models\TeacherObservation;
 use App\Models\TeacherTraining;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class TeacherProfileSeeder extends Seeder
 {
@@ -79,6 +80,20 @@ class TeacherProfileSeeder extends Seeder
                     'notes'       => null,
                 ]);
             }
+        }
+
+        // Mark first teacher per distinct subject as the Unit Head for that subject.
+        $seenSubjects = [];
+        foreach ($teachers as $t) {
+            $subject = $t->subject;
+            if (! $subject || in_array($subject, $seenSubjects, true)) {
+                continue;
+            }
+            $seenSubjects[] = $subject;
+            $t->update([
+                'is_unit_head'      => true,
+                'unit_head_subject' => $subject,
+            ]);
         }
 
         // Link a few students to teachers as parent (children quota)
@@ -324,6 +339,78 @@ class TeacherProfileSeeder extends Seeder
                 'second_approver_id'  => 1,
                 'second_approved_at'  => now()->subDays(2),
             ]);
+        }
+
+        // 13. Compensation history — 3-4 yearly progression rows per teacher
+        if (class_exists(\App\Models\TeacherCompensation::class) && Schema::hasTable('teacher_compensation')) {
+            foreach ($teachers as $i => $t) {
+                $baseStart = 5_500_000 + ($i * 200_000);
+                $allowanceStart = [
+                    'transport' => 400_000,
+                    'meal'      => 250_000,
+                    'role'      => 150_000 + ($i * 25_000),
+                ];
+                $years = rand(3, 4);
+                $startYear = now()->year - $years;
+
+                for ($y = 0; $y < $years; $y++) {
+                    $growth = 1 + (rand(50, 100) / 1000); // 5-10%
+                    $base = (int) round($baseStart * ($growth ** $y));
+                    $allowances = collect($allowanceStart)
+                        ->map(fn ($v) => (int) round($v * ($growth ** $y)))
+                        ->all();
+                    \App\Models\TeacherCompensation::create([
+                        'teacher_id'     => $t->id,
+                        'base_salary'    => $base,
+                        'allowances'     => $allowances,
+                        'currency'       => 'IDR',
+                        'effective_from' => Carbon::create($startYear + $y, rand(1, 6), 1),
+                        'notes'          => $y === 0
+                            ? 'Initial appointment package.'
+                            : 'Annual review adjustment ('.now()->subYears($years - $y)->format('Y').').',
+                    ]);
+                }
+            }
+        }
+
+        // 14. Activity audit log — 30-50 diverse rows per teacher across last 90 days
+        if (class_exists(\App\Models\AuditLog::class) && Schema::hasTable('audit_logs')) {
+            $actionPool = [
+                'leave'       => ['leave.requested', 'leave.approved', 'leave.rejected', 'leave.cancelled'],
+                'observation' => ['observation.created', 'observation.scored', 'observation.completed'],
+                'document'    => ['document.uploaded', 'document.verified', 'document.expired'],
+                'employment'  => ['employment.promoted', 'employment.contract_renewed', 'salary.adjusted', 'compensation.updated'],
+                'duty'        => ['duty.assigned', 'duty.completed', 'duty.swapped'],
+            ];
+            $actorPool = ['principal.admin', 'hr.officer', 'vice.principal', 'unit.head', 'system'];
+            $rolePool  = ['principal', 'hr', 'vice_principal', 'unit_head', 'system'];
+
+            $notePool = [
+                'leave'       => ['Family emergency.', 'Doctor appointment.', 'Approved per policy.', 'Cancelled by request.'],
+                'observation' => ['Strong classroom management.', 'Engagement could improve.', 'Excellent rubric scores.', 'Follow-up scheduled.'],
+                'document'    => ['Certificate validated.', 'Awaiting renewal.', 'NPWP updated.', 'Background check filed.'],
+                'employment'  => ['Promotion approved by board.', 'Contract renewed for 2 years.', 'Compensation reviewed annually.', 'Title change effective next month.'],
+                'duty'        => ['Morning gate duty.', 'Exam invigilation roster.', 'Library supervision.', 'Field trip lead.'],
+            ];
+
+            foreach ($teachers as $t) {
+                $rowCount = rand(30, 50);
+                for ($n = 0; $n < $rowCount; $n++) {
+                    $category = array_rand($actionPool);
+                    $action   = $actionPool[$category][array_rand($actionPool[$category])];
+                    $actorIdx = array_rand($actorPool);
+                    \App\Models\AuditLog::create([
+                        'occurred_at' => now()->subDays(rand(0, 90))->subMinutes(rand(0, 1440)),
+                        'user_name'   => $actorPool[$actorIdx],
+                        'role'        => $rolePool[$actorIdx],
+                        'action'      => $action,
+                        'target'      => 'Teacher:'.$t->id,
+                        'from_value'  => null,
+                        'to_value'    => null,
+                        'note'        => $notePool[$category][array_rand($notePool[$category])],
+                    ]);
+                }
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\TeacherResource\Pages;
 
 use App\Filament\Resources\TeacherResource;
 use App\Models\DutyAssignment;
+use App\Models\LetterOfIntent;
 use App\Models\ParentCommunication;
 use App\Models\Teacher;
 use App\Models\TeacherAttendance;
@@ -17,6 +18,9 @@ use App\Models\TeacherTraining;
 use App\Models\VoluntaryRequest;
 use App\Services\Timetable\TeacherSchedule;
 use App\Support\TeacherWarnings;
+use Filament\Actions\Action;
+use Filament\Forms;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Tabs;
@@ -28,6 +32,82 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewTeacher extends ViewRecord
 {
     protected static string $resource = TeacherResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('letter_of_intent')
+                ->label('Send Letter of Intent')
+                ->icon('heroicon-o-document-check')
+                ->color('primary')
+                ->form([
+                    Forms\Components\TextInput::make('academic_year')
+                        ->required()
+                        ->default('2026/2027'),
+                    Forms\Components\TextInput::make('position')
+                        ->default(fn () => $this->record->title ?? null)
+                        ->placeholder('e.g. Mathematics Teacher'),
+                    Forms\Components\DateTimePicker::make('deadline_at'),
+                    Forms\Components\Textarea::make('body')
+                        ->rows(8)
+                        ->required()
+                        ->default(fn () => "Dear {$this->record->name},\n\nWe are pleased to extend an offer to continue your role at Sutomo School for academic year 2026/2027. Please review this letter and confirm your intent by signing below.\n\n— Principal"),
+                ])
+                ->requiresConfirmation()
+                ->action(function (array $data) {
+                    // Duplicate guard: refuse if an active letter already exists for this AY.
+                    $exists = LetterOfIntent::where('teacher_id', $this->record->id)
+                        ->where('academic_year', $data['academic_year'])
+                        ->whereIn('status', ['draft', 'sent', 'signed'])
+                        ->exists();
+                    if ($exists) {
+                        Notification::make()
+                            ->title('A letter for ' . $data['academic_year'] . ' already exists.')
+                            ->warning()
+                            ->send();
+                        return;
+                    }
+                    $loi = LetterOfIntent::create([
+                        'teacher_id'    => $this->record->id,
+                        'principal_id'  => Auth::id(),
+                        'academic_year' => $data['academic_year'],
+                        'position'      => $data['position'] ?? null,
+                        'body'          => $data['body'],
+                        'deadline_at'   => $data['deadline_at'] ?? null,
+                    ]);
+                    // Mark as sent (status/sent_at are not in fillable — explicit forceFill).
+                    $loi->forceFill([
+                        'status'  => 'sent',
+                        'sent_at' => now(),
+                    ])->save();
+
+                    if (class_exists(\App\Models\AuditLog::class)) {
+                        try {
+                            \App\Models\AuditLog::create([
+                                'occurred_at' => now(),
+                                'user_name'   => optional(Auth::user())->name ?? 'system',
+                                'role'        => 'principal',
+                                'action'      => 'loi.sent',
+                                'target'      => 'LetterOfIntent:' . $loi->id,
+                                'to_value'    => $data['academic_year'],
+                            ]);
+                        } catch (\Throwable $e) {
+                            // audit failure must not block
+                        }
+                    }
+                    Notification::make()->title('Letter of Intent sent')->success()->send();
+                }),
+            Action::make('schedule_observation')
+                ->label('Schedule Observation')
+                ->icon('heroicon-o-eye')
+                ->url(fn () => \App\Filament\Principal\Resources\TeacherObservationResource::getUrl(
+                    'create',
+                    ['teacher_id' => $this->record->id],
+                    panel: 'principal',
+                ))
+                ->openUrlInNewTab(),
+        ];
+    }
 
     public function infolist(Infolist $infolist): Infolist
     {
@@ -64,6 +144,19 @@ class ViewTeacher extends ViewRecord
                     ->view('filament.principal.teacher.renewal-card')
                     ->viewData(fn ($record) => ['teacher' => $record]),
             ]),
+
+            Section::make('Pending Letter of Intent')
+                ->icon('heroicon-o-document-check')
+                ->visible(fn ($record) => LetterOfIntent::where('teacher_id', $record->id)->whereIn('status', ['sent', 'draft'])->exists())
+                ->schema([
+                    ViewEntry::make('pending_loi')
+                        ->view('filament.principal.teacher.pending-loi')
+                        ->viewData(fn ($record) => [
+                            'loi' => LetterOfIntent::where('teacher_id', $record->id)
+                                ->whereIn('status', ['sent', 'draft'])
+                                ->latest()->first(),
+                        ]),
+                ]),
 
             Tabs::make('Profile')->columnSpanFull()->tabs([
 
@@ -159,6 +252,95 @@ class ViewTeacher extends ViewRecord
                                         ->where('teacher_id', $record->id)
                                         ->orderByDesc('occurred_at')->limit(10)->get(),
                                 ]),
+                        ]),
+
+                    Section::make('Subject Mastery (from observations)')
+                        ->schema([
+                            ViewEntry::make('subject_radar')
+                                ->view('filament.principal.teacher.subject-radar')
+                                ->viewData(function ($record) {
+                                    $obs = $record->observations()->where('status', 'approved')->get();
+                                    $perCriterion = [];
+                                    foreach (TeacherObservation::criteriaLabels() as $key => $label) {
+                                        $vals = $obs->map(fn ($o) => data_get($o->dimensions, $key))
+                                            ->filter(fn ($v) => is_numeric($v))
+                                            ->values();
+                                        $perCriterion[$key] = [
+                                            'label' => $label,
+                                            'avg'   => $vals->isEmpty() ? null : round($vals->avg(), 2),
+                                        ];
+                                    }
+                                    return ['perCriterion' => $perCriterion];
+                                }),
+                        ]),
+
+                    Section::make('Workload at a Glance')
+                        ->schema([
+                            ViewEntry::make('workload_glance')
+                                ->view('filament.principal.teacher.workload-card')
+                                ->viewData(function ($record) {
+                                    $teaching = 0;
+                                    $cap = 30;
+                                    try {
+                                        $w = TeacherSchedule::for($record)->workload();
+                                        $teaching = (int) ($w['count'] ?? 0);
+                                        $cap = (int) ($w['cap'] ?? 30);
+                                    } catch (\Throwable $e) {
+                                        $teaching = 0;
+                                        $cap = 30;
+                                    }
+                                    try {
+                                        $duty = DutyAssignment::where('teacher_id', $record->id)
+                                            ->whereIn('status', ['assigned', 'accepted'])
+                                            ->where('recurrence', 'weekly')
+                                            ->count();
+                                    } catch (\Throwable $e) {
+                                        $duty = 0;
+                                    }
+                                    $total = $teaching + $duty;
+                                    return [
+                                        'teaching' => $teaching,
+                                        'duty'     => $duty,
+                                        'total'    => $total,
+                                        'cap'      => $cap ?: 30,
+                                    ];
+                                }),
+                        ]),
+
+                    Section::make('Recent Student Feedback')
+                        ->schema([
+                            ViewEntry::make('student_feedback')
+                                ->view('filament.principal.teacher.student-feedback')
+                                ->viewData(fn ($record) => [
+                                    'samples' => [
+                                        ['rating' => 5, 'text' => 'Very clear explanations and patient with questions.', 'class' => '10A', 'date' => now()->subDays(3)->toDateString()],
+                                        ['rating' => 4, 'text' => 'Engaging lessons; would love more practice problems.',  'class' => '10B', 'date' => now()->subDays(7)->toDateString()],
+                                        ['rating' => 5, 'text' => 'Always available for extra help after school.',        'class' => '11A', 'date' => now()->subDays(11)->toDateString()],
+                                    ],
+                                ]),
+                        ]),
+
+                    Section::make('Action items from latest observation')
+                        ->visible(fn ($record) => $record->observations()
+                            ->whereNotNull('action_items')
+                            ->where('action_items', '!=', '')
+                            ->exists())
+                        ->schema([
+                            ViewEntry::make('last_action_items')
+                                ->view('filament.principal.teacher.last-action-items')
+                                ->viewData(function ($record) {
+                                    $latest = $record->observations()
+                                        ->with('observer')
+                                        ->whereNotNull('action_items')
+                                        ->where('action_items', '!=', '')
+                                        ->orderByDesc('observed_at')
+                                        ->first();
+                                    return [
+                                        'action_items' => $latest?->action_items,
+                                        'observed_at'  => $latest?->observed_at,
+                                        'observer'     => $latest?->observer?->name ?? 'Unknown observer',
+                                    ];
+                                }),
                         ]),
                 ]),
 
@@ -343,13 +525,13 @@ class ViewTeacher extends ViewRecord
                                 ]),
                         ]),
 
-                    Section::make('Observations (recent 5)')->collapsible()->schema([
+                    Section::make('Observations (recent 10)')->collapsible()->schema([
                         ViewEntry::make('observations')
-                            ->view('filament.principal.teacher.observations-list')
+                            ->view('filament.principal.teacher.observations-table')
                             ->viewData(fn ($record) => [
                                 'observations' => TeacherObservation::with('observer')
                                     ->where('teacher_id', $record->id)
-                                    ->orderByDesc('observed_at')->limit(5)->get(),
+                                    ->orderByDesc('observed_at')->limit(10)->get(),
                             ]),
                     ]),
 

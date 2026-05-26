@@ -14,7 +14,7 @@ use Filament\Pages\Page;
 class Onboarding extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-rocket-launch';
-    protected static ?string $navigationGroup = 'People';
+    protected static ?string $navigationGroup = 'Hiring';
     protected static ?int $navigationSort = 2;
     protected static string $view = 'filament.pages.onboarding';
     protected static ?string $title = 'Onboarding';
