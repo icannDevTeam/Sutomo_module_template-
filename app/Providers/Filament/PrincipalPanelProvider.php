@@ -53,6 +53,7 @@ class PrincipalPanelProvider extends PanelProvider
                 'Hiring',          // Teacher Recruitment (Vacancy / Candidate / Interview / Deposit / Pipeline / Assessments)
                 'People',          // Teacher Onboarding (Teacher master + OPL/Probation/Contract board)
                 'Approvals',
+                'Procurement',
                 'SSC',
                 'CCA / ECA',
                 'Operations',

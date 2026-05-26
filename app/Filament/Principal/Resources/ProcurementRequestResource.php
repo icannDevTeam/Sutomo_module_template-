@@ -15,7 +15,7 @@ class ProcurementRequestResource extends Resource
     protected static ?string $model = ProcurementRequest::class;
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $navigationLabel = 'Procurement';
-    protected static ?string $navigationGroup = 'Approvals';
+    protected static ?string $navigationGroup = 'Procurement';
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
