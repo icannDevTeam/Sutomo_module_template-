@@ -63,9 +63,6 @@ class ViewTeacher extends ViewRecord
                 ViewEntry::make('renewal')
                     ->view('filament.principal.teacher.renewal-card')
                     ->viewData(fn ($record) => ['teacher' => $record]),
-                ViewEntry::make('ai_summary')
-                    ->view('filament.principal.teacher.ai-summary')
-                    ->viewData(fn ($record) => ['summary' => \App\Support\TeacherSummary::generate($record)]),
             ]),
 
             Tabs::make('Profile')->columnSpanFull()->tabs([

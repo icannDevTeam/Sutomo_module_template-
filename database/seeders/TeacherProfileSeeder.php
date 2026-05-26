@@ -60,7 +60,7 @@ class TeacherProfileSeeder extends Seeder
             $t->update([
                 'awards'         => $awardCount ? collect($awardsPool)->shuffle()->take($awardCount)->values()->all() : null,
                 'initiatives'    => collect($initiativesPool)->shuffle()->take($initCount)->values()->all(),
-                'children_quota' => ($i % 4 === 0) ? 2 : (($i % 3 === 0) ? 1 : null),
+                'children_quota' => $i === 0 ? 3 : (($i % 4 === 0) ? 2 : (($i % 3 === 0) ? 1 : null)),
             ]);
 
             $sessionsCount = 3 + ($i % 4);

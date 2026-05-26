@@ -204,6 +204,13 @@ class TeacherResource extends Resource
                     ->size(36),
                 Tables\Columns\TextColumn::make('name')->searchable()->weight('bold')
                     ->description(fn ($record) => $record->subject . ' · ' . strtoupper($record->campus ?? '')),
+                Tables\Columns\TextColumn::make('email')
+                    ->searchable()
+                    ->toggleable()
+                    ->copyable()
+                    ->icon('heroicon-m-envelope')
+                    ->color('gray')
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('title')->badge()
                     ->formatStateUsing(fn ($state) => Teacher::TITLES[$state] ?? ($state ?: '—'))
                     ->color(fn ($state) => Teacher::TITLE_COLORS[$state] ?? 'gray'),
