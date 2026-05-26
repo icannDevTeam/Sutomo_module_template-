@@ -100,6 +100,14 @@ class PrincipalPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn () => Blade::render('<link rel="stylesheet" href="{{ asset(\'css/principal.css\') }}?v=' . filemtime(public_path('css/principal.css')) . '">')
+            )
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn () => view('filament.principal.topbar.context-pill')->render()
+            )
+            ->renderHook(
+                PanelsRenderHook::USER_MENU_BEFORE,
+                fn () => view('filament.principal.topbar.quick-icons')->render()
             );
     }
 }
