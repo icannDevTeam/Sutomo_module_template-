@@ -46,6 +46,7 @@ class PrincipalPanelProvider extends PanelProvider
             ->font('Inter')
             ->navigationGroups([
                 'Overview',
+                'Communication',
                 'Enrollment',
                 'Academics',
                 'Students',
@@ -58,7 +59,6 @@ class PrincipalPanelProvider extends PanelProvider
                 'CCA / ECA',
                 'Operations',
                 'Planning',
-                'Communication',
                 'Settings',
             ])
             ->sidebarCollapsibleOnDesktop()
