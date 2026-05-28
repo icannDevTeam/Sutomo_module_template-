@@ -115,25 +115,44 @@
             background: #fff;
         }
         .msg-composer {
-            display: grid; grid-template-columns: 1fr auto; gap: .65rem;
-            align-items: center;
-            background: #f9fafb;
+            display: grid; grid-template-columns: 1fr auto; gap: .5rem;
+            align-items: end;
+            background: #fff;
             border: 1px solid #e5e7eb;
             border-radius: .75rem;
-            padding: .35rem .5rem .35rem .85rem;
+            padding: .4rem .45rem .4rem .9rem;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .msg-composer:focus-within {
+            border-color: #c4b5fd;
+            box-shadow: 0 0 0 3px rgba(167,139,250,.18);
         }
         .msg-composer textarea {
             background: transparent;
             border: 0;
+            outline: 0;
+            box-shadow: none;
             resize: none;
             width: 100%;
-            font-size: .85rem;
+            font-size: .875rem;
+            line-height: 1.45;
             color: #111827;
             padding: .55rem 0;
-            min-height: 1.5rem;
-            max-height: 6rem;
+            min-height: 2.4rem;
+            max-height: 8rem;
+            font-family: inherit;
+            display: block;
+            overflow-y: auto;
         }
-        .msg-composer textarea:focus { outline: none; }
+        .msg-composer textarea::placeholder { color: #9ca3af; }
+        .msg-composer textarea:focus,
+        .msg-composer textarea:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            background: transparent !important;
+        }
+        .msg-composer textarea:disabled { opacity: .6; cursor: wait; }
         .msg-composer__actions { display: inline-flex; align-items: center; gap: .35rem; }
         .msg-icon-btn {
             width: 2rem; height: 2rem;
@@ -236,11 +255,20 @@
                 </div>
 
                 <div class="msg-thread__foot">
-                    <form wire:submit.prevent="send" class="msg-composer">
+                    <form wire:submit.prevent="send" class="msg-composer"
+                          x-data="{
+                              autosize(el) {
+                                  el.style.height = 'auto';
+                                  el.style.height = Math.min(el.scrollHeight, 128) + 'px';
+                              }
+                          }"
+                          x-init="$nextTick(() => { const t = $el.querySelector('textarea'); if (t) { autosize(t); t.focus(); } })">
                         <textarea wire:model="draft"
                                   placeholder="Write a message..."
                                   rows="1"
-                                  @keydown.enter.prevent="$el.form.requestSubmit()"></textarea>
+                                  x-ref="draft"
+                                  x-on:input="autosize($event.target)"
+                                  x-on:keydown.enter="if (! $event.shiftKey) { $event.preventDefault(); $el.form.requestSubmit(); }"></textarea>
                         <div class="msg-composer__actions">
                             <button type="button" class="msg-icon-btn" title="Emoji">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.1rem;height:1.1rem;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
@@ -261,17 +289,28 @@
     </div>
 
     <script>
-        document.addEventListener('livewire:navigated', () => {
+        const msgScrollToBottom = () => {
             const el = document.getElementById('msg-scroll');
-            if (el) el.scrollTop = el.scrollHeight;
+            if (el) {
+                // double-rAF to wait for Livewire DOM patch
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    el.scrollTop = el.scrollHeight;
+                }));
+            }
+        };
+        const msgRefocus = () => {
+            const ta = document.querySelector('.msg-composer textarea');
+            if (ta) {
+                ta.style.height = 'auto';
+                ta.focus();
+            }
+        };
+        document.addEventListener('livewire:navigated', () => { msgScrollToBottom(); msgRefocus(); });
+        document.addEventListener('livewire:init', () => {
+            Livewire.hook('morph.updated', () => msgScrollToBottom());
+            Livewire.on('msg-sent', () => { msgScrollToBottom(); msgRefocus(); });
+            Livewire.on('msg-thread-changed', () => { msgScrollToBottom(); msgRefocus(); });
         });
-        document.addEventListener('livewire:update', () => {
-            const el = document.getElementById('msg-scroll');
-            if (el) el.scrollTop = el.scrollHeight;
-        });
-        window.addEventListener('load', () => {
-            const el = document.getElementById('msg-scroll');
-            if (el) el.scrollTop = el.scrollHeight;
-        });
+        window.addEventListener('load', () => { msgScrollToBottom(); msgRefocus(); });
     </script>
 </x-filament-panels::page>

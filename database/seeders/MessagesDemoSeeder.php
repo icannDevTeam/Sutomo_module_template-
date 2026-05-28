@@ -19,6 +19,14 @@ class MessagesDemoSeeder extends Seeder
         MessageThread::query()->delete();
 
         $today = Carbon::today();
+        $now   = Carbon::now();
+
+        // Anchor today's threads to "minutes ago" so newly sent messages
+        // always land at the bottom of the conversation in any demo run.
+        $t1c   = $now->copy()->subMinutes(20); // most recent partner reply
+        $t1b   = $now->copy()->subMinutes(35); // my reply
+        $t1a   = $now->copy()->subMinutes(50); // opening message
+        $t2a   = $now->copy()->subHours(2);
 
         // ---------- Thread 1: Budi Pratiwi (active in screenshot) ----------
         $t1 = MessageThread::create([
@@ -28,13 +36,13 @@ class MessagesDemoSeeder extends Seeder
             'partner_role'      => 'Parent · Dian Pratiwi (4A)',
             'partner_initials'  => 'BP',
             'partner_color'     => 'emerald',
-            'last_message_at'   => $today->copy()->setTime(10, 45),
+            'last_message_at'   => $t1c,
             'unread_count'      => 1,
         ]);
         $this->seedMessages($t1, [
-            [false, 'Budi Pratiwi',  'BP', $today->copy()->setTime(10, 24), 'Selamat pagi Bu Sarah, saya ingin menanyakan kondisi Dian. Sudah 4 hari tidak masuk, bagaimana kondisinya di sekolah sebelumnya?'],
-            [true,  'Sarah Rahayu',  'SR', $today->copy()->setTime(10, 31), 'Selamat pagi Pak Budi. Sebelumnya Dian hadir dan aktif. Apakah ada kondisi kesehatan yang perlu kami ketahui?'],
-            [false, 'Budi Pratiwi',  'BP', $today->copy()->setTime(10, 45), 'Dian sedang demam tinggi Bu. Saya rencana bawa ke dokter hari ini. Mohon doanya 🙏'],
+            [false, 'Budi Pratiwi',  'BP', $t1a, 'Selamat pagi Bu Sarah, saya ingin menanyakan kondisi Dian. Sudah 4 hari tidak masuk, bagaimana kondisinya di sekolah sebelumnya?'],
+            [true,  'Sarah Rahayu',  'SR', $t1b, 'Selamat pagi Pak Budi. Sebelumnya Dian hadir dan aktif. Apakah ada kondisi kesehatan yang perlu kami ketahui?'],
+            [false, 'Budi Pratiwi',  'BP', $t1c, 'Dian sedang demam tinggi Bu. Saya rencana bawa ke dokter hari ini. Mohon doanya 🙏'],
         ]);
 
         // ---------- Thread 2: Andi Laksono (Principal) ----------
@@ -45,11 +53,11 @@ class MessagesDemoSeeder extends Seeder
             'partner_role'      => 'Principal',
             'partner_initials'  => 'AL',
             'partner_color'     => 'blue',
-            'last_message_at'   => $today->copy()->setTime(9, 15),
+            'last_message_at'   => $t2a,
             'unread_count'      => 1,
         ]);
         $this->seedMessages($t2, [
-            [false, 'Andi Laksono', 'AL', $today->copy()->setTime(9, 15), 'Please review the duty assignment for next week and confirm by EOD.'],
+            [false, 'Andi Laksono', 'AL', $t2a, 'Please review the duty assignment for next week and confirm by EOD.'],
         ]);
 
         // ---------- Thread 3: Rina Permata (Dec 3) ----------

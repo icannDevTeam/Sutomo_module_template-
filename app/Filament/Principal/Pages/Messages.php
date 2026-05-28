@@ -58,6 +58,7 @@ class Messages extends Page
         $this->threadId = $id;
         $this->draft = '';
         $this->markRead();
+        $this->dispatch('msg-thread-changed');
     }
 
     public function setCategory(string $cat): void
@@ -81,8 +82,12 @@ class Messages extends Page
             'body'            => $body,
             'sent_at'         => now(),
         ]);
-        $thread->update(['last_message_at' => now()]);
+        $thread->update([
+            'last_message_at' => now(),
+            'unread_count'    => 0,
+        ]);
         $this->draft = '';
+        $this->dispatch('msg-sent');
     }
 
     protected function markRead(): void
