@@ -58,6 +58,7 @@ class PrincipalPanelProvider extends PanelProvider
                 'CCA / ECA',
                 'Operations',
                 'Planning',
+                'Communication',
                 'Settings',
             ])
             ->sidebarCollapsibleOnDesktop()
@@ -116,6 +117,10 @@ class PrincipalPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::USER_MENU_BEFORE,
                 fn () => view('filament.principal.topbar.quick-icons')->render()
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn () => view('filament.principal.topbar.floating-chat')->render()
             );
     }
 }
