@@ -3,9 +3,11 @@
 namespace App\Filament\Principal\Resources;
 
 use App\Filament\Principal\Resources\TeacherLeaveResource\Pages;
+use App\Models\DutyAssignment;
 use App\Models\Teacher;
 use App\Models\TeacherLeave;
 use App\Support\CsvExporter;
+use App\Support\SubstituteSuggester;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -75,17 +77,7 @@ class TeacherLeaveResource extends Resource
                     ->modalCancelActionLabel('Close')
                     ->modalContent(fn ($record) => view('filament.principal.teacher.leave-detail', ['record' => $record]))
                     ->extraModalFooterActions(fn ($record) => $record->status === 'pending' ? [
-                        Tables\Actions\Action::make('approveInModal')
-                            ->label('Approve')->icon('heroicon-o-check')->color('success')
-                            ->requiresConfirmation()
-                            ->action(function ($record) {
-                                $record->update([
-                                    'status'     => 'approved',
-                                    'decided_by' => auth()->user()?->name ?? 'Principal',
-                                    'decided_at' => now(),
-                                ]);
-                                Notification::make()->title('Leave approved')->success()->send();
-                            }),
+                        self::approveWithSubstituteAction('approveInModal'),
                         Tables\Actions\Action::make('rejectInModal')
                             ->label('Reject')->icon('heroicon-o-x-mark')->color('danger')
                             ->requiresConfirmation()
@@ -104,16 +96,7 @@ class TeacherLeaveResource extends Resource
                     ->url(fn ($record) => route('teacher-leave.print', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('approve')->icon('heroicon-o-check')->color('success')
-                    ->visible(fn ($record) => $record->status === 'pending')
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => 'approved',
-                            'decided_by' => auth()->user()?->name ?? 'Principal',
-                            'decided_at' => now(),
-                        ]);
-                        Notification::make()->title('Leave approved')->success()->send();
-                    }),
+                self::approveWithSubstituteAction('approve'),
                 Tables\Actions\Action::make('reject')->icon('heroicon-o-x-mark')->color('danger')
                     ->visible(fn ($record) => $record->status === 'pending')
                     ->requiresConfirmation()
@@ -155,5 +138,93 @@ class TeacherLeaveResource extends Resource
             'create' => Pages\CreateTeacherLeave::route('/create'),
             'edit'   => Pages\EditTeacherLeave::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Approve action with a candidate-picker modal.
+     * Used both as a row action and as a modal footer action on the View modal.
+     */
+    protected static function approveWithSubstituteAction(string $name): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->label('Approve')
+            ->icon('heroicon-o-check')
+            ->color('success')
+            ->visible(fn ($record) => $record->status === 'pending')
+            ->modalHeading(fn ($record) => 'Assign Substitute · ' . ($record->teacher?->name ?? 'Teacher'))
+            ->modalWidth('5xl')
+            ->modalSubmitActionLabel('Approve & Assign')
+            ->modalContent(fn ($record) => view('filament.principal.teacher.substitute-picker', [
+                'leave'      => $record,
+                'candidates' => SubstituteSuggester::for($record),
+            ]))
+            ->form([
+                Forms\Components\Hidden::make('substitute_teacher_id'),
+                Forms\Components\Toggle::make('create_duty_assignment')
+                    ->label('Also create a DutyAssignment (status = pending) for the substitute')
+                    ->default(true),
+                Forms\Components\Toggle::make('approve_without_substitute')
+                    ->label('Approve without assigning a substitute')
+                    ->helperText('Use for mid-day or prior-notice cases where cover is not required.')
+                    ->default(false),
+            ])
+            ->action(function (array $data, $record): void {
+                $skipSubstitute = (bool) ($data['approve_without_substitute'] ?? false);
+                $substituteId   = $data['substitute_teacher_id'] ?? null;
+
+                if (! $skipSubstitute && ! $substituteId) {
+                    Notification::make()
+                        ->title('Pick a substitute, or toggle "Approve without assigning a substitute".')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
+                if (! $skipSubstitute && $substituteId) {
+                    // Defense in depth: reject if candidate is no longer assignable.
+                    $candidates = SubstituteSuggester::for($record, 100);
+                    $picked     = $candidates->firstWhere(fn ($c) => (int) $c['teacher']->id === (int) $substituteId);
+
+                    if ($picked && ! $picked['is_assignable']) {
+                        Notification::make()
+                            ->title('That substitute is no longer available.')
+                            ->body(implode(' · ', $picked['conflict_reasons']))
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+                }
+
+                $record->update([
+                    'status'                => 'approved',
+                    'substitute_teacher_id' => $skipSubstitute ? null : $substituteId,
+                    'decided_by'            => auth()->user()?->name ?? 'Principal',
+                    'decided_at'            => now(),
+                ]);
+
+                $subName = null;
+                if (! $skipSubstitute && $substituteId) {
+                    $subName = Teacher::whereKey($substituteId)->value('name');
+
+                    if (($data['create_duty_assignment'] ?? false) && $subName) {
+                        DutyAssignment::create([
+                            'teacher_id'    => $substituteId,
+                            'title'         => 'Cover for ' . ($record->teacher?->name ?? 'teacher'),
+                            'starts_at'     => $record->starts_at,
+                            'ends_at'       => $record->ends_at,
+                            'recurrence'    => 'once',
+                            'status'        => 'pending',
+                            'assigned_by'   => auth()->user()?->name ?? 'Principal',
+                            'academic_year' => DutyAssignment::academicYearFor($record->starts_at),
+                        ]);
+                    }
+                }
+
+                Notification::make()
+                    ->title('Leave approved')
+                    ->body($subName ? $subName . ' assigned as substitute.' : 'Approved without substitute.')
+                    ->success()
+                    ->send();
+            });
     }
 }

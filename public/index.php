@@ -5,6 +5,9 @@ use Illuminate\Http\Request;
 // Silence PHP 8.5 deprecations from vendor code (e.g. PDO::MYSQL_ATTR_SSL_CA).
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
+// Dev only: prevent first-compile timeouts on Windows when serving with `artisan serve`.
+@set_time_limit(0);
+
 define('LARAVEL_START', microtime(true));
 
 // Determine if the application is in maintenance mode...
