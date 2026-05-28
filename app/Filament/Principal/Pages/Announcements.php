@@ -18,7 +18,7 @@ class Announcements extends Page implements HasForms, HasActions
     use InteractsWithActions, InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
-    protected static ?string $navigationGroup = 'Overview';
+    protected static ?string $navigationGroup = 'Communication';
     protected static ?string $title = 'Announcements';
     protected static ?int $navigationSort = 1;
     protected static string $view = 'filament.principal.pages.announcements';
