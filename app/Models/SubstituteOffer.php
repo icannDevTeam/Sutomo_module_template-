@@ -17,27 +17,30 @@ class SubstituteOffer extends Model
     ];
 
     public const STATUSES = [
-        'pending'   => 'Pending',
-        'accepted'  => 'Accepted',
-        'declined'  => 'Declined',
-        'expired'   => 'Expired',
-        'cancelled' => 'Cancelled',
+        'pending'    => 'Awaiting response',
+        'interested' => 'Interested',
+        'assigned'   => 'Assigned',
+        'declined'   => 'Not available',
+        'expired'    => 'Expired',
+        'cancelled'  => 'Closed',
     ];
 
     public const STATUS_COLORS = [
-        'pending'   => 'warning',
-        'accepted'  => 'success',
-        'declined'  => 'danger',
-        'expired'   => 'gray',
-        'cancelled' => 'gray',
+        'pending'    => 'warning',
+        'interested' => 'info',
+        'assigned'   => 'success',
+        'declined'   => 'danger',
+        'expired'    => 'gray',
+        'cancelled'  => 'gray',
     ];
 
     public const STATUS_ICONS = [
-        'pending'   => '⏳',
-        'accepted'  => '✅',
-        'declined'  => '❌',
-        'expired'   => '⌛',
-        'cancelled' => '🚫',
+        'pending'    => '⏳',
+        'interested' => '🙋',
+        'assigned'   => '✅',
+        'declined'   => '❌',
+        'expired'    => '⌛',
+        'cancelled'  => '🚫',
     ];
 
     public function leave(): BelongsTo

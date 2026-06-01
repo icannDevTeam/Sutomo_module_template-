@@ -30,7 +30,7 @@ class SubmitLeaveOnBehalf extends Page
     public ?string $startsAt = null;
     public ?string $endsAt = null;
     public ?string $reason = null;
-    public bool $broadcastAfter = true;
+    public bool $autoSearchEnabled = true;
 
     public function mount(): void
     {
@@ -167,25 +167,26 @@ class SubmitLeaveOnBehalf extends Page
         if (! $teacher) return;
 
         $leave = TeacherLeave::create([
-            'teacher_id' => $this->teacherId,
-            'type'       => $this->type,
-            'starts_at'  => $this->startsAt,
-            'ends_at'    => $this->endsAt,
-            'reason'     => $this->reason ?: 'Filed by principal on behalf of teacher.',
-            'status'     => 'pending',
+            'teacher_id'          => $this->teacherId,
+            'type'                => $this->type,
+            'starts_at'           => $this->startsAt,
+            'ends_at'             => $this->endsAt,
+            'reason'              => $this->reason ?: 'Filed by principal on behalf of teacher.',
+            'status'              => 'pending',
+            'auto_search_enabled' => $this->autoSearchEnabled,
         ]);
 
-        $broadcastCount = 0;
-        if ($this->broadcastAfter) {
-            $offers = SubstituteBroadcaster::broadcast($leave);
-            $broadcastCount = count($offers);
+        $invited = 0;
+        if ($this->autoSearchEnabled) {
+            $offers = SubstituteBroadcaster::startAutoSearch($leave);
+            $invited = count($offers);
         }
 
         Notification::make()
             ->title('Leave submitted for ' . $teacher->name)
-            ->body($broadcastCount
-                ? "Cover request broadcast to {$broadcastCount} substitute(s)."
-                : 'No substitute broadcast.')
+            ->body($invited
+                ? "Auto substitute search started. {$invited} teacher(s) invited."
+                : 'Auto substitute search disabled — assign manually.')
             ->success()
             ->send();
 

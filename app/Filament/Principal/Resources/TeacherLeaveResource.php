@@ -49,6 +49,16 @@ class TeacherLeaveResource extends Resource
             Forms\Components\Select::make('status')->options(TeacherLeave::STATUSES)->default('pending')->required(),
             Forms\Components\Select::make('substitute_teacher_id')->label('Substitute')
                 ->options(fn () => Teacher::orderBy('name')->pluck('name','id'))->searchable(),
+            Forms\Components\Section::make('Auto Substitute Search')
+                ->description('When enabled, eligible internal teachers receive an email and can express interest in covering. The principal still picks the final substitute.')
+                ->columnSpanFull()
+                ->schema([
+                    Forms\Components\Toggle::make('auto_search_enabled')
+                        ->label('Enable auto substitute search on submit')
+                        ->default(true)
+                        ->helperText('Turn off to handle substitute assignment entirely manually.'),
+                ])
+                ->collapsible(),
         ])->columns(2);
     }
 
@@ -67,19 +77,27 @@ class TeacherLeaveResource extends Resource
                     ->badge()
                     ->state(fn ($record) => $record->coverageStatus())
                     ->color(fn (string $state) => match ($state) {
-                        'covered', 'accepted' => 'success',
-                        'broadcasting'        => 'warning',
-                        'unbroadcast'         => 'gray',
-                        'none'                => 'danger',
-                        default               => 'gray',
+                        'covered'        => 'success',
+                        'interested'     => 'info',
+                        'searching'      => 'warning',
+                        'search_closed'  => 'gray',
+                        'unbroadcast'    => 'gray',
+                        'none'           => 'danger',
+                        default          => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state) => match ($state) {
-                        'covered'      => '✅ Covered',
-                        'accepted'     => '✅ Accepted',
-                        'broadcasting' => '📡 Broadcasting',
-                        'unbroadcast'  => '⚪ No broadcast',
-                        'none'         => '⚠ No cover',
-                        default        => $state,
+                    ->formatStateUsing(function (string $state, $record) {
+                        if ($state === 'interested') {
+                            $count = $record->offers()->where('status', 'interested')->count();
+                            return "🙋 {$count} interested";
+                        }
+                        return match ($state) {
+                            'covered'       => '✅ Covered',
+                            'searching'     => '📡 Searching',
+                            'search_closed' => '🚪 Search closed',
+                            'unbroadcast'   => '⚪ Not searched',
+                            'none'          => '⚠ No cover',
+                            default         => $state,
+                        };
                     }),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn ($state) => TeacherLeave::STATUS_COLORS[$state] ?? 'gray'),
@@ -99,7 +117,9 @@ class TeacherLeaveResource extends Resource
                     ->modalContent(fn ($record) => view('filament.principal.teacher.leave-detail', ['record' => $record]))
                     ->extraModalFooterActions(fn ($record) => $record->status === 'pending' ? [
                         self::approveWithSubstituteAction('approveInModal'),
-                        self::broadcastAction('broadcastInModal'),
+                        self::pickInterestedAction('pickInterestedInModal'),
+                        self::startSearchAction('startSearchInModal'),
+                        self::closeSearchAction('closeSearchInModal'),
                         Tables\Actions\Action::make('rejectInModal')
                             ->label('Reject')->icon('heroicon-o-x-mark')->color('danger')
                             ->requiresConfirmation()
@@ -117,7 +137,9 @@ class TeacherLeaveResource extends Resource
                     ->visible(fn ($record) => $record->status === 'approved')
                     ->url(fn ($record) => route('teacher-leave.print', $record))
                     ->openUrlInNewTab(),
-                self::broadcastAction(),
+                self::startSearchAction(),
+                self::closeSearchAction(),
+                self::pickInterestedAction(),
                 Tables\Actions\EditAction::make(),
                 self::approveWithSubstituteAction('approve'),
                 Tables\Actions\Action::make('reject')->icon('heroicon-o-x-mark')->color('danger')
@@ -252,90 +274,133 @@ class TeacherLeaveResource extends Resource
     }
 
     /**
-     * Broadcast cover request to top candidates via email.
+     * Start (or restart) the auto substitute search. Emails all eligible
+     * candidates; interested ones show up in the leave detail for the
+     * principal to pick.
      */
-    protected static function broadcastAction(string $name = 'broadcast'): Tables\Actions\Action
+    protected static function startSearchAction(string $name = 'startSearch'): Tables\Actions\Action
     {
         return Tables\Actions\Action::make($name)
-            ->label('Broadcast')
+            ->label(fn ($record) => $record->auto_search_status === 'open' ? 'Re-broadcast' : 'Start Auto Search')
             ->icon('heroicon-o-paper-airplane')
             ->color('info')
-            ->visible(fn ($record) => $record->status === 'pending' && ! $record->substitute_teacher_id)
-            ->modalHeading(fn ($record) => 'Broadcast Cover Request · ' . ($record->teacher?->name ?? 'Teacher'))
-            ->modalDescription('Emails the top candidates simultaneously. First to accept gets the slot; others are notified the slot is filled.')
-            ->modalWidth('3xl')
-            ->modalSubmitActionLabel('Send Broadcast')
-            ->form(function ($record) {
-                $offered = $record->offers()->pluck('teacher_id')->all();
-                $candidates = SubstituteSuggester::for($record, 10)
-                    ->filter(fn ($c) => $c['is_assignable'])
-                    ->reject(fn ($c) => in_array($c['teacher']->id, $offered, true));
-
-                $options = $candidates->mapWithKeys(function ($c) {
-                    $t = $c['teacher'];
-                    $label = "{$t->name} · {$t->subject} · " . ($c['tier_label'] ?? '');
-                    if ($t->email) $label .= " · {$t->email}";
-                    return [$t->id => $label];
-                })->all();
-
-                $defaults = $candidates->take(SubstituteBroadcaster::DEFAULT_BATCH_SIZE)
-                    ->map(fn ($c) => $c['teacher']->id)->values()->all();
-
-                return [
-                    Forms\Components\Placeholder::make('info')
-                        ->label('')
-                        ->content(function () use ($options, $record) {
-                            $existing = $record->offers()->count();
-                            if (empty($options)) {
-                                return 'No more eligible candidates to broadcast to.' .
-                                    ($existing ? " ({$existing} already offered)" : '');
-                            }
-                            return 'Showing top ' . count($options) . ' assignable candidates.' .
-                                ($existing ? " {$existing} have already been offered." : '');
-                        }),
-                    Forms\Components\CheckboxList::make('teacher_ids')
-                        ->label('Send to')
-                        ->options($options)
-                        ->default($defaults)
-                        ->columns(1)
-                        ->bulkToggleable()
-                        ->required()
-                        ->visible(! empty($options)),
-                    Forms\Components\TextInput::make('ttl_hours')
-                        ->label('Response window (hours)')
-                        ->numeric()->minValue(1)->maxValue(72)
-                        ->default(SubstituteBroadcaster::DEFAULT_TTL_HOURS)
-                        ->required()
-                        ->visible(! empty($options)),
-                ];
-            })
+            ->visible(fn ($record) => $record->status === 'pending'
+                && ! $record->substitute_teacher_id
+                && $record->auto_search_status !== 'open')
+            ->modalHeading(fn ($record) => 'Start Auto Substitute Search · ' . ($record->teacher?->name ?? 'Teacher'))
+            ->modalDescription('Emails eligible internal teachers inviting them to express interest. Search auto-closes when the cap is reached or after the response window.')
+            ->modalWidth('xl')
+            ->modalSubmitActionLabel('Start Search')
+            ->form([
+                Forms\Components\TextInput::make('ttl_hours')
+                    ->label('Response window (hours)')
+                    ->numeric()->minValue(1)->maxValue(72)
+                    ->default(SubstituteBroadcaster::DEFAULT_TTL_HOURS)
+                    ->required(),
+                Forms\Components\TextInput::make('cap')
+                    ->label('Max interested teachers before auto-close')
+                    ->numeric()->minValue(1)->maxValue(20)
+                    ->default(SubstituteBroadcaster::DEFAULT_CAP)
+                    ->required(),
+                Forms\Components\TextInput::make('invite_limit')
+                    ->label('Max teachers to email')
+                    ->numeric()->minValue(1)->maxValue(50)
+                    ->default(SubstituteBroadcaster::DEFAULT_INVITE_LIMIT)
+                    ->required(),
+            ])
             ->action(function (array $data, $record): void {
-                $ids = array_map('intval', $data['teacher_ids'] ?? []);
-                $ttl = max(1, (int) ($data['ttl_hours'] ?? SubstituteBroadcaster::DEFAULT_TTL_HOURS));
-
-                if (empty($ids)) {
-                    Notification::make()->title('Select at least one candidate.')->danger()->send();
-                    return;
-                }
-
-                $offers = SubstituteBroadcaster::broadcast(
+                $offers = SubstituteBroadcaster::startAutoSearch(
                     leave: $record,
-                    teacherIds: $ids,
-                    size: count($ids),
-                    ttlHours: $ttl,
+                    ttlHours: (int) ($data['ttl_hours'] ?? SubstituteBroadcaster::DEFAULT_TTL_HOURS),
+                    cap: (int) ($data['cap'] ?? SubstituteBroadcaster::DEFAULT_CAP),
+                    inviteLimit: (int) ($data['invite_limit'] ?? SubstituteBroadcaster::DEFAULT_INVITE_LIMIT),
                 );
 
                 if (empty($offers)) {
-                    Notification::make()->title('No offers sent')
-                        ->body('All selected candidates have already been offered.')
+                    Notification::make()->title('No new candidates to invite')
+                        ->body('All eligible teachers have already been invited.')
                         ->warning()->send();
                     return;
                 }
 
-                $names = collect($offers)->map(fn ($o) => $o->teacher?->name)->filter()->implode(', ');
                 Notification::make()
-                    ->title('Broadcast sent to ' . count($offers) . ' teacher(s)')
-                    ->body($names . ' · response window ' . $ttl . 'h')
+                    ->title('Auto search started')
+                    ->body(count($offers) . ' teacher(s) invited to express interest.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * Manually close the auto substitute search.
+     */
+    protected static function closeSearchAction(string $name = 'closeSearch'): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->label('Close Search')
+            ->icon('heroicon-o-x-circle')
+            ->color('gray')
+            ->visible(fn ($record) => $record->status === 'pending'
+                && $record->auto_search_status === 'open')
+            ->requiresConfirmation()
+            ->modalHeading('Close auto substitute search?')
+            ->modalDescription('Pending invitations will be cancelled. Teachers who already expressed interest will still be visible so you can assign one.')
+            ->action(function ($record): void {
+                SubstituteBroadcaster::closeAutoSearch($record, 'closed_manual');
+                Notification::make()->title('Auto search closed')->success()->send();
+            });
+    }
+
+    /**
+     * Modal listing teachers who expressed interest, with radio + Assign.
+     */
+    protected static function pickInterestedAction(string $name = 'pickInterested'): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->label(fn ($record) => 'Pick Substitute (' . $record->offers()->where('status', 'interested')->count() . ')')
+            ->icon('heroicon-o-user-plus')
+            ->color('success')
+            ->visible(fn ($record) => $record->status === 'pending'
+                && ! $record->substitute_teacher_id
+                && $record->offers()->where('status', 'interested')->exists())
+            ->modalHeading(fn ($record) => 'Pick Substitute · ' . ($record->teacher?->name ?? 'Teacher'))
+            ->modalDescription('Choose one of the teachers who expressed interest. The other interested teachers will be notified the slot is filled.')
+            ->modalWidth('2xl')
+            ->modalSubmitActionLabel('Assign as Substitute')
+            ->form(function ($record) {
+                $offers = $record->offers()->with('teacher')
+                    ->where('status', 'interested')
+                    ->orderBy('responded_at')
+                    ->get();
+
+                $options = $offers->mapWithKeys(function ($o) {
+                    $t = $o->teacher;
+                    if (! $t) return [];
+                    $when = $o->responded_at ? $o->responded_at->diffForHumans() : '';
+                    return [$o->id => "{$t->name} · {$t->subject} · expressed interest {$when}"];
+                })->all();
+
+                return [
+                    Forms\Components\Radio::make('offer_id')
+                        ->label('Interested teachers')
+                        ->options($options)
+                        ->required(),
+                ];
+            })
+            ->action(function (array $data, $record): void {
+                $offerId = (int) ($data['offer_id'] ?? 0);
+                $assigned = SubstituteBroadcaster::assignFromInterested($record, $offerId);
+
+                if (! $assigned) {
+                    Notification::make()->title('Could not assign')
+                        ->body('That teacher is no longer interested.')
+                        ->danger()->send();
+                    return;
+                }
+
+                Notification::make()
+                    ->title('Substitute assigned')
+                    ->body(($assigned->teacher?->name ?? 'Teacher') . ' is now the substitute. Other interested teachers were notified.')
                     ->success()
                     ->send();
             });

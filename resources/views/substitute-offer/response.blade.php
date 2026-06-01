@@ -6,12 +6,13 @@
     $typeLabel = TeacherLeave::TYPES[$leave?->type ?? ''] ?? 'Leave';
 
     $palette = [
-        'accepted' => ['bg' => '#ecfdf5', 'border' => '#10b981', 'icon' => '✅', 'title' => 'Cover Accepted'],
-        'declined' => ['bg' => '#fef2f2', 'border' => '#ef4444', 'icon' => '❌', 'title' => 'Cover Declined'],
-        'filled'   => ['bg' => '#fffbeb', 'border' => '#f59e0b', 'icon' => '⏳', 'title' => 'Slot Already Filled'],
-        'expired'  => ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'icon' => '⌛', 'title' => 'Offer Expired'],
-        'already'  => ['bg' => '#eff6ff', 'border' => '#3b82f6', 'icon' => 'ℹ️', 'title' => 'Already Responded'],
-        'error'    => ['bg' => '#fef2f2', 'border' => '#ef4444', 'icon' => '⚠️', 'title' => 'Something Went Wrong'],
+        'interested' => ['bg' => '#eff6ff', 'border' => '#3b82f6', 'icon' => '🙋', 'title' => 'Interest Recorded'],
+        'assigned'   => ['bg' => '#ecfdf5', 'border' => '#10b981', 'icon' => '✅', 'title' => 'You Got The Cover'],
+        'declined'   => ['bg' => '#fef2f2', 'border' => '#ef4444', 'icon' => '❌', 'title' => 'Marked Not Available'],
+        'filled'     => ['bg' => '#fffbeb', 'border' => '#f59e0b', 'icon' => '⏳', 'title' => 'Substitute Already Assigned'],
+        'closed'     => ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'icon' => '🚪', 'title' => 'Cover Search Closed'],
+        'expired'    => ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'icon' => '⌛', 'title' => 'Invitation Expired'],
+        'error'      => ['bg' => '#fef2f2', 'border' => '#ef4444', 'icon' => '⚠️', 'title' => 'Something Went Wrong'],
     ][$state] ?? ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'icon' => 'ℹ️', 'title' => 'Notice'];
 @endphp
 <!DOCTYPE html>

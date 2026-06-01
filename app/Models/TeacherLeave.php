@@ -11,9 +11,13 @@ class TeacherLeave extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'starts_at'   => 'date',
-        'ends_at'     => 'date',
-        'decided_at'  => 'datetime',
+        'starts_at'             => 'date',
+        'ends_at'               => 'date',
+        'decided_at'            => 'datetime',
+        'auto_search_enabled'   => 'bool',
+        'auto_search_opened_at' => 'datetime',
+        'auto_search_closes_at' => 'datetime',
+        'auto_search_closed_at' => 'datetime',
     ];
 
     public const TYPES = [
@@ -32,6 +36,24 @@ class TeacherLeave extends Model
 
     public const STATUS_COLORS = [
         'pending' => 'warning', 'approved' => 'success', 'rejected' => 'danger',
+    ];
+
+    public const AUTO_SEARCH_STATUSES = [
+        'disabled'        => 'Disabled',
+        'open'            => 'Open',
+        'closed_full'     => 'Closed (cap reached)',
+        'closed_manual'   => 'Closed by principal',
+        'closed_assigned' => 'Closed (substitute assigned)',
+        'expired'         => 'Expired',
+    ];
+
+    public const AUTO_SEARCH_COLORS = [
+        'disabled'        => 'gray',
+        'open'            => 'info',
+        'closed_full'     => 'warning',
+        'closed_manual'   => 'gray',
+        'closed_assigned' => 'success',
+        'expired'         => 'gray',
     ];
 
     public function teacher(): BelongsTo
@@ -54,26 +76,47 @@ class TeacherLeave extends Model
         return $this->offers()->whereNotIn('status', ['cancelled']);
     }
 
+    public function interestedOffers(): HasMany
+    {
+        return $this->offers()->where('status', 'interested');
+    }
+
+    public function isAutoSearchOpen(): bool
+    {
+        return $this->auto_search_status === 'open'
+            && (! $this->auto_search_closes_at || $this->auto_search_closes_at->isFuture());
+    }
+
+    public function autoSearchStatusLabel(): string
+    {
+        return self::AUTO_SEARCH_STATUSES[$this->auto_search_status] ?? $this->auto_search_status;
+    }
+
+    public function autoSearchStatusColor(): string
+    {
+        return self::AUTO_SEARCH_COLORS[$this->auto_search_status] ?? 'gray';
+    }
+
     /**
-     * Coverage health: green = substitute assigned OR pending offers exist,
-     * amber = no substitute and no active offers but candidates exist,
-     * red = no substitute and no candidates available (after consult).
+     * Coverage health used by the table badge.
      */
     public function coverageStatus(): string
     {
-        if ($this->status !== 'pending') {
-            return $this->substitute_teacher_id ? 'covered' : 'none';
-        }
         if ($this->substitute_teacher_id) {
             return 'covered';
         }
-        $hasAccepted = $this->offers()->where('status', 'accepted')->exists();
-        if ($hasAccepted) {
-            return 'accepted';
+        if ($this->status !== 'pending') {
+            return 'none';
         }
-        $hasPending = $this->offers()->where('status', 'pending')->exists();
-        if ($hasPending) {
-            return 'broadcasting';
+        $interested = $this->offers()->where('status', 'interested')->count();
+        if ($interested > 0) {
+            return 'interested';     // principal needs to pick
+        }
+        if ($this->isAutoSearchOpen()) {
+            return 'searching';
+        }
+        if ($this->auto_search_status !== 'disabled') {
+            return 'search_closed';
         }
         return 'unbroadcast';
     }

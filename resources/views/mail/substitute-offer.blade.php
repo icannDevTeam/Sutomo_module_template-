@@ -9,11 +9,11 @@
         : 1;
 @endphp
 @component('mail::message')
-# Cover Request
+# Cover Request — Express Interest
 
 Hi {{ $teacher?->name ?? 'there' }},
 
-**{{ $leaveTeacher }}** has filed a **{{ $typeLabel }}** request and we'd like you to cover their classes.
+**{{ $leaveTeacher }}** has a **{{ $typeLabel }}** request and the principal is opening a cover search.
 
 @component('mail::panel')
 **Teacher on leave:** {{ $leaveTeacher }}
@@ -25,17 +25,17 @@ Hi {{ $teacher?->name ?? 'there' }},
 @endif
 @endcomponent
 
-We've offered this slot to up to 3 teachers. **First to accept gets it** — others will be notified once it's filled.
+If you can cover this slot, click **I'm Interested** below. The principal will review everyone who expressed interest and confirm the final substitute.
 
 @component('mail::button', ['url' => $acceptUrl, 'color' => 'success'])
-✅ Accept Cover
+🙋 I'm Interested
 @endcomponent
 
 @component('mail::button', ['url' => $declineUrl, 'color' => 'error'])
-❌ Decline
+❌ Not Available
 @endcomponent
 
-These links expire on **{{ $expiresAt->format('D, d M Y · H:i') }}** (or sooner if the slot is filled).
+This invitation expires on **{{ $expiresAt->format('D, d M Y · H:i') }}** (or sooner if enough teachers have expressed interest).
 
 Thanks,
 Principal's Office · Sutomo School

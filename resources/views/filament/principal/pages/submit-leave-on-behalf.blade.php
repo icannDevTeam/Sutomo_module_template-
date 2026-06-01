@@ -86,9 +86,12 @@
                 <textarea class="slob-textarea" wire:model="reason" placeholder="e.g., Family emergency"></textarea>
 
                 <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px;">
-                    <input type="checkbox" wire:model="broadcastAfter">
-                    Broadcast to substitutes immediately
+                    <input type="checkbox" wire:model="autoSearchEnabled">
+                    Enable auto substitute search
                 </label>
+                <div style="font-size:11px; color:#64748b; margin-top:4px; padding-left:24px;">
+                    Emails eligible internal teachers to express interest. You still pick the final substitute.
+                </div>
             </div>
 
             @if($teacher && !empty($quotas))
