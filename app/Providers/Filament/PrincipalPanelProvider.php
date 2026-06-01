@@ -78,7 +78,11 @@ class PrincipalPanelProvider extends PanelProvider
                 \App\Filament\Resources\CandidateResource::class,
                 \App\Filament\Resources\InterviewResource::class,
                 \App\Filament\Resources\DepositResource::class,
-                \App\Filament\Resources\TeacherResource::class,
+                // NOTE: Principal panel uses \App\Filament\Principal\Resources\TeacherResource
+                // (auto-discovered above) for the "Teacher Review" experience. Do NOT register
+                // the shared \App\Filament\Resources\TeacherResource here — both share slug
+                // 'teachers' and registering it overrides the principal index/view/edit pages
+                // with the old table view.
                 \App\Filament\Principal\Resources\LetterOfIntentResource::class,
             ])
             ->discoverPages(in: app_path('Filament/Principal/Pages'), for: 'App\\Filament\\Principal\\Pages')

@@ -157,7 +157,8 @@ class Teacher extends Model
             $vals = $this->observations()
                 ->orderByDesc('observed_at')
                 ->limit($last)
-                ->pluck('average_score')
+                ->get()
+                ->map(fn ($o) => $o->average_score)
                 ->filter(fn ($v) => $v !== null && (float) $v > 0)
                 ->map(fn ($v) => (float) $v);
             return $vals->isEmpty() ? null : round($vals->avg(), 2);

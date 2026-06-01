@@ -27,8 +27,27 @@ class ViewTeacher extends Page
 
     public function mount(int|string $record): void
     {
-        $this->record = \App\Models\Teacher::findOrFail($record);
+        // Livewire/Filament hydrates the typed `public Teacher $record` from the URL
+        // segment, then re-passes the serialized form (often a JSON string of the
+        // model attributes) into mount(). Extract the primary key defensively from
+        // anything we might receive: a plain id, a JSON blob, or a Model instance.
+        $id = $this->extractRecordId($record);
+        $this->record = \App\Models\Teacher::findOrFail($id);
         $this->authorizeAccess();
+    }
+
+    private function extractRecordId(mixed $raw): int|string
+    {
+        if ($raw instanceof \App\Models\Teacher) {
+            return $raw->getKey();
+        }
+        if (is_string($raw) && str_starts_with(ltrim($raw), '{')) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) && isset($decoded['id'])) {
+                return $decoded['id'];
+            }
+        }
+        return $raw;
     }
 
     protected function authorizeAccess(): void
