@@ -116,6 +116,48 @@ class ViewTeacher extends Page
                     $this->tab = 'query_letters';
                 }),
 
+            Actions\Action::make('setPromotionReadiness')
+                ->label('Set promotion readiness')
+                ->icon('heroicon-o-flag')
+                ->color('success')
+                ->visible(fn () => in_array(auth()->user()?->role ?? '', ['principal','vice_principal','unit_head','hr','admin','superadmin'], true))
+                ->form([
+                    Forms\Components\Radio::make('level')
+                        ->label('Readiness')
+                        ->options([
+                            'ready'      => 'Ready for promotion',
+                            'developing' => 'Developing',
+                            'not_ready'  => 'Not ready',
+                            '__auto__'   => 'Clear override (use auto-computed)',
+                        ])
+                        ->default(fn () => $this->record->promotion_readiness ?: '__auto__')
+                        ->required(),
+                    Forms\Components\Textarea::make('note')
+                        ->label('Reason / context')
+                        ->rows(4)
+                        ->default(fn () => $this->record->promotion_readiness_note)
+                        ->requiredIf('level', ['ready','developing','not_ready']),
+                ])
+                ->action(function (array $data): void {
+                    if (($data['level'] ?? null) === '__auto__') {
+                        $this->record->update([
+                            'promotion_readiness'        => null,
+                            'promotion_readiness_note'   => null,
+                            'promotion_readiness_set_by' => null,
+                            'promotion_readiness_set_at' => null,
+                        ]);
+                        Notification::make()->title('Override cleared — using auto-computed level')->success()->send();
+                        return;
+                    }
+                    $this->record->update([
+                        'promotion_readiness'        => $data['level'],
+                        'promotion_readiness_note'   => trim((string) ($data['note'] ?? '')) ?: null,
+                        'promotion_readiness_set_by' => auth()->id(),
+                        'promotion_readiness_set_at' => now(),
+                    ]);
+                    Notification::make()->title('Promotion readiness updated')->success()->send();
+                }),
+
             Actions\Action::make('edit')
                 ->label('Edit profile')
                 ->icon('heroicon-o-pencil')

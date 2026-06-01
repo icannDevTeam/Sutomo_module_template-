@@ -26,6 +26,7 @@ class Teacher extends Model
         'rating'          => 'float',
         'bank_account_no' => 'encrypted',
         'tax_id_npwp'     => 'encrypted',
+        'promotion_readiness_set_at' => 'datetime',
     ];
 
     public const STATUSES = [
@@ -54,6 +55,203 @@ class Teacher extends Model
         'vice_principal'      => 'danger',
         'principal'           => 'danger',
     ];
+
+    public const PROMOTION_LEVELS = [
+        'ready'      => 'Ready',
+        'developing' => 'Developing',
+        'not_ready'  => 'Not ready',
+    ];
+
+    public const PROMOTION_COLORS = [
+        'ready'      => 'success',
+        'developing' => 'warning',
+        'not_ready'  => 'danger',
+    ];
+
+    public function promotionSetter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'promotion_readiness_set_by');
+    }
+
+    /**
+     * Return promotion readiness: manual override wins, else computed.
+     * @return array{level:string,label:string,color:string,source:string,reason:string,setBy:?string,setAt:?\Illuminate\Support\Carbon}
+     */
+    public function promotionReadiness(): array
+    {
+        $manual = $this->promotion_readiness;
+        if ($manual && isset(self::PROMOTION_LEVELS[$manual])) {
+            return [
+                'level'  => $manual,
+                'label'  => self::PROMOTION_LEVELS[$manual],
+                'color'  => self::PROMOTION_COLORS[$manual],
+                'source' => 'manual',
+                'reason' => (string) ($this->promotion_readiness_note ?? ''),
+                'setBy'  => optional($this->promotionSetter)->name,
+                'setAt'  => $this->promotion_readiness_set_at
+                    ? Carbon::parse($this->promotion_readiness_set_at) : null,
+            ];
+        }
+
+        $attn   = $this->attendanceRate(90);
+        $obs    = $this->observationAverage(3);
+        $open   = $this->openQueryLettersCount();
+        $tenure = $this->tenureYears();
+        $review = $this->last_review ? Carbon::parse($this->last_review) : null;
+        $reviewOk = $review && $review->gt(now()->subMonths(12));
+
+        $reasons = [];
+        if ($tenure < 1)                $reasons[] = 'tenure < 1y';
+        if ($attn !== null && $attn < 75) $reasons[] = 'attendance < 75%';
+        if ($obs  !== null && $obs  < 2.5) $reasons[] = 'observation < 2.5';
+        if ($open > 0)                  $reasons[] = $open . ' open query letter' . ($open > 1 ? 's' : '');
+
+        if (! empty($reasons)) {
+            $level = 'not_ready';
+        } elseif (
+            $tenure >= 3
+            && ($attn === null || $attn >= 90)
+            && ($obs  === null || $obs  >= 3.5)
+            && $reviewOk
+        ) {
+            $level = 'ready';
+        } else {
+            $level = 'developing';
+            if ($tenure < 3)                $reasons[] = 'tenure < 3y';
+            if ($attn !== null && $attn < 90) $reasons[] = 'attendance ' . $attn . '%';
+            if ($obs  !== null && $obs  < 3.5) $reasons[] = 'obs avg ' . number_format($obs, 1);
+            if (! $reviewOk)                $reasons[] = 'review > 12 mo';
+        }
+
+        return [
+            'level'  => $level,
+            'label'  => self::PROMOTION_LEVELS[$level],
+            'color'  => self::PROMOTION_COLORS[$level],
+            'source' => 'auto',
+            'reason' => $reasons ? implode(' · ', $reasons) : 'meets all criteria',
+            'setBy'  => null,
+            'setAt'  => null,
+        ];
+    }
+
+    /** Attendance % over the last N days. Returns null if no data. */
+    public function attendanceRate(int $days = 90): ?int
+    {
+        try {
+            $start = now()->subDays($days);
+            $rows = $this->attendance()->where('date', '>=', $start)->get();
+            $present = $rows->where('status', 'present')->count();
+            $base    = $present
+                     + $rows->where('status', 'late')->count()
+                     + $rows->where('status', 'absent')->count();
+            return $base ? (int) round(($present / $base) * 100) : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /** Average observation score over last N observations. Returns null if none. */
+    public function observationAverage(int $last = 3): ?float
+    {
+        try {
+            $vals = $this->observations()
+                ->orderByDesc('observed_at')
+                ->limit($last)
+                ->pluck('average_score')
+                ->filter(fn ($v) => $v !== null && (float) $v > 0)
+                ->map(fn ($v) => (float) $v);
+            return $vals->isEmpty() ? null : round($vals->avg(), 2);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function openQueryLettersCount(): int
+    {
+        try {
+            return (int) $this->queryLetters()
+                ->whereIn('status', ['sent', 'responded'])
+                ->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /** Average progress % across active (non-completed) goals. */
+    public function goalsProgressAverage(): ?int
+    {
+        try {
+            $vals = $this->goals()->pluck('progress')->filter(fn ($v) => $v !== null);
+            return $vals->isEmpty() ? null : (int) round($vals->avg());
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function tenureYears(): float
+    {
+        if (! $this->joined_at) return 0.0;
+        return round(Carbon::parse($this->joined_at)->floatDiffInYears(now()), 1);
+    }
+
+    public function isDueForReview(): bool
+    {
+        if (! $this->last_review) return true;
+        return Carbon::parse($this->last_review)->lt(now()->subMonths(12));
+    }
+
+    public function isContractEndingWithin(int $days = 90): bool
+    {
+        if (! $this->contract_end) return false;
+        $end = Carbon::parse($this->contract_end);
+        return $end->gte(now()->startOfDay()) && $end->lte(now()->addDays($days));
+    }
+
+    public function isOnLeaveOn(\Carbon\CarbonInterface|\Illuminate\Support\Carbon $date): bool
+    {
+        try {
+            return $this->leaves()
+                ->where('status', 'approved')
+                ->where('starts_at', '<=', $date)
+                ->where('ends_at', '>=', $date)
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function isOnLeaveBetween($start, $end): bool
+    {
+        try {
+            return $this->leaves()
+                ->where('status', 'approved')
+                ->where('starts_at', '<=', $end)
+                ->where('ends_at', '>=', $start)
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function hasPinnedNotes(): bool
+    {
+        try {
+            return $this->notes()->where('pinned', true)->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function hasMissingRequiredDocs(): bool
+    {
+        try {
+            return $this->clearances()
+                ->whereIn('status', ['pending', 'expired', 'missing'])
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
 
     public function leaves(): HasMany
     {

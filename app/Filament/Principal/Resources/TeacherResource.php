@@ -14,12 +14,12 @@ use Illuminate\Database\Eloquent\Builder;
 class TeacherResource extends Resource
 {
     protected static ?string $model = Teacher::class;
-    protected static ?string $navigationIcon = 'heroicon-o-book-open';
+    protected static ?string $navigationIcon = 'heroicon-o-identification';
     protected static ?string $navigationGroup = 'Teachers';
     protected static ?int $navigationSort = 1;
-    protected static ?string $navigationLabel = 'Master Teacher Database (Book Induk)';
-    protected static ?string $modelLabel = 'Teacher';
-    protected static ?string $pluralModelLabel = 'Teachers';
+    protected static ?string $navigationLabel = 'Teacher Review';
+    protected static ?string $modelLabel = 'Teacher Review';
+    protected static ?string $pluralModelLabel = 'Teacher Reviews';
     protected static ?string $slug = 'teachers';
 
     public static function form(Form $form): Form
@@ -129,9 +129,10 @@ class TeacherResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListTeachers::route('/'),
-            'view'  => Pages\ViewTeacher::route('/{record}'),
-            'edit'  => Pages\EditTeacher::route('/{record}/edit'),
+            'index'   => Pages\ListTeachers::route('/'),
+            'compare' => Pages\TeacherCompare::route('/compare'),
+            'view'    => Pages\ViewTeacher::route('/{record}'),
+            'edit'    => Pages\EditTeacher::route('/{record}/edit'),
         ];
     }
 }

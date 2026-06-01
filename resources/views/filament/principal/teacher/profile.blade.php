@@ -124,6 +124,24 @@
     <div class="mt-panel">
         {{-- ============ PROFILE ============ --}}
         @if($currentTab === 'profile')
+            @php $pr = $record->promotionReadiness(); @endphp
+            <div class="mt-section" style="border-left:4px solid {{ ['success'=>'#10b981','warning'=>'#f59e0b','danger'=>'#ef4444'][$pr['color']] ?? '#9ca3af' }};">
+                <h3 class="mt-section-title">Promotion Readiness</h3>
+                <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+                    <span style="display:inline-flex; align-items:center; gap:.5rem; font-weight:600; font-size:1.05rem;">
+                        <span style="width:12px; height:12px; border-radius:9999px; background:{{ ['success'=>'#10b981','warning'=>'#f59e0b','danger'=>'#ef4444'][$pr['color']] ?? '#9ca3af' }};"></span>
+                        {{ $pr['label'] }}
+                    </span>
+                    <span style="font-size:.8rem; color:#6b7280;">
+                        @if($pr['source'] === 'manual')
+                            Manual override{{ $pr['setBy'] ? ' by '.$pr['setBy'] : '' }}{{ $pr['setAt'] ? ' on '.$pr['setAt']->format('d M Y') : '' }}
+                        @else
+                            Auto-computed
+                        @endif
+                    </span>
+                </div>
+                <div style="margin-top:.5rem; font-size:.85rem; color:#374151;">{{ $pr['reason'] }}</div>
+            </div>
             <div class="mt-section">
                 <h3 class="mt-section-title">Identity</h3>
                 <div class="mt-grid">

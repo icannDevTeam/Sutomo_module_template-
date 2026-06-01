@@ -2,6 +2,10 @@
     {{-- Tabs --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="flex gap-1">
+            <a href="{{ \App\Filament\Principal\Resources\TeacherResource::getUrl('index') }}"
+               class="px-3 py-2 text-sm rounded-md border bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:border-white/10 dark:hover:bg-white/5 transition">
+                ← Grid
+            </a>
             <button type="button" wire:click="setTab('compare')" @class([
                 'px-3 py-2 text-sm rounded-md border transition',
                 'bg-primary-600 text-white border-primary-600' => $activeTab === 'compare',

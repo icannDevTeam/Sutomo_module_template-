@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Filament\Principal\Pages;
+namespace App\Filament\Principal\Resources\TeacherResource\Pages;
 
+use App\Filament\Principal\Resources\TeacherResource;
 use App\Models\Teacher;
 use App\Models\TeacherAttendance;
 use App\Models\TeacherCertification;
@@ -10,7 +11,7 @@ use App\Models\TeacherObservation;
 use App\Models\TeacherTraining;
 use App\Models\DutyAssignment;
 use App\Support\CsvExporter;
-use Filament\Pages\Page;
+use Filament\Resources\Pages\Page;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -22,10 +23,9 @@ class TeacherCompare extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-scale';
-    protected static ?string $navigationGroup = 'Teachers';
+    protected static string $resource = TeacherResource::class;
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $title = 'Compare Teachers';
-    protected static ?int $navigationSort = 9;
     protected static string $view = 'filament.principal.pages.teacher-compare';
 
     public ?array $data = ['ids' => []];
@@ -75,6 +75,10 @@ class TeacherCompare extends Page implements HasForms
         $ids = request()->query('ids');
         if (is_string($ids)) {
             $this->data['ids'] = collect(explode(',', $ids))->filter()->map('intval')->take(3)->all();
+        }
+        $tab = request()->query('tab');
+        if (in_array($tab, ['compare', 'leaderboard'], true)) {
+            $this->activeTab = $tab;
         }
         $this->form->fill(['ids' => $this->data['ids']]);
     }
