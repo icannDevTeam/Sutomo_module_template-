@@ -60,6 +60,18 @@ class Teacher extends Model
         return $this->hasMany(TeacherLeave::class);
     }
 
+    public function notes(): HasMany
+    {
+        return $this->hasMany(TeacherNote::class)
+            ->orderByDesc('pinned')
+            ->orderByDesc('created_at');
+    }
+
+    public function queryLetters(): HasMany
+    {
+        return $this->hasMany(QueryLetter::class)->orderByDesc('issued_at');
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(TeacherDocument::class);
