@@ -11,6 +11,18 @@
         .slob-card h3 { font-size:13px; font-weight:600; color:#0f172a; margin:0 0 12px; text-transform:uppercase; letter-spacing:.05em; }
         .slob-select, .slob-input, .slob-textarea {
             width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:#fff;
+            color:#0f172a; line-height:1.4; box-sizing:border-box;
+        }
+        .slob-select {
+            -webkit-appearance:none; -moz-appearance:none; appearance:none;
+            padding-right:32px;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 8 10 12 14 8'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px 12px;
+        }
+        .slob-select:focus, .slob-input:focus, .slob-textarea:focus {
+            outline:none; border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.15);
         }
         .slob-textarea { min-height:60px; resize:vertical; }
         .slob-label { font-size:12px; font-weight:500; color:#475569; margin-bottom:4px; display:block; }
