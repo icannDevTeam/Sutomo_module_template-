@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ObservationCriteriaSeeder::class);
         $this->call(LetterOfIntentConfigSeeder::class);
         $this->call(PrincipalDemoSeeder::class);
+        $this->call(SubstituteOfferDemoSeeder::class);
     }
 
     private function seedVacancies(): void

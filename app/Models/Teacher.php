@@ -150,6 +150,41 @@ class Teacher extends Model
         return $this->hasMany(TeacherAttendance::class);
     }
 
+    public function substituteOffers(): HasMany
+    {
+        return $this->hasMany(SubstituteOffer::class);
+    }
+
+    /**
+     * Days used (approved leaves only) for a given type within an academic year.
+     */
+    public function leaveDaysUsed(string $type, ?int $year = null): int
+    {
+        $year = $year ?? now()->year;
+        $start = "{$year}-01-01";
+        $end   = "{$year}-12-31";
+
+        return (int) $this->leaves()
+            ->where('type', $type)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('starts_at', [$start, $end])
+                  ->orWhereBetween('ends_at', [$start, $end]);
+            })
+            ->get()
+            ->sum(fn ($l) => max(1, $l->starts_at->diffInDays($l->ends_at) + 1));
+    }
+
+    public function quotaFor(string $type): int
+    {
+        return match ($type) {
+            'sick'                 => (int) ($this->sick_quota ?? 12),
+            'emergency', 'midday'  => (int) ($this->personal_quota ?? 5),
+            'sabbatical', 'prior'  => (int) ($this->annual_quota ?? 12),
+            default                => (int) ($this->annual_quota ?? 12),
+        };
+    }
+
     public function employmentEvents(): HasMany
     {
         return $this->hasMany(TeacherEmploymentEvent::class);

@@ -4,9 +4,11 @@ namespace App\Filament\Principal\Resources;
 
 use App\Filament\Principal\Resources\TeacherLeaveResource\Pages;
 use App\Models\DutyAssignment;
+use App\Models\SubstituteOffer;
 use App\Models\Teacher;
 use App\Models\TeacherLeave;
 use App\Support\CsvExporter;
+use App\Support\SubstituteBroadcaster;
 use App\Support\SubstituteSuggester;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -60,6 +62,25 @@ class TeacherLeaveResource extends Resource
                 Tables\Columns\TextColumn::make('starts_at')->date(),
                 Tables\Columns\TextColumn::make('ends_at')->date(),
                 Tables\Columns\TextColumn::make('substitute.name')->label('Substitute')->placeholder('—'),
+                Tables\Columns\TextColumn::make('coverage')
+                    ->label('Coverage')
+                    ->badge()
+                    ->state(fn ($record) => $record->coverageStatus())
+                    ->color(fn (string $state) => match ($state) {
+                        'covered', 'accepted' => 'success',
+                        'broadcasting'        => 'warning',
+                        'unbroadcast'         => 'gray',
+                        'none'                => 'danger',
+                        default               => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        'covered'      => '✅ Covered',
+                        'accepted'     => '✅ Accepted',
+                        'broadcasting' => '📡 Broadcasting',
+                        'unbroadcast'  => '⚪ No broadcast',
+                        'none'         => '⚠ No cover',
+                        default        => $state,
+                    }),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn ($state) => TeacherLeave::STATUS_COLORS[$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('decided_by')->placeholder('—')->toggleable(),
@@ -78,6 +99,7 @@ class TeacherLeaveResource extends Resource
                     ->modalContent(fn ($record) => view('filament.principal.teacher.leave-detail', ['record' => $record]))
                     ->extraModalFooterActions(fn ($record) => $record->status === 'pending' ? [
                         self::approveWithSubstituteAction('approveInModal'),
+                        self::broadcastAction('broadcastInModal'),
                         Tables\Actions\Action::make('rejectInModal')
                             ->label('Reject')->icon('heroicon-o-x-mark')->color('danger')
                             ->requiresConfirmation()
@@ -95,6 +117,7 @@ class TeacherLeaveResource extends Resource
                     ->visible(fn ($record) => $record->status === 'approved')
                     ->url(fn ($record) => route('teacher-leave.print', $record))
                     ->openUrlInNewTab(),
+                self::broadcastAction(),
                 Tables\Actions\EditAction::make(),
                 self::approveWithSubstituteAction('approve'),
                 Tables\Actions\Action::make('reject')->icon('heroicon-o-x-mark')->color('danger')
@@ -223,6 +246,96 @@ class TeacherLeaveResource extends Resource
                 Notification::make()
                     ->title('Leave approved')
                     ->body($subName ? $subName . ' assigned as substitute.' : 'Approved without substitute.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * Broadcast cover request to top candidates via email.
+     */
+    protected static function broadcastAction(string $name = 'broadcast'): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->label('Broadcast')
+            ->icon('heroicon-o-paper-airplane')
+            ->color('info')
+            ->visible(fn ($record) => $record->status === 'pending' && ! $record->substitute_teacher_id)
+            ->modalHeading(fn ($record) => 'Broadcast Cover Request · ' . ($record->teacher?->name ?? 'Teacher'))
+            ->modalDescription('Emails the top candidates simultaneously. First to accept gets the slot; others are notified the slot is filled.')
+            ->modalWidth('3xl')
+            ->modalSubmitActionLabel('Send Broadcast')
+            ->form(function ($record) {
+                $offered = $record->offers()->pluck('teacher_id')->all();
+                $candidates = SubstituteSuggester::for($record, 10)
+                    ->filter(fn ($c) => $c['is_assignable'])
+                    ->reject(fn ($c) => in_array($c['teacher']->id, $offered, true));
+
+                $options = $candidates->mapWithKeys(function ($c) {
+                    $t = $c['teacher'];
+                    $label = "{$t->name} · {$t->subject} · " . ($c['tier_label'] ?? '');
+                    if ($t->email) $label .= " · {$t->email}";
+                    return [$t->id => $label];
+                })->all();
+
+                $defaults = $candidates->take(SubstituteBroadcaster::DEFAULT_BATCH_SIZE)
+                    ->map(fn ($c) => $c['teacher']->id)->values()->all();
+
+                return [
+                    Forms\Components\Placeholder::make('info')
+                        ->label('')
+                        ->content(function () use ($options, $record) {
+                            $existing = $record->offers()->count();
+                            if (empty($options)) {
+                                return 'No more eligible candidates to broadcast to.' .
+                                    ($existing ? " ({$existing} already offered)" : '');
+                            }
+                            return 'Showing top ' . count($options) . ' assignable candidates.' .
+                                ($existing ? " {$existing} have already been offered." : '');
+                        }),
+                    Forms\Components\CheckboxList::make('teacher_ids')
+                        ->label('Send to')
+                        ->options($options)
+                        ->default($defaults)
+                        ->columns(1)
+                        ->bulkToggleable()
+                        ->required()
+                        ->visible(! empty($options)),
+                    Forms\Components\TextInput::make('ttl_hours')
+                        ->label('Response window (hours)')
+                        ->numeric()->minValue(1)->maxValue(72)
+                        ->default(SubstituteBroadcaster::DEFAULT_TTL_HOURS)
+                        ->required()
+                        ->visible(! empty($options)),
+                ];
+            })
+            ->action(function (array $data, $record): void {
+                $ids = array_map('intval', $data['teacher_ids'] ?? []);
+                $ttl = max(1, (int) ($data['ttl_hours'] ?? SubstituteBroadcaster::DEFAULT_TTL_HOURS));
+
+                if (empty($ids)) {
+                    Notification::make()->title('Select at least one candidate.')->danger()->send();
+                    return;
+                }
+
+                $offers = SubstituteBroadcaster::broadcast(
+                    leave: $record,
+                    teacherIds: $ids,
+                    size: count($ids),
+                    ttlHours: $ttl,
+                );
+
+                if (empty($offers)) {
+                    Notification::make()->title('No offers sent')
+                        ->body('All selected candidates have already been offered.')
+                        ->warning()->send();
+                    return;
+                }
+
+                $names = collect($offers)->map(fn ($o) => $o->teacher?->name)->filter()->implode(', ');
+                Notification::make()
+                    ->title('Broadcast sent to ' . count($offers) . ' teacher(s)')
+                    ->body($names . ' · response window ' . $ttl . 'h')
                     ->success()
                     ->send();
             });

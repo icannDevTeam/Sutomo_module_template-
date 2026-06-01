@@ -10,6 +10,14 @@ Route::get('/api/enrollment-config/{unit}', [\App\Http\Controllers\Api\Enrollmen
     ->whereAlphaNumeric('unit')
     ->name('api.enrollment-config.show');
 
+// Public signed routes for substitute cover offers (no auth — token in URL).
+Route::middleware('signed')->group(function () {
+    Route::get('/substitute-offer/{offer}/accept', [\App\Http\Controllers\SubstituteOfferController::class, 'accept'])
+        ->name('substitute-offer.accept');
+    Route::get('/substitute-offer/{offer}/decline', [\App\Http\Controllers\SubstituteOfferController::class, 'decline'])
+        ->name('substitute-offer.decline');
+});
+
 // Printable views (require authenticated Filament panel session)
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/print/teacher-leave/{record}', function (\App\Models\TeacherLeave $record) {
