@@ -135,9 +135,9 @@
                             <strong>{{ $workingDays }}</strong> working day{{ $workingDays === 1 ? '' : 's' }}
                         </div>
                         <div style="color:#475569;">
-                            {{ Carbon::parse($startsAtDate)->format('D, d M Y') }}
+                            {{ \Illuminate\Support\Carbon::parse($startsAtDate)->format('D, d M Y') }}
                             →
-                            {{ Carbon::parse($endsAtDate)->format('D, d M Y') }}
+                            {{ \Illuminate\Support\Carbon::parse($endsAtDate)->format('D, d M Y') }}
                         </div>
                         <button type="button" wire:click="clearSelection" style="margin-top:8px; background:transparent; border:none; color:#6366f1; cursor:pointer; font-size:12px; padding:0;">Clear selection</button>
                     </div>
@@ -178,7 +178,7 @@
                                 $isSelectedStart = $startsAtDate === $dateStr;
                                 $isSelectedEnd = $endsAtDate === $dateStr;
                                 $isInRange = $startsAtDate && $endsAtDate &&
-                                             $cell->between(Carbon::parse($startsAtDate), Carbon::parse($endsAtDate));
+                                             $cell->between(\Illuminate\Support\Carbon::parse($startsAtDate), \Illuminate\Support\Carbon::parse($endsAtDate));
                                 $classes = ['slob-cell'];
                                 if ($isWeekend) $classes[] = 'slob-cell--weekend';
                                 if ($isToday) $classes[] = 'slob-cell--today';
