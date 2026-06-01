@@ -35,12 +35,12 @@ class SubstituteOffer extends Model
     ];
 
     public const STATUS_ICONS = [
-        'pending'    => '⏳',
-        'interested' => '🙋',
-        'assigned'   => '✅',
-        'declined'   => '❌',
-        'expired'    => '⌛',
-        'cancelled'  => '🚫',
+        'pending'    => '',
+        'interested' => '',
+        'assigned'   => '',
+        'declined'   => '',
+        'expired'    => '',
+        'cancelled'  => '',
     ];
 
     public function leave(): BelongsTo

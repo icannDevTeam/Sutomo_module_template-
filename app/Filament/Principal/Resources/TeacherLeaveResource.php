@@ -88,14 +88,14 @@ class TeacherLeaveResource extends Resource
                     ->formatStateUsing(function (string $state, $record) {
                         if ($state === 'interested') {
                             $count = $record->offers()->where('status', 'interested')->count();
-                            return "🙋 {$count} interested";
+                            return "{$count} interested";
                         }
                         return match ($state) {
-                            'covered'       => '✅ Covered',
-                            'searching'     => '📡 Searching',
-                            'search_closed' => '🚪 Search closed',
-                            'unbroadcast'   => '⚪ Not searched',
-                            'none'          => '⚠ No cover',
+                            'covered'       => 'Covered',
+                            'searching'     => 'Searching',
+                            'search_closed' => 'Search closed',
+                            'unbroadcast'   => 'Not searched',
+                            'none'          => 'No cover',
                             default         => $state,
                         };
                     }),

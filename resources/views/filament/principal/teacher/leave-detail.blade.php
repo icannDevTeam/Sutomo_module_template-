@@ -64,7 +64,7 @@
         <div style="margin-top:18px; border-top:1px solid #e5e7eb; padding-top:14px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
                 <div style="font-weight:600; color:#0f172a; display:flex; align-items:center; gap:8px;">
-                    📡 Auto Substitute Search
+                    Auto Substitute Search
                     <span class="sp-doc-badge sp-doc-badge--{{ $record->autoSearchStatusColor() }}">
                         {{ $record->autoSearchStatusLabel() }}
                     </span>
@@ -80,13 +80,12 @@
             @if($interested->isNotEmpty())
                 <div style="background:#eff6ff; border:1px solid #93c5fd; border-radius:10px; padding:12px; margin-bottom:10px;">
                     <div style="font-weight:600; font-size:13px; color:#1e3a8a; margin-bottom:8px;">
-                        🙋 {{ $interested->count() }} teacher{{ $interested->count() === 1 ? '' : 's' }} expressed interest
+                        {{ $interested->count() }} teacher{{ $interested->count() === 1 ? '' : 's' }} expressed interest
                     </div>
                     <div style="display:flex; flex-direction:column; gap:6px;">
                         @foreach($interested as $offer)
                             <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:#fff; border:1px solid #bfdbfe; border-radius:8px;">
                                 <div style="display:flex; align-items:center; gap:10px;">
-                                    <span style="font-size:16px;">🙋</span>
                                     <div>
                                         <div style="font-weight:600; font-size:13px;">{{ $offer->teacher?->name ?? 'Unknown' }}</div>
                                         <div style="font-size:11px; color:#64748b;">
@@ -114,7 +113,6 @@
                             @php $color = SubstituteOffer::STATUS_COLORS[$offer->status] ?? 'gray'; @endphp
                             <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb; font-size:12px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
-                                    <span>{{ $offer->statusIcon() }}</span>
                                     <span style="font-weight:500;">{{ $offer->teacher?->name ?? 'Unknown' }}</span>
                                     <span style="color:#94a3b8;">· {{ $offer->teacher?->subject ?? '—' }}</span>
                                 </div>
@@ -129,7 +127,7 @@
 
     <div class="sp-leave-modal__actions">
         <a href="{{ route('teacher-leave.print', $record) }}" target="_blank" rel="noopener" class="sp-doc-preview__download">
-            🖨 Print Leave Letter
+            Print Leave Letter
         </a>
     </div>
 </div>

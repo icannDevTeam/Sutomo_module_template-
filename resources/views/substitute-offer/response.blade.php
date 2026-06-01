@@ -6,14 +6,14 @@
     $typeLabel = TeacherLeave::TYPES[$leave?->type ?? ''] ?? 'Leave';
 
     $palette = [
-        'interested' => ['bg' => '#eff6ff', 'border' => '#3b82f6', 'icon' => '🙋', 'title' => 'Interest Recorded'],
-        'assigned'   => ['bg' => '#ecfdf5', 'border' => '#10b981', 'icon' => '✅', 'title' => 'You Got The Cover'],
-        'declined'   => ['bg' => '#fef2f2', 'border' => '#ef4444', 'icon' => '❌', 'title' => 'Marked Not Available'],
-        'filled'     => ['bg' => '#fffbeb', 'border' => '#f59e0b', 'icon' => '⏳', 'title' => 'Substitute Already Assigned'],
-        'closed'     => ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'icon' => '🚪', 'title' => 'Cover Search Closed'],
-        'expired'    => ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'icon' => '⌛', 'title' => 'Invitation Expired'],
-        'error'      => ['bg' => '#fef2f2', 'border' => '#ef4444', 'icon' => '⚠️', 'title' => 'Something Went Wrong'],
-    ][$state] ?? ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'icon' => 'ℹ️', 'title' => 'Notice'];
+        'interested' => ['bg' => '#eff6ff', 'border' => '#3b82f6', 'title' => 'Interest Recorded'],
+        'assigned'   => ['bg' => '#ecfdf5', 'border' => '#10b981', 'title' => 'You Got The Cover'],
+        'declined'   => ['bg' => '#fef2f2', 'border' => '#ef4444', 'title' => 'Marked Not Available'],
+        'filled'     => ['bg' => '#fffbeb', 'border' => '#f59e0b', 'title' => 'Substitute Already Assigned'],
+        'closed'     => ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'title' => 'Cover Search Closed'],
+        'expired'    => ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'title' => 'Invitation Expired'],
+        'error'      => ['bg' => '#fef2f2', 'border' => '#ef4444', 'title' => 'Something Went Wrong'],
+    ][$state] ?? ['bg' => '#f3f4f6', 'border' => '#9ca3af', 'title' => 'Notice'];
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -42,7 +42,7 @@
 <div class="wrap">
     <div class="brand">Sutomo School · Principal's Office</div>
     <div class="card">
-        <div class="badge"><span class="icon">{{ $palette['icon'] }}</span> {{ $palette['title'] }}</div>
+        <div class="badge">{{ $palette['title'] }}</div>
         <div class="title">Hi {{ $teacher?->name ?? 'there' }},</div>
         <div class="msg">{{ $message }}</div>
 

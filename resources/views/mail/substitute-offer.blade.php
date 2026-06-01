@@ -28,11 +28,11 @@ Hi {{ $teacher?->name ?? 'there' }},
 If you can cover this slot, click **I'm Interested** below. The principal will review everyone who expressed interest and confirm the final substitute.
 
 @component('mail::button', ['url' => $acceptUrl, 'color' => 'success'])
-🙋 I'm Interested
+I'm Interested
 @endcomponent
 
 @component('mail::button', ['url' => $declineUrl, 'color' => 'error'])
-❌ Not Available
+Not Available
 @endcomponent
 
 This invitation expires on **{{ $expiresAt->format('D, d M Y · H:i') }}** (or sooner if enough teachers have expressed interest).
