@@ -53,7 +53,6 @@
     @endif
 
     @php
-        use App\Models\SubstituteOffer;
         $offers = $record->offers()->with('teacher')->get();
         $interested = $offers->where('status', 'interested');
         $declined = $offers->where('status', 'declined');
@@ -110,7 +109,7 @@
                     </summary>
                     <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
                         @foreach($pending->merge($declined) as $offer)
-                            @php $color = SubstituteOffer::STATUS_COLORS[$offer->status] ?? 'gray'; @endphp
+                            @php $color = \App\Models\SubstituteOffer::STATUS_COLORS[$offer->status] ?? 'gray'; @endphp
                             <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb; font-size:12px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <span style="font-weight:500;">{{ $offer->teacher?->name ?? 'Unknown' }}</span>

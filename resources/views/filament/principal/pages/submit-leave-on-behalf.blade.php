@@ -1,8 +1,7 @@
 <x-filament-panels::page>
     @php
-        use Illuminate\Support\Carbon;
-        $startsAtDate = $this->startsAt ? Carbon::parse($this->startsAt)->toDateString() : null;
-        $endsAtDate   = $this->endsAt ? Carbon::parse($this->endsAt)->toDateString() : null;
+        $startsAtDate = $this->startsAt ? \Illuminate\Support\Carbon::parse($this->startsAt)->toDateString() : null;
+        $endsAtDate   = $this->endsAt ? \Illuminate\Support\Carbon::parse($this->endsAt)->toDateString() : null;
     @endphp
 
     <style>
