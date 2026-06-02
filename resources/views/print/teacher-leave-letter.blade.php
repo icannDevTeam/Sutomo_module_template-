@@ -50,7 +50,7 @@
             <tr><td>Teacher Name</td><td>{{ $record->teacher?->name ?? '—' }}</td></tr>
             <tr><td>Employee Code</td><td>{{ $record->teacher?->code ?? '—' }}</td></tr>
             <tr><td>Department</td><td>{{ $record->teacher?->dept ?? '—' }}</td></tr>
-            <tr><td>Leave Type</td><td>{{ \App\Models\TeacherLeave::TYPES[$record->type] ?? $record->type }}</td></tr>
+            <tr><td>Leave Type</td><td>{{ \App\Models\LeaveType::labelFor($record->type) }}</td></tr>
             <tr><td>From</td><td>{{ optional($record->starts_at)->format('l, d F Y') ?? '—' }}</td></tr>
             <tr><td>To</td><td>{{ optional($record->ends_at)->format('l, d F Y') ?? '—' }}</td></tr>
             <tr><td>Duration</td><td>{{ $record->starts_at && $record->ends_at ? ($record->starts_at->diffInDays($record->ends_at) + 1) . ' working day(s)' : '—' }}</td></tr>

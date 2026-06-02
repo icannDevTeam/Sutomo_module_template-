@@ -40,7 +40,7 @@
                     </div>
                     <div class="sp-leave-row__body">
                         <div class="sp-leave-row__title">
-                            {{ TeacherLeave::TYPES[$leave->type] ?? $leave->type }}
+                            {{ \App\Models\LeaveType::labelFor($leave->type) }}
                             <span class="sp-leave-row__days">· {{ $days }} {{ \Illuminate\Support\Str::plural('day', $days) }}</span>
                         </div>
                         <div class="sp-leave-row__meta">

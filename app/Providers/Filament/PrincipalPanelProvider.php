@@ -94,6 +94,8 @@ class PrincipalPanelProvider extends PanelProvider
                 \App\Filament\Pages\YayasanApproval::class,
                 \App\Filament\Pages\Onboarding::class,
                 \App\Filament\Principal\Pages\OplSessionDetail::class,
+                \App\Filament\Principal\Pages\TeacherSubstitutionConfig::class,
+                \App\Filament\Principal\Pages\SubstitutionTimetable::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Principal/Widgets'), for: 'App\\Filament\\Principal\\Widgets')
             ->middleware([

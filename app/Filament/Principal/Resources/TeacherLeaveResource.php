@@ -42,16 +42,24 @@ class TeacherLeaveResource extends Resource
             Forms\Components\Select::make('teacher_id')->label('Teacher')
                 ->options(fn () => Teacher::orderBy('name')->pluck('name','id'))
                 ->searchable()->required(),
-            Forms\Components\Select::make('type')->options(TeacherLeave::TYPES)->required(),
+            Forms\Components\Select::make('type')
+                ->options(\App\Models\LeaveType::options())
+                ->required()
+                ->live()
+                ->helperText(fn ($state) => $state && ! \App\Models\LeaveType::requiresSubstitute($state)
+                    ? 'This leave type does NOT require a substitute.'
+                    : null),
             Forms\Components\DatePicker::make('starts_at')->required(),
             Forms\Components\DatePicker::make('ends_at')->required(),
             Forms\Components\Textarea::make('reason')->rows(2)->columnSpanFull(),
             Forms\Components\Select::make('status')->options(TeacherLeave::STATUSES)->default('pending')->required(),
             Forms\Components\Select::make('substitute_teacher_id')->label('Substitute')
-                ->options(fn () => Teacher::orderBy('name')->pluck('name','id'))->searchable(),
+                ->options(fn () => Teacher::orderBy('name')->pluck('name','id'))->searchable()
+                ->visible(fn (callable $get) => \App\Models\LeaveType::requiresSubstitute($get('type'))),
             Forms\Components\Section::make('Auto Substitute Search')
                 ->description('When enabled, eligible internal teachers receive an email and can express interest in covering. The principal still picks the final substitute.')
                 ->columnSpanFull()
+                ->visible(fn (callable $get) => \App\Models\LeaveType::requiresSubstitute($get('type')))
                 ->schema([
                     Forms\Components\Toggle::make('auto_search_enabled')
                         ->label('Enable auto substitute search on submit')
@@ -68,7 +76,8 @@ class TeacherLeaveResource extends Resource
             ->defaultSort('starts_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('teacher.name')->searchable(),
-                Tables\Columns\TextColumn::make('type')->badge(),
+                Tables\Columns\TextColumn::make('type')->badge()
+                    ->formatStateUsing(fn ($state) => \App\Models\LeaveType::labelFor($state)),
                 Tables\Columns\TextColumn::make('starts_at')->date(),
                 Tables\Columns\TextColumn::make('ends_at')->date(),
                 Tables\Columns\TextColumn::make('substitute.name')->label('Substitute')->placeholder('—'),
@@ -105,7 +114,7 @@ class TeacherLeaveResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(TeacherLeave::STATUSES),
-                Tables\Filters\SelectFilter::make('type')->options(TeacherLeave::TYPES),
+                Tables\Filters\SelectFilter::make('type')->options(\App\Models\LeaveType::options()),
             ])
             ->actions([
                 Tables\Actions\Action::make('view')
@@ -161,7 +170,7 @@ class TeacherLeaveResource extends Resource
                         $records,
                         [
                             'Teacher'    => fn ($r) => $r->teacher?->name ?? '',
-                            'Type'       => fn ($r) => TeacherLeave::TYPES[$r->type] ?? $r->type,
+                            'Type'       => fn ($r) => \App\Models\LeaveType::labelFor($r->type),
                             'From'       => fn ($r) => optional($r->starts_at)->format('Y-m-d'),
                             'To'         => fn ($r) => optional($r->ends_at)->format('Y-m-d'),
                             'Days'       => fn ($r) => $r->starts_at && $r->ends_at ? $r->starts_at->diffInDays($r->ends_at) + 1 : '',
@@ -179,9 +188,8 @@ class TeacherLeaveResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListTeacherLeaves::route('/'),
-            'create' => Pages\CreateTeacherLeave::route('/create'),
-            'edit'   => Pages\EditTeacherLeave::route('/{record}/edit'),
+            'index' => Pages\ListTeacherLeaves::route('/'),
+            'edit'  => Pages\EditTeacherLeave::route('/{record}/edit'),
         ];
     }
 

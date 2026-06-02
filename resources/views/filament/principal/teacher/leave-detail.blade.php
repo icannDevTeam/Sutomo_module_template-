@@ -10,7 +10,7 @@
     <div class="sp-leave-modal__head">
         <div>
             <div class="sp-leave-modal__teacher">{{ $record->teacher?->name ?? '—' }}</div>
-            <div class="sp-leave-modal__type">{{ TeacherLeave::TYPES[$record->type] ?? $record->type }} Leave</div>
+            <div class="sp-leave-modal__type">{{ \App\Models\LeaveType::labelFor($record->type) }} Leave</div>
         </div>
         <span class="sp-doc-badge sp-doc-badge--{{ $statusColor }}">
             {{ TeacherLeave::STATUSES[$record->status] ?? $record->status }}

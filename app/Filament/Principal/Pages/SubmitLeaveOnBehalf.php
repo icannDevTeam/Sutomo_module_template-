@@ -2,9 +2,12 @@
 
 namespace App\Filament\Principal\Pages;
 
+use App\Models\DutyAssignment;
+use App\Models\LeaveType;
 use App\Models\Teacher;
 use App\Models\TeacherLeave;
 use App\Support\SubstituteBroadcaster;
+use App\Support\SubstituteSuggester;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
@@ -15,10 +18,11 @@ class SubmitLeaveOnBehalf extends Page
     protected static ?string $navigationIcon = 'heroicon-o-calendar-date-range';
     protected static ?string $navigationGroup = 'Approvals';
     protected static ?int $navigationSort = 1;
-    protected static ?string $title = 'Submit Leave on Behalf';
-    protected static ?string $navigationLabel = 'Submit Leave for Teacher';
+    protected static ?string $title = 'New Leave Application';
+    protected static ?string $navigationLabel = 'New Leave Application';
     protected static ?string $slug = 'submit-leave';
     protected static string $view = 'filament.principal.pages.submit-leave-on-behalf';
+    protected static bool $shouldRegisterNavigation = false;
 
     #[Url(as: 't')]
     public ?int $teacherId = null;
@@ -32,9 +36,26 @@ class SubmitLeaveOnBehalf extends Page
     public ?string $reason = null;
     public bool $autoSearchEnabled = true;
 
+    /** Optional: principal pre-picks a substitute → fast-path approve. */
+    public ?int $preferredSubstituteId = null;
+
+    /** When pre-picking, also create a DutyAssignment for the substitute. */
+    public bool $createDutyAssignment = true;
+
+    /** Banner shown after a successful submit. */
+    public ?array $lastSubmitted = null;
+
+    public function dismissLastSubmitted(): void
+    {
+        $this->lastSubmitted = null;
+    }
+
     public function mount(): void
     {
         $this->monthKey = $this->monthKey ?: now()->format('Y-m');
+        // Default type = first active leave type
+        $first = LeaveType::query()->where('is_active', true)->orderBy('sort_order')->first();
+        if ($first) $this->type = $first->key;
     }
 
     public function getViewData(): array
@@ -42,7 +63,7 @@ class SubmitLeaveOnBehalf extends Page
         $teachers = Teacher::query()
             ->whereNotIn('status', ['alumni'])
             ->orderBy('name')
-            ->get(['id', 'name', 'subject', 'campus', 'annual_quota', 'sick_quota', 'personal_quota']);
+            ->get(['id', 'name', 'subject', 'campus', 'quota']);
 
         $teacher = $this->teacherId ? $teachers->firstWhere('id', $this->teacherId) : null;
 
@@ -78,23 +99,20 @@ class SubmitLeaveOnBehalf extends Page
             }
         }
 
-        // Quota cards
+        // Single quota card
         $quotas = [];
         if ($teacher) {
-            foreach (['sick' => 'Sick', 'emergency' => 'Personal/Emergency', 'sabbatical' => 'Annual/Sabbatical'] as $key => $label) {
-                $usedKey = $key;
-                $limit = $teacher->quotaFor($key);
-                $used  = $teacher->leaveDaysUsed($key, $month->year);
-                $quotas[] = [
-                    'key'   => $key,
-                    'label' => $label,
-                    'used'  => $used,
-                    'limit' => $limit,
-                    'remaining' => max(0, $limit - $used),
-                    'pct'   => $limit > 0 ? min(100, ($used / $limit) * 100) : 0,
-                    'color' => $used >= $limit ? 'danger' : ($used / max(1,$limit) >= 0.75 ? 'warning' : 'success'),
-                ];
-            }
+            $limit = $teacher->quotaFor();
+            $used  = $teacher->leaveDaysUsed($month->year);
+            $pct   = $limit > 0 ? min(100, ($used / $limit) * 100) : 0;
+            $quotas[] = [
+                'label'     => 'Leave quota',
+                'used'      => $used,
+                'limit'     => $limit,
+                'remaining' => max(0, $limit - $used),
+                'pct'       => $pct,
+                'color'     => $used >= $limit ? 'danger' : ($pct >= 75 ? 'warning' : 'success'),
+            ];
         }
 
         // Selected day count (excluding weekends)
@@ -126,8 +144,84 @@ class SubmitLeaveOnBehalf extends Page
             'leavesByDate'  => $leavesByDate,
             'quotas'        => $quotas,
             'workingDays'   => $workingDays,
-            'types'         => TeacherLeave::TYPES,
+            'leaveTypes'    => LeaveType::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('label')
+                ->get(['key', 'label', 'affects_quota', 'requires_substitute', 'color']),
+            'requiresSubstitute' => $this->requiresSubstitute(),
+            'suggestions'        => $this->buildSuggestions($teacher),
+            'tierLabels'         => SubstituteSuggester::TIER_LABELS,
+            'pickedSubstitute'   => $this->preferredSubstituteId
+                ? Teacher::find($this->preferredSubstituteId)
+                : null,
+            'canSubmit'          => $this->canSubmit(),
         ];
+    }
+
+    /** Whether the currently-selected leave type requires substitute coverage. */
+    public function requiresSubstitute(): bool
+    {
+        return LeaveType::requiresSubstitute($this->type);
+    }
+
+    /**
+     * Build a transient (un-persisted) TeacherLeave from current form state
+     * and ask SubstituteSuggester for ranked candidates. Returns empty
+     * collection until teacher + dates are picked.
+     */
+    protected function buildSuggestions(?Teacher $teacher)
+    {
+        // No substitute needed for this leave type → skip suggestion engine.
+        if (! $this->requiresSubstitute()) {
+            return collect();
+        }
+        if (! $teacher || ! $this->startsAt || ! $this->endsAt) {
+            return collect();
+        }
+        try {
+            $start = Carbon::parse($this->startsAt);
+            $end   = Carbon::parse($this->endsAt);
+            if ($end->lt($start)) return collect();
+        } catch (\Throwable $e) {
+            return collect();
+        }
+
+        $transient = new TeacherLeave([
+            'teacher_id' => $teacher->id,
+            'type'       => $this->type,
+            'starts_at'  => $start,
+            'ends_at'    => $end,
+        ]);
+        $transient->setRelation('teacher', $teacher);
+
+        return SubstituteSuggester::for($transient, 12);
+    }
+
+    /**
+     * Submit gate: leaves require a coverage path — either a picked
+     * substitute or auto-broadcast enabled.
+     */
+    public function canSubmit(): bool
+    {
+        if (! $this->teacherId || ! $this->startsAt || ! $this->endsAt) {
+            return false;
+        }
+        // Leave types that don't require a substitute can be submitted directly.
+        if (! $this->requiresSubstitute()) {
+            return true;
+        }
+        return $this->preferredSubstituteId !== null || $this->autoSearchEnabled;
+    }
+
+    public function pickSubstitute(int $teacherId): void
+    {
+        $this->preferredSubstituteId = $teacherId;
+    }
+
+    public function clearPick(): void
+    {
+        $this->preferredSubstituteId = null;
     }
 
     public function pickDate(string $date): void
@@ -156,6 +250,28 @@ class SubmitLeaveOnBehalf extends Page
         $this->endsAt = null;
     }
 
+    /** Snap month-key to whichever month contains the From date so the calendar follows the user. */
+    public function updatedStartsAt($value): void
+    {
+        if (! $value) return;
+        try {
+            $this->monthKey = Carbon::parse($value)->format('Y-m');
+            if ($this->endsAt && Carbon::parse($this->endsAt)->lt(Carbon::parse($value))) {
+                $this->endsAt = $value;
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    public function updatedEndsAt($value): void
+    {
+        if (! $value || ! $this->startsAt) return;
+        try {
+            if (Carbon::parse($value)->lt(Carbon::parse($this->startsAt))) {
+                $this->endsAt = $this->startsAt;
+            }
+        } catch (\Throwable $e) {}
+    }
+
     public function submit(): void
     {
         if (! $this->teacherId || ! $this->startsAt || ! $this->endsAt) {
@@ -166,6 +282,128 @@ class SubmitLeaveOnBehalf extends Page
         $teacher = Teacher::find($this->teacherId);
         if (! $teacher) return;
 
+        // ── No-substitute path: leave types like Brief Absence / Assigned Work ──
+        if (! $this->requiresSubstitute()) {
+            $leave = TeacherLeave::create([
+                'teacher_id'          => $teacher->id,
+                'type'                => $this->type,
+                'starts_at'           => $this->startsAt,
+                'ends_at'             => $this->endsAt,
+                'reason'              => $this->reason ?: 'Filed by principal on behalf of teacher.',
+                'status'              => 'approved',
+                'auto_search_enabled' => false,
+                'decided_by'          => auth()->user()?->name ?? 'Principal',
+                'decided_at'          => now(),
+            ]);
+
+            $this->lastSubmitted = [
+                'teacher'    => $teacher->name,
+                'type'       => LeaveType::labelFor($this->type),
+                'dates'      => Carbon::parse($this->startsAt)->format('d M').' – '.Carbon::parse($this->endsAt)->format('d M Y'),
+                'status'     => 'approved',
+                'substitute' => null,
+                'duty'       => false,
+                'message'    => 'No substitute required for this type.',
+                'leave_id'   => $leave->id,
+            ];
+
+            Notification::make()
+                ->title('Leave approved for ' . $teacher->name)
+                ->body(LeaveType::labelFor($this->type) . ' — no substitute required.')
+                ->success()
+                ->send();
+
+            $this->reset(['startsAt', 'endsAt', 'reason', 'preferredSubstituteId']);
+            return;
+        }
+
+        if ($this->preferredSubstituteId === null && ! $this->autoSearchEnabled) {
+            Notification::make()
+                ->title('Coverage path required')
+                ->body('Pick a substitute from the suggestions, or enable auto substitute search.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        // ── Fast-path: principal pre-picked a substitute ─────────────────
+        if ($this->preferredSubstituteId !== null) {
+            // Defense in depth: re-run suggester and confirm the pick is still assignable.
+            $transient = new TeacherLeave([
+                'teacher_id' => $teacher->id,
+                'type'       => $this->type,
+                'starts_at'  => Carbon::parse($this->startsAt),
+                'ends_at'    => Carbon::parse($this->endsAt),
+            ]);
+            $transient->setRelation('teacher', $teacher);
+            $candidates = SubstituteSuggester::for($transient, 100);
+            $picked = $candidates->firstWhere(
+                fn ($c) => (int) $c['teacher']->id === (int) $this->preferredSubstituteId
+            );
+            if ($picked && ! $picked['is_assignable']) {
+                Notification::make()
+                    ->title('That substitute is no longer available.')
+                    ->body(implode(' · ', $picked['conflict_reasons']))
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            $sub = Teacher::find($this->preferredSubstituteId);
+            if (! $sub) {
+                Notification::make()->title('Substitute not found.')->danger()->send();
+                return;
+            }
+
+            $leave = TeacherLeave::create([
+                'teacher_id'           => $teacher->id,
+                'type'                 => $this->type,
+                'starts_at'            => $this->startsAt,
+                'ends_at'              => $this->endsAt,
+                'reason'               => $this->reason ?: 'Filed by principal on behalf of teacher.',
+                'status'               => 'approved',
+                'substitute_teacher_id'=> $sub->id,
+                'decided_by'           => auth()->user()?->name ?? 'Principal',
+                'decided_at'           => now(),
+                'auto_search_enabled'  => false,
+            ]);
+
+            if ($this->createDutyAssignment) {
+                DutyAssignment::create([
+                    'teacher_id'    => $sub->id,
+                    'title'         => 'Cover for ' . $teacher->name,
+                    'starts_at'     => $leave->starts_at,
+                    'ends_at'       => $leave->ends_at,
+                    'recurrence'    => 'once',
+                    'status'        => 'pending',
+                    'assigned_by'   => auth()->user()?->name ?? 'Principal',
+                    'academic_year' => DutyAssignment::academicYearFor($leave->starts_at),
+                ]);
+            }
+
+            $this->lastSubmitted = [
+                'teacher'    => $teacher->name,
+                'type'       => LeaveType::labelFor($this->type),
+                'dates'      => Carbon::parse($this->startsAt)->format('d M').' – '.Carbon::parse($this->endsAt)->format('d M Y'),
+                'status'     => 'approved',
+                'substitute' => $sub->name,
+                'duty'       => $this->createDutyAssignment,
+                'message'    => $sub->name . ' is now covering.',
+                'leave_id'   => $leave->id,
+            ];
+
+            Notification::make()
+                ->title('Leave approved for ' . $teacher->name)
+                ->body($sub->name . ' is now covering · '
+                    . ($this->createDutyAssignment ? 'duty hand-off created.' : 'no duty hand-off created.'))
+                ->success()
+                ->send();
+
+            $this->reset(['startsAt', 'endsAt', 'reason', 'preferredSubstituteId']);
+            return;
+        }
+
+        // ── Broadcast path: file pending and start auto-search ───────────
         $leave = TeacherLeave::create([
             'teacher_id'          => $this->teacherId,
             'type'                => $this->type,
@@ -173,23 +411,33 @@ class SubmitLeaveOnBehalf extends Page
             'ends_at'             => $this->endsAt,
             'reason'              => $this->reason ?: 'Filed by principal on behalf of teacher.',
             'status'              => 'pending',
-            'auto_search_enabled' => $this->autoSearchEnabled,
+            'auto_search_enabled' => true,
         ]);
 
-        $invited = 0;
-        if ($this->autoSearchEnabled) {
-            $offers = SubstituteBroadcaster::startAutoSearch($leave);
-            $invited = count($offers);
-        }
+        $offers = SubstituteBroadcaster::startAutoSearch($leave);
+        $invited = count($offers);
+
+        $this->lastSubmitted = [
+            'teacher'    => $teacher->name,
+            'type'       => LeaveType::labelFor($this->type),
+            'dates'      => Carbon::parse($this->startsAt)->format('d M').' – '.Carbon::parse($this->endsAt)->format('d M Y'),
+            'status'     => 'pending',
+            'substitute' => null,
+            'duty'       => false,
+            'message'    => $invited
+                ? "Auto substitute search started — {$invited} teacher(s) invited."
+                : 'No eligible candidates found — assign manually from the leave list.',
+            'leave_id'   => $leave->id,
+        ];
 
         Notification::make()
             ->title('Leave submitted for ' . $teacher->name)
             ->body($invited
                 ? "Auto substitute search started. {$invited} teacher(s) invited."
-                : 'Auto substitute search disabled — assign manually.')
+                : 'No eligible candidates found — assign manually from the leave list.')
             ->success()
             ->send();
 
-        $this->reset(['startsAt', 'endsAt', 'reason']);
+        $this->reset(['startsAt', 'endsAt', 'reason', 'preferredSubstituteId']);
     }
 }

@@ -26,8 +26,43 @@ class Teacher extends Model
         'rating'          => 'float',
         'bank_account_no' => 'encrypted',
         'tax_id_npwp'     => 'encrypted',
-        'promotion_readiness_set_at' => 'datetime',
+        'promotion_readiness_set_at'    => 'datetime',
+        'substitution_category_set_at'  => 'datetime',
     ];
+
+    public const SUBSTITUTION_CATEGORIES = [
+        'vip'        => 'VIP',
+        'preferred'  => 'Globally Preferred',
+        'standard'   => 'Standard',
+        'restricted' => 'Restricted',
+        'blocked'    => 'Blocked',
+    ];
+
+    public const SUBSTITUTION_CATEGORY_COLORS = [
+        'vip'        => 'success',
+        'preferred'  => 'info',
+        'standard'   => 'gray',
+        'restricted' => 'warning',
+        'blocked'    => 'danger',
+    ];
+
+    public const SUBSTITUTION_CATEGORY_DESCRIPTIONS = [
+        'vip'        => 'Always invited first (subject to conflicts).',
+        'preferred'  => 'Boosted above generic matches.',
+        'standard'   => 'Default — ranked normally by subject/dept/campus.',
+        'restricted' => 'Sinks to the bottom of any tier — invited only when no one else is available.',
+        'blocked'    => 'Never invited and never appears in the candidate list.',
+    ];
+
+    public function isSubstitutionBlocked(): bool
+    {
+        return ($this->substitution_category ?? 'standard') === 'blocked';
+    }
+
+    public function substitutionCategorySetter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'substitution_category_set_by');
+    }
 
     public const STATUSES = [
         'permanent' => 'Permanent',
@@ -367,16 +402,26 @@ class Teacher extends Model
     }
 
     /**
-     * Days used (approved leaves only) for a given type within an academic year.
+     * Days used (approved leaves only) within an academic year.
+     * Only counts leave types where LeaveType.affects_quota = true.
      */
-    public function leaveDaysUsed(string $type, ?int $year = null): int
+    public function leaveDaysUsed(?int $year = null): int
     {
         $year = $year ?? now()->year;
         $start = "{$year}-01-01";
         $end   = "{$year}-12-31";
 
+        $countingTypes = LeaveType::query()
+            ->where('affects_quota', true)
+            ->pluck('key')
+            ->all();
+
+        if (empty($countingTypes)) {
+            return 0;
+        }
+
         return (int) $this->leaves()
-            ->where('type', $type)
+            ->whereIn('type', $countingTypes)
             ->where('status', 'approved')
             ->where(function ($q) use ($start, $end) {
                 $q->whereBetween('starts_at', [$start, $end])
@@ -386,14 +431,9 @@ class Teacher extends Model
             ->sum(fn ($l) => max(1, $l->starts_at->diffInDays($l->ends_at) + 1));
     }
 
-    public function quotaFor(string $type): int
+    public function quotaFor(): int
     {
-        return match ($type) {
-            'sick'                 => (int) ($this->sick_quota ?? 12),
-            'emergency', 'midday'  => (int) ($this->personal_quota ?? 5),
-            'sabbatical', 'prior'  => (int) ($this->annual_quota ?? 12),
-            default                => (int) ($this->annual_quota ?? 12),
-        };
+        return (int) ($this->quota ?? 12);
     }
 
     public function employmentEvents(): HasMany

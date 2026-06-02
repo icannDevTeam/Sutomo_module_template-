@@ -39,11 +39,13 @@ class DatabaseSeeder extends Seeder
         $this->call(TimetableSeeder::class);
         $this->call(AnnouncementSeeder::class);
         $this->call(UnitPlanSeeder::class);
+        $this->call(LeaveTypeSeeder::class);
         $this->call(TeacherApprovalsSeeder::class);
         $this->call(TeacherProfileSeeder::class);
         $this->call(ObservationCriteriaSeeder::class);
         $this->call(LetterOfIntentConfigSeeder::class);
         $this->call(PrincipalDemoSeeder::class);
+        $this->call(TeacherSubstitutionConfigDemoSeeder::class);
         $this->call(SubstituteOfferDemoSeeder::class);
     }
 
@@ -456,7 +458,7 @@ class DatabaseSeeder extends Seeder
             $starts = now()->addDays(fake()->numberBetween(-30, 30));
             TeacherLeave::create([
                 'teacher_id' => $tid,
-                'type' => fake()->randomElement(array_keys(TeacherLeave::TYPES)),
+                'type' => fake()->randomElement(array_keys(\App\Models\LeaveType::options()) ?: ['sick']),
                 'starts_at' => $starts->toDateString(),
                 'ends_at' => $starts->copy()->addDays(fake()->numberBetween(1, 5))->toDateString(),
                 'reason' => fake()->sentence(8),

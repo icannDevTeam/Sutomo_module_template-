@@ -1,7 +1,7 @@
 @php
     use App\Models\TeacherLeave;
     $leaveTeacher = $leave?->teacher?->name ?? 'a teacher';
-    $typeLabel = TeacherLeave::TYPES[$leave?->type ?? ''] ?? 'Leave';
+    $typeLabel = \App\Models\LeaveType::labelFor($leave?->type);
     $from = optional($leave?->starts_at)->format('D, d M Y');
     $to   = optional($leave?->ends_at)->format('D, d M Y');
     $days = ($leave && $leave->starts_at && $leave->ends_at)

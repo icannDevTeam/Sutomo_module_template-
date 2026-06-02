@@ -10,7 +10,7 @@
         ->first();
 
     $statusText = $activeLeave
-        ? 'On Leave (' . (TeacherLeave::TYPES[$activeLeave->type] ?? $activeLeave->type) . ')'
+        ? 'On Leave (' . \App\Models\LeaveType::labelFor($activeLeave->type) . ')'
         : 'Available';
     $statusTone = $activeLeave ? 'warning' : 'success';
 

@@ -384,27 +384,23 @@
         @if($currentTab === 'leaves')
             @php
                 $year = now()->year;
-                $quotaRows = [];
-                foreach (['sick'=>'Sick','emergency'=>'Personal/Emergency','sabbatical'=>'Annual/Sabbatical'] as $key=>$label) {
-                    $limit = (int) $record->quotaFor($key);
-                    $used = (int) $record->leaveDaysUsed($key, $year);
-                    $pct = $limit > 0 ? min(100, ($used/$limit)*100) : 0;
-                    $color = $used >= $limit ? '#ef4444' : ($pct >= 75 ? '#f59e0b' : '#10b981');
-                    $quotaRows[] = compact('key','label','limit','used','pct','color');
-                }
+                $limit = (int) $record->quotaFor();
+                $used = (int) $record->leaveDaysUsed($year);
+                $pct = $limit > 0 ? min(100, ($used/$limit)*100) : 0;
+                $color = $used >= $limit ? '#ef4444' : ($pct >= 75 ? '#f59e0b' : '#10b981');
+                $remaining = max(0, $limit - $used);
             @endphp
             <div class="mt-section">
                 <h3 class="mt-section-title">Quota usage · {{ $year }}</h3>
                 <div class="mt-quota">
-                    @foreach($quotaRows as $q)
-                        <div class="mt-quota__row">
-                            <div class="mt-quota__head">
-                                <strong>{{ $q['label'] }}</strong>
-                                <span style="color:#64748b;">{{ $q['used'] }} / {{ $q['limit'] }} days</span>
-                            </div>
-                            <div class="mt-quota__bar"><div style="width:{{ $q['pct'] }}%; background:{{ $q['color'] }};"></div></div>
+                    <div class="mt-quota__row">
+                        <div class="mt-quota__head">
+                            <strong>Leave quota</strong>
+                            <span style="color:#64748b;">{{ $used }} / {{ $limit }} days · <strong style="color:{{ $color }};">{{ $remaining }} left</strong></span>
                         </div>
-                    @endforeach
+                        <div class="mt-quota__bar"><div style="width:{{ $pct }}%; background:{{ $color }};"></div></div>
+                        <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Only quota-affecting leave types are counted.</div>
+                    </div>
                 </div>
             </div>
             <div class="mt-section">
@@ -417,7 +413,7 @@
                         <tbody>
                             @foreach($leaves as $l)
                                 <tr>
-                                    <td>{{ \App\Models\TeacherLeave::TYPES[$l->type] ?? $l->type }}</td>
+                                    <td>{{ \App\Models\LeaveType::labelFor($l->type) }}</td>
                                     <td>{{ $l->starts_at?->format('d M Y') ?? '—' }}</td>
                                     <td>{{ $l->ends_at?->format('d M Y') ?? '—' }}</td>
                                     <td><span class="mt-badge mt-badge--{{ ['approved'=>'success','rejected'=>'danger','pending'=>'warning'][$l->status] ?? 'gray' }}">{{ $l->status }}</span></td>

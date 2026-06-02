@@ -3,7 +3,7 @@
     $leave = $offer->leave;
     $teacher = $offer->teacher;
     $leaveTeacher = $leave?->teacher?->name ?? 'a teacher';
-    $typeLabel = TeacherLeave::TYPES[$leave?->type ?? ''] ?? 'Leave';
+    $typeLabel = \App\Models\LeaveType::labelFor($leave?->type);
 
     $palette = [
         'interested' => ['bg' => '#eff6ff', 'border' => '#3b82f6', 'title' => 'Interest Recorded'],

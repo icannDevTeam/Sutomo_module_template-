@@ -27,16 +27,20 @@ use Illuminate\Support\Collection;
  */
 class SubstituteSuggester
 {
-    public const TIER_PREFERRED  = 1;
-    public const TIER_SUBJECT    = 2;
-    public const TIER_DEPT       = 3;
-    public const TIER_CAMPUS     = 4;
+    public const TIER_VIP              = 0;
+    public const TIER_PREFERRED        = 1;
+    public const TIER_GLOBAL_PREFERRED = 2;
+    public const TIER_SUBJECT          = 3;
+    public const TIER_DEPT             = 4;
+    public const TIER_CAMPUS           = 5;
 
     public const TIER_LABELS = [
-        self::TIER_PREFERRED => 'Preferred',
-        self::TIER_SUBJECT   => 'Subject match',
-        self::TIER_DEPT      => 'Dept match',
-        self::TIER_CAMPUS    => 'Same campus',
+        self::TIER_VIP              => 'VIP',
+        self::TIER_PREFERRED        => 'Pinned for this teacher',
+        self::TIER_GLOBAL_PREFERRED => 'Globally preferred',
+        self::TIER_SUBJECT          => 'Subject match',
+        self::TIER_DEPT             => 'Dept match',
+        self::TIER_CAMPUS           => 'Same campus',
     ];
 
     public static function for(TeacherLeave $leave, int $limit = 10): Collection
@@ -52,22 +56,45 @@ class SubstituteSuggester
             return collect();
         }
 
-        // ---- Tier 1: Preferred (pivot order) ----
+        // ---- Tier 0: VIP (substitution_category = 'vip', same campus) ----
+        $vip = Teacher::query()
+            ->where('id', '!=', $teacher->id)
+            ->where('status', '!=', 'alumni')
+            ->where('substitution_category', 'vip')
+            ->when($teacher->campus, fn ($q) => $q->where('campus', $teacher->campus))
+            ->orderBy('name')
+            ->get();
+
+        $seen = $vip->pluck('id')->all();
+        $seen[] = $teacher->id;
+
+        // ---- Tier 1: Preferred (pinned for this teacher, pivot order) ----
         $preferred = $teacher->preferredSubstitutes()
             ->where('teachers.id', '!=', $teacher->id)
             ->where('status', '!=', 'alumni')
+            ->where('substitution_category', '!=', 'blocked')
+            ->whereNotIn('teachers.id', $seen)
             ->get();
 
-        $seen = $preferred->pluck('id')->all();
-        $seen[] = $teacher->id;
+        $seen = array_merge($seen, $preferred->pluck('id')->all());
 
-        // ---- Pool for tiers 2-4: same campus, not alumni, not already picked ----
+        // ---- Pool for tiers 1.5-4: same campus, not alumni, not blocked, not already picked ----
         $poolBase = Teacher::query()
             ->whereNotIn('id', $seen)
             ->where('status', '!=', 'alumni')
+            ->where('substitution_category', '!=', 'blocked')
             ->when($teacher->campus, fn ($q) => $q->where('campus', $teacher->campus));
 
+        // ---- Tier 1.5: Globally Preferred ----
+        $globalPreferred = (clone $poolBase)
+            ->where('substitution_category', 'preferred')
+            ->orderBy('name')
+            ->get();
+
+        $seen = array_merge($seen, $globalPreferred->pluck('id')->all());
+
         $subject = (clone $poolBase)
+            ->whereNotIn('id', $seen)
             ->when($teacher->subject, fn ($q) => $q->where('subject', $teacher->subject))
             ->when(! $teacher->subject, fn ($q) => $q->whereRaw('1 = 0'))
             ->orderBy('name')
@@ -89,14 +116,27 @@ class SubstituteSuggester
             ->orderBy('name')
             ->get();
 
-        // ---- Assemble + annotate ----
+        // ---- Assemble + annotate (restricted teachers sink to bottom of each tier) ----
         $rows = collect();
-        self::pushTier($rows, $preferred,  self::TIER_PREFERRED, $start, $end, $leave->id);
-        self::pushTier($rows, $subject,    self::TIER_SUBJECT,   $start, $end, $leave->id);
-        self::pushTier($rows, $dept,       self::TIER_DEPT,      $start, $end, $leave->id);
-        self::pushTier($rows, $campusOnly, self::TIER_CAMPUS,    $start, $end, $leave->id);
+        self::pushTier($rows, self::sinkRestricted($vip),              self::TIER_VIP,              $start, $end, $leave->id);
+        self::pushTier($rows, self::sinkRestricted($preferred),        self::TIER_PREFERRED,        $start, $end, $leave->id);
+        self::pushTier($rows, self::sinkRestricted($globalPreferred),  self::TIER_GLOBAL_PREFERRED, $start, $end, $leave->id);
+        self::pushTier($rows, self::sinkRestricted($subject),          self::TIER_SUBJECT,          $start, $end, $leave->id);
+        self::pushTier($rows, self::sinkRestricted($dept),             self::TIER_DEPT,             $start, $end, $leave->id);
+        self::pushTier($rows, self::sinkRestricted($campusOnly),       self::TIER_CAMPUS,           $start, $end, $leave->id);
 
         return $rows->take($limit)->values();
+    }
+
+    /**
+     * Stable sort: non-restricted teachers first, restricted at the bottom.
+     */
+    protected static function sinkRestricted(Collection $teachers): Collection
+    {
+        return $teachers->sortBy(
+            fn (Teacher $t) => ($t->substitution_category ?? 'standard') === 'restricted' ? 1 : 0,
+            SORT_REGULAR,
+        )->values();
     }
 
     protected static function pushTier(Collection $rows, Collection $teachers, int $tier, $start, $end, ?int $excludeLeaveId): void
@@ -144,6 +184,9 @@ class SubstituteSuggester
             'phone'              => $t->phone,
             'email'              => $t->email,
             'wa_link'            => self::whatsappLink($t->phone),
+            'category'           => $t->substitution_category ?? 'standard',
+            'category_label'     => Teacher::SUBSTITUTION_CATEGORIES[$t->substitution_category ?? 'standard'] ?? 'Standard',
+            'category_color'     => Teacher::SUBSTITUTION_CATEGORY_COLORS[$t->substitution_category ?? 'standard'] ?? 'gray',
         ];
     }
 
