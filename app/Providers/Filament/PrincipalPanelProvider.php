@@ -98,6 +98,7 @@ class PrincipalPanelProvider extends PanelProvider
                 \App\Filament\Principal\Pages\OplSessionDetail::class,
                 \App\Filament\Principal\Pages\TeacherSubstitutionConfig::class,
                 \App\Filament\Principal\Pages\SubstitutionTimetable::class,
+                \App\Filament\Principal\Pages\LetterOfIntentFollowUp::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Principal/Widgets'), for: 'App\\Filament\\Principal\\Widgets')
             ->middleware([

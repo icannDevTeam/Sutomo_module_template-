@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command(RenewalRemindersCommand::class)->dailyAt('06:00');
+
+\Illuminate\Support\Facades\Schedule::command('loi:send-reminders')->dailyAt('08:00');
