@@ -16,8 +16,8 @@ class TeacherGoalResource extends Resource
     protected static ?string $model = TeacherGoal::class;
     protected static ?string $navigationIcon = 'heroicon-o-flag';
     protected static ?string $navigationLabel = 'Teacher Goals';
-    protected static ?string $navigationGroup = 'Teachers';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationGroup = 'Supervision';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {

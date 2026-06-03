@@ -98,6 +98,16 @@
         </div>
     </div>
 
+    @if(! empty($eligibility) && ($eligibility['total_slots'] ?? 0) > 0)
+        <div style="margin-bottom: 14px; padding: 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;">
+            @include('filament.principal.teacher.eligibility-grid', [
+                'eligibility'      => $eligibility,
+                'showPick'         => true,
+                'alpinePickTarget' => 'picked',
+            ])
+        </div>
+    @endif
+
     @forelse ([0, 1, 2, 3, 4, 5] as $tier)
         @php $group = $grouped->get($tier, collect()); @endphp
         <div class="sp-pick__tier">

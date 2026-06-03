@@ -16,7 +16,7 @@ use Livewire\Attributes\Url;
 class SubmitLeaveOnBehalf extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-calendar-date-range';
-    protected static ?string $navigationGroup = 'Approvals';
+    protected static ?string $navigationGroup = 'Leave & Substitution';
     protected static ?int $navigationSort = 1;
     protected static ?string $title = 'New Leave Application';
     protected static ?string $navigationLabel = 'New Leave Application';
@@ -150,7 +150,8 @@ class SubmitLeaveOnBehalf extends Page
                 ->orderBy('label')
                 ->get(['key', 'label', 'affects_quota', 'requires_substitute', 'color']),
             'requiresSubstitute' => $this->requiresSubstitute(),
-            'suggestions'        => $this->buildSuggestions($teacher),
+            'suggestions'        => $suggestions = $this->buildSuggestions($teacher),
+            'eligibility'        => $this->buildEligibility($teacher, $suggestions),
             'tierLabels'         => SubstituteSuggester::TIER_LABELS,
             'pickedSubstitute'   => $this->preferredSubstituteId
                 ? Teacher::find($this->preferredSubstituteId)
@@ -196,6 +197,39 @@ class SubmitLeaveOnBehalf extends Page
         $transient->setRelation('teacher', $teacher);
 
         return SubstituteSuggester::for($transient, 12);
+    }
+
+    /**
+     * Build the per-period eligibility matrix for the current form state.
+     * Returns null when there's nothing to compute yet.
+     *
+     * @return array|null
+     */
+    protected function buildEligibility(?Teacher $teacher, $suggestions)
+    {
+        if (! $this->requiresSubstitute() || ! $teacher || ! $this->startsAt || ! $this->endsAt) {
+            return null;
+        }
+        if ($suggestions->isEmpty()) {
+            return null;
+        }
+        try {
+            $start = Carbon::parse($this->startsAt);
+            $end   = Carbon::parse($this->endsAt);
+            if ($end->lt($start)) return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $transient = new TeacherLeave([
+            'teacher_id' => $teacher->id,
+            'type'       => $this->type,
+            'starts_at'  => $start,
+            'ends_at'    => $end,
+        ]);
+        $transient->setRelation('teacher', $teacher);
+
+        return \App\Support\SubstituteEligibilityGrid::buildFor($transient, $suggestions);
     }
 
     /**

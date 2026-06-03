@@ -14,10 +14,10 @@ class LeaveTypeResource extends Resource
 {
     protected static ?string $model = LeaveType::class;
     protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'Leave & Substitution';
     protected static ?string $navigationLabel = 'Leave Types';
     protected static ?string $modelLabel = 'Leave Type';
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 89;
     protected static ?string $slug = 'leave-types';
 
     public static function form(Form $form): Form

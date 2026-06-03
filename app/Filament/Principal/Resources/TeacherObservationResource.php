@@ -20,8 +20,8 @@ class TeacherObservationResource extends Resource
     protected static ?string $model = TeacherObservation::class;
     protected static ?string $navigationIcon = 'heroicon-o-eye';
     protected static ?string $navigationLabel = 'Teacher Observations';
-    protected static ?string $navigationGroup = 'Teachers';
-    protected static ?int $navigationSort = 4;
+    protected static ?string $navigationGroup = 'Supervision';
+    protected static ?int $navigationSort = 2;
 
     public const STATUS_COLORS = [
         'pending'  => 'warning',

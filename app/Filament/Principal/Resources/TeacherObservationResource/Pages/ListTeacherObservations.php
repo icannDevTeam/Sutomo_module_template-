@@ -3,6 +3,7 @@
 namespace App\Filament\Principal\Resources\TeacherObservationResource\Pages;
 
 use App\Filament\Principal\Resources\TeacherObservationResource;
+use App\Filament\Principal\Resources\TeacherObservationResource\Widgets\SupervisionStatsOverview;
 use App\Models\TeacherObservation;
 use Filament\Actions;
 use Filament\Resources\Components\Tab;
@@ -18,6 +19,11 @@ class ListTeacherObservations extends ListRecords
     protected function getHeaderActions(): array
     {
         return [Actions\CreateAction::make()];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [SupervisionStatsOverview::class];
     }
 
     public function getTabs(): array

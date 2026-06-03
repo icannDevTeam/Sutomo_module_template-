@@ -237,27 +237,44 @@
                         </div>
                     @endif
 
-                    <button type="button" class="slob-submit"
-                            wire:click="submit" wire:loading.attr="disabled" wire:target="submit"
-                            @disabled(! $canSubmit)
-                            title="{{ $canSubmit ? 'Submit leave' : 'Pick a substitute or enable auto-broadcast first' }}">
-                        <span wire:loading.remove wire:target="submit">
-                            {{ ! $requiresSubstitute ? 'Submit & approve' : ($pickedSubstitute ? 'Submit & approve' : 'Submit leave') }}
-                        </span>
-                        <span wire:loading wire:target="submit" style="display:inline-flex; align-items:center; gap:6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="animation:slob-spin 1s linear infinite;">
-                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity=".25"/>
-                                <path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                            </svg>
-                            Submitting…
-                        </span>
-                    </button>
+                    @if($lastSubmitted)
+                        <div style="margin-top:12px; padding:10px 12px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; color:#065f46; font-size:12px; text-align:center;">
+                            ✓ Submission saved. Click <strong>Submit another</strong> in the green banner above to file a new leave.
+                        </div>
+                    @else
+                        <button type="button" class="slob-submit"
+                                wire:click="submit" wire:loading.attr="disabled" wire:target="submit"
+                                @disabled(! $canSubmit)
+                                title="{{ $canSubmit ? 'Submit leave' : 'Pick a substitute or enable auto-broadcast first' }}">
+                            <span wire:loading.remove wire:target="submit">
+                                {{ ! $requiresSubstitute ? 'Submit & approve' : ($pickedSubstitute ? 'Submit & approve' : 'Submit leave') }}
+                            </span>
+                            <span wire:loading wire:target="submit" style="display:inline-flex; align-items:center; gap:6px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="animation:slob-spin 1s linear infinite;">
+                                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity=".25"/>
+                                    <path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                </svg>
+                                Submitting…
+                            </span>
+                        </button>
+                    @endif
                 </div>
             @endif
         </div>
 
         {{-- RIGHT: suggestions + calendar --}}
         <div style="display:flex; flex-direction:column; gap:16px;">
+            @if($requiresSubstitute && ! empty($eligibility) && ($eligibility['total_slots'] ?? 0) > 0)
+            {{-- Per-period eligibility matrix --}}
+            <div class="slob-card">
+                @include('filament.principal.teacher.eligibility-grid', [
+                    'eligibility'        => $eligibility,
+                    'showPick'           => true,
+                    'livewirePickMethod' => 'pickSubstitute',
+                ])
+            </div>
+            @endif
+
             @if($requiresSubstitute)
             {{-- Suggested substitutes panel --}}
             <div class="slob-card">

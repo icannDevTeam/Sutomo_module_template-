@@ -18,8 +18,8 @@ class VoluntaryRequestResource extends Resource
     protected static ?string $model = VoluntaryRequest::class;
     protected static ?string $navigationIcon = 'heroicon-o-hand-raised';
     protected static ?string $navigationLabel = 'Voluntary Requests';
-    protected static ?string $navigationGroup = 'Approvals';
-    protected static ?int $navigationSort = 4;
+    protected static ?string $navigationGroup = 'Contract Management';
+    protected static ?int $navigationSort = 5;
 
     public static function getNavigationBadge(): ?string
     {

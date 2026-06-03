@@ -8,9 +8,9 @@ use Filament\Pages\Page;
 class ContractContinuation extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-document';
-    protected static ?string $navigationGroup = 'Teachers';
+    protected static ?string $navigationGroup = 'Contract Management';
     protected static ?string $title = 'Contract Continuation & SK';
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 2;
     protected static string $view = 'filament.principal.pages.contract-continuation';
 
     public function getViewData(): array

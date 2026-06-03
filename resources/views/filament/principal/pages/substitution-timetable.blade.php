@@ -216,8 +216,15 @@
                                 <td class="px-3 py-2">
                                     @if ($cell['source'] === 'leave')
                                         @if ($cell['leave_id'])
-                                            <a class="text-primary-600 hover:underline"
-                                               href="{{ url('/principal/teacher-leaves/'.$cell['leave_id'].'/edit') }}">Leave #{{ $cell['leave_id'] }}</a>
+                                            <div class="flex flex-col gap-1">
+                                                <a class="text-primary-600 hover:underline"
+                                                   href="{{ url('/principal/teacher-leaves/'.$cell['leave_id'].'/edit') }}">Leave #{{ $cell['leave_id'] }}</a>
+                                                <button type="button"
+                                                        wire:click="inspectLeave({{ $cell['leave_id'] }})"
+                                                        class="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 self-start">
+                                                    Inspect →
+                                                </button>
+                                            </div>
                                         @else
                                             Leave
                                         @endif
@@ -242,4 +249,67 @@
             </div>
         @endif
     @endif
+
+    {{-- ── Eligibility lookup ───────────────────────────────────────── --}}
+    <div id="eligibility-lookup"
+         x-data="{}"
+         @scroll-to-eligibility.window="$nextTick(() => document.getElementById('eligibility-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))"
+         class="rounded-lg border border-gray-200 bg-white p-4 mt-4">
+
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900">Eligibility lookup</h3>
+                <p class="text-xs text-gray-500">Pick a leave to see which substitutes are actually free for each affected period.</p>
+            </div>
+            @if($eligibilityLeaveId)
+                <button type="button" wire:click="clearInspect"
+                        class="text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                    Clear
+                </button>
+            @endif
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+            <label class="text-xs font-medium text-gray-600">Leave:</label>
+            <select wire:model.live="eligibilityLeaveId"
+                    class="text-xs border border-gray-300 rounded-md px-2 py-1 min-w-[300px]">
+                <option value="">— select a leave —</option>
+                @foreach($inspectableLeaves as $l)
+                    <option value="{{ $l->id }}">
+                        {{ $l->teacher?->name ?? '—' }} ·
+                        {{ ucfirst($l->status) }} ·
+                        {{ optional($l->starts_at)->format('d M') }}–{{ optional($l->ends_at)->format('d M') }}
+                        ({{ \App\Models\LeaveType::labelFor($l->type) }})
+                    </option>
+                @endforeach
+            </select>
+            @if($inspectableLeaves->isEmpty())
+                <span class="text-xs text-gray-400 italic">No leaves in current window.</span>
+            @endif
+        </div>
+
+        @if($eligibilityLeaveId && $eligibility)
+            <div class="border-t border-gray-100 pt-3">
+                @if($inspectedLeave)
+                    <div class="text-xs text-gray-700 mb-3">
+                        <strong>{{ $inspectedLeave->teacher?->name }}</strong>
+                        · {{ \App\Models\LeaveType::labelFor($inspectedLeave->type) }}
+                        · {{ optional($inspectedLeave->starts_at)->format('d M') }}–{{ optional($inspectedLeave->ends_at)->format('d M Y') }}
+                        @if($inspectedLeave->substitute_teacher_id)
+                            · <span class="text-emerald-700">currently covered by {{ $inspectedLeave->substitute?->name }}</span>
+                        @endif
+                    </div>
+                @endif
+
+                @include('filament.principal.teacher.eligibility-grid', [
+                    'eligibility' => $eligibility,
+                    'showPick'    => false,
+                ])
+            </div>
+        @elseif($eligibilityLeaveId && ! $eligibility)
+            <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                Could not build eligibility (teacher missing, no published timetable, or window outside school days).
+            </div>
+        @endif
+    </div>
 </x-filament-panels::page>

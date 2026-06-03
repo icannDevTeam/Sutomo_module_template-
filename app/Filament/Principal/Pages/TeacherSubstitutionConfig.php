@@ -21,10 +21,10 @@ class TeacherSubstitutionConfig extends Page implements HasForms, HasTable
     use InteractsWithForms, InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
-    protected static ?string $navigationGroup = 'Planning';
+    protected static ?string $navigationGroup = 'Leave & Substitution';
     protected static ?string $navigationLabel = 'Substitution Config';
     protected static ?string $title = 'Teacher Substitution Configuration';
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 90;
     protected static string $view = 'filament.principal.pages.teacher-substitution-config';
     protected static ?string $slug = 'substitution-config';
 

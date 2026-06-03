@@ -22,7 +22,7 @@ class TeacherLeaveResource extends Resource
     protected static ?string $model = TeacherLeave::class;
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
     protected static ?string $navigationLabel = 'Teacher Leaves';
-    protected static ?string $navigationGroup = 'Approvals';
+    protected static ?string $navigationGroup = 'Leave & Substitution';
     protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
@@ -207,10 +207,14 @@ class TeacherLeaveResource extends Resource
             ->modalHeading(fn ($record) => 'Assign Substitute · ' . ($record->teacher?->name ?? 'Teacher'))
             ->modalWidth('5xl')
             ->modalSubmitActionLabel('Approve & Assign')
-            ->modalContent(fn ($record) => view('filament.principal.teacher.substitute-picker', [
-                'leave'      => $record,
-                'candidates' => SubstituteSuggester::for($record),
-            ]))
+            ->modalContent(function ($record) {
+                $candidates = SubstituteSuggester::for($record);
+                return view('filament.principal.teacher.substitute-picker', [
+                    'leave'       => $record,
+                    'candidates'  => $candidates,
+                    'eligibility' => \App\Support\SubstituteEligibilityGrid::buildFor($record, $candidates),
+                ]);
+            })
             ->form([
                 Forms\Components\Hidden::make('substitute_teacher_id'),
                 Forms\Components\Toggle::make('create_duty_assignment')
@@ -360,7 +364,9 @@ class TeacherLeaveResource extends Resource
     }
 
     /**
-     * Modal listing teachers who expressed interest, with radio + Assign.
+     * Modal listing teachers who expressed interest, with eligibility heatmap
+     * + radio + Assign. Shows per-period conflicts so the Principal can
+     * validate each respondent against the leave's actual timetable slots.
      */
     protected static function pickInterestedAction(string $name = 'pickInterested'): Tables\Actions\Action
     {
@@ -372,9 +378,59 @@ class TeacherLeaveResource extends Resource
                 && ! $record->substitute_teacher_id
                 && $record->offers()->where('status', 'interested')->exists())
             ->modalHeading(fn ($record) => 'Pick Substitute · ' . ($record->teacher?->name ?? 'Teacher'))
-            ->modalDescription('Choose one of the teachers who expressed interest. The other interested teachers will be notified the slot is filled.')
-            ->modalWidth('2xl')
+            ->modalDescription('Review per-period conflicts for each respondent before assigning.')
+            ->modalWidth('5xl')
             ->modalSubmitActionLabel('Assign as Substitute')
+            ->modalContent(function ($record) {
+                $offers = $record->offers()->with('teacher')
+                    ->where('status', 'interested')
+                    ->orderBy('responded_at')
+                    ->get();
+
+                $teacherIds = $offers->pluck('teacher_id')->all();
+
+                // Get suggester-annotated rows for the respondents (preserves tier/category badges).
+                $allCandidates = SubstituteSuggester::for($record, 999);
+                $byId = $allCandidates->keyBy(fn ($r) => $r['teacher']->id);
+
+                $candidates = collect();
+                foreach ($offers as $o) {
+                    $tid = $o->teacher_id;
+                    if (isset($byId[$tid])) {
+                        $row = $byId[$tid];
+                        $row['offer_id']    = $o->id;
+                        $row['responded_at'] = $o->responded_at;
+                        $candidates->push($row);
+                    } elseif ($o->teacher) {
+                        // Fallback for respondents not in suggester pool (e.g. cross-campus).
+                        $candidates->push([
+                            'teacher'            => $o->teacher,
+                            'tier'               => SubstituteSuggester::TIER_CAMPUS,
+                            'tier_label'         => 'Responded',
+                            'rank_in_tier'       => 1,
+                            'availability'       => 'free',
+                            'availability_color' => 'success',
+                            'availability_label' => 'Responded',
+                            'conflict_reasons'   => [],
+                            'is_assignable'      => true,
+                            'category'           => $o->teacher->substitution_category ?? 'standard',
+                            'category_label'     => 'Standard',
+                            'category_color'     => 'gray',
+                            'offer_id'           => $o->id,
+                            'responded_at'       => $o->responded_at,
+                        ]);
+                    }
+                }
+
+                $eligibility = \App\Support\SubstituteEligibilityGrid::buildFor($record, $candidates);
+
+                return view('filament.principal.teacher.review-submissions', [
+                    'leave'       => $record,
+                    'offers'      => $offers,
+                    'candidates'  => $candidates,
+                    'eligibility' => $eligibility,
+                ]);
+            })
             ->form(function ($record) {
                 $offers = $record->offers()->with('teacher')
                     ->where('status', 'interested')
@@ -390,7 +446,7 @@ class TeacherLeaveResource extends Resource
 
                 return [
                     Forms\Components\Radio::make('offer_id')
-                        ->label('Interested teachers')
+                        ->label('Assign one of the responding teachers')
                         ->options($options)
                         ->required(),
                 ];

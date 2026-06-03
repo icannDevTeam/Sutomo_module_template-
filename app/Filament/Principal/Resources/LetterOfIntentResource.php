@@ -18,8 +18,8 @@ class LetterOfIntentResource extends Resource
     protected static ?string $model = LetterOfIntent::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-check';
     protected static ?string $navigationLabel = 'Letters of Intent';
-    protected static ?string $navigationGroup = 'Teachers';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationGroup = 'Contract Management';
+    protected static ?int $navigationSort = 1;
 
     public static function getNavigationBadge(): ?string
     {

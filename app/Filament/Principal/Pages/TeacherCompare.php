@@ -23,9 +23,9 @@ class TeacherCompare extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';
-    protected static ?string $navigationGroup = 'Teachers';
+    protected static ?string $navigationGroup = 'Supervision';
     protected static ?string $title = 'Compare Teachers';
-    protected static ?int $navigationSort = 9;
+    protected static ?int $navigationSort = 4;
     protected static string $view = 'filament.principal.pages.teacher-compare';
 
     public ?array $data = ['ids' => []];

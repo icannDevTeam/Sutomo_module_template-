@@ -18,8 +18,8 @@ class DutyAssignmentResource extends Resource
     protected static ?string $model = DutyAssignment::class;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Duty Assignments';
-    protected static ?string $navigationGroup = 'Approvals';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationGroup = 'Leave & Substitution';
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationBadge(): ?string
     {

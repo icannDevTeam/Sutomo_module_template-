@@ -19,6 +19,12 @@ class EbookPlatformResource extends Resource
     protected static ?string $label = 'e-Book Platform';
     protected static ?string $pluralLabel = 'e-Book Platforms';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        // Platforms are managed from inside the e-Book Catalog (EbookPackResource).
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

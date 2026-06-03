@@ -21,8 +21,8 @@ class SensitiveApprovalResource extends Resource
     protected static ?string $model = SensitiveApprovalRequest::class;
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
     protected static ?string $navigationLabel = 'Approvals (HR Sensitive)';
-    protected static ?string $navigationGroup = 'Teachers';
-    protected static ?int $navigationSort = 6;
+    protected static ?string $navigationGroup = 'Contract Management';
+    protected static ?int $navigationSort = 3;
 
     public static function canViewAny(): bool
     {

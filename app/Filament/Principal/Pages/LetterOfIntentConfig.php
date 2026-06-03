@@ -28,10 +28,10 @@ class LetterOfIntentConfig extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static ?string $navigationGroup = 'Teachers';
+    protected static ?string $navigationGroup = 'Contract Management';
     protected static ?string $navigationLabel = 'LOI Configuration';
     protected static ?string $title = 'Letter of Intent — Configuration';
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 90;
     protected static string $view = 'filament.principal.pages.letter-of-intent-config';
     protected static ?string $slug = 'letter-of-intent-config';
 

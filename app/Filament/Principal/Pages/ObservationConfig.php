@@ -9,7 +9,7 @@ use Filament\Pages\Page;
 class ObservationConfig extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'Supervision';
     protected static ?string $navigationLabel = 'Observation Criteria';
     protected static ?string $title = 'Observation Criteria';
     protected static ?int $navigationSort = 90;
