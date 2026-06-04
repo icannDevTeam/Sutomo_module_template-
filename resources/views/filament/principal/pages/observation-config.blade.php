@@ -125,6 +125,54 @@
             <x-heroicon-m-plus class="size-4" />
             Add criterion
         </button>
+
+        {{-- ============================================================
+             PROBATION WATCH SETTINGS (Phase 3)
+             ============================================================ --}}
+        <div class="mt-8 rounded-xl border border-amber-200 bg-amber-50/40 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">
+            <div class="flex items-start gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                    <x-heroicon-o-shield-check class="size-5" />
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Probation Watch</h3>
+                    <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
+                        Thresholds used by the Probation Watch page to flag PKWT-I teachers as ready for a continuation decision.
+                    </p>
+                </div>
+                <label class="inline-flex items-center gap-2">
+                    <input type="checkbox" wire:model.live="probationWatchEnabled" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Enabled</span>
+                </label>
+            </div>
+
+            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-200">Min principal supervisions</label>
+                    <input type="number" min="0" max="50"
+                        wire:model="probationMinSupervisions"
+                        @disabled(! $probationWatchEnabled)
+                        class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50" />
+                    <p class="mt-1 text-[11px] text-gray-500">Required during the 3-month probation window.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-200">Min peer observations</label>
+                    <input type="number" min="0" max="50"
+                        wire:model="probationMinPeerObservations"
+                        @disabled(! $probationWatchEnabled)
+                        class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50" />
+                    <p class="mt-1 text-[11px] text-gray-500">Counted using observation_type = peer_observation.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-200">Decision-due window (days)</label>
+                    <input type="number" min="1" max="90"
+                        wire:model="probationDecisionDueDays"
+                        @disabled(! $probationWatchEnabled)
+                        class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50" />
+                    <p class="mt-1 text-[11px] text-gray-500">Flag a teacher as "decision due" when this many days remain on probation.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Sticky save bar --}}

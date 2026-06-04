@@ -3,6 +3,7 @@
 namespace App\Filament\Principal\Pages;
 
 use App\Models\ObservationCriterion;
+use App\Models\ObservationSetting;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -11,11 +12,17 @@ class ObservationConfig extends Page
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
     protected static ?string $navigationGroup = 'Supervision';
     protected static ?string $navigationLabel = 'Observation Criteria';
-    protected static ?string $title = 'Observation Criteria';
+    protected static ?string $title = 'Observation Configuration';
     protected static ?int $navigationSort = 90;
     protected static string $view = 'filament.principal.pages.observation-config';
 
     public array $criteria = [];
+
+    // Probation Watch settings (Phase 3)
+    public bool $probationWatchEnabled = true;
+    public int $probationMinSupervisions = 4;
+    public int $probationMinPeerObservations = 2;
+    public int $probationDecisionDueDays = 14;
 
     public function mount(): void
     {
@@ -35,6 +42,12 @@ class ObservationConfig extends Page
         } catch (\Throwable $e) {
             $this->criteria = [];
         }
+
+        $settings = ObservationSetting::current();
+        $this->probationWatchEnabled         = (bool) $settings->probation_watch_enabled;
+        $this->probationMinSupervisions      = (int) $settings->probation_min_supervisions;
+        $this->probationMinPeerObservations  = (int) $settings->probation_min_peer_observations;
+        $this->probationDecisionDueDays      = (int) $settings->probation_decision_due_days;
     }
 
     public function addRow(): void
@@ -141,8 +154,20 @@ class ObservationConfig extends Page
             }
         }
 
+        // Save probation settings (Phase 3) BEFORE re-mounting (mount reloads from DB).
+        $settings = ObservationSetting::current();
+        if (! $settings->exists) {
+            $settings = new ObservationSetting(['id' => 1]);
+        }
+        $settings->fill([
+            'probation_watch_enabled'         => (bool) $this->probationWatchEnabled,
+            'probation_min_supervisions'      => max(0, min(50, (int) $this->probationMinSupervisions)),
+            'probation_min_peer_observations' => max(0, min(50, (int) $this->probationMinPeerObservations)),
+            'probation_decision_due_days'     => max(1, min(90, (int) $this->probationDecisionDueDays)),
+        ])->save();
+
         $this->mount();
 
-        Notification::make()->title('Observation criteria saved')->success()->send();
+        Notification::make()->title('Observation configuration saved')->success()->send();
     }
 }

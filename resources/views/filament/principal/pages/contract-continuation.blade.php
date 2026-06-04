@@ -1,33 +1,218 @@
 <x-filament-panels::page>
-<div style="background:white;border:1px solid #e2e8f0;border-radius:.75rem;overflow-x:auto;">
-    <div style="padding:.85rem 1rem;border-bottom:1px solid #e2e8f0;background:#fffbeb;color:#92400e;font-weight:600;">
-        ⏰ Contracts expiring within 3 months — recommend continuation or send to Yayasan
+    {{-- Intro --}}
+    <div class="sp-cm-intro">
+        Per-teacher continuation pipeline for permanent (Guru SK) staff.
+        Stages unlock in order:
+        <b>Submit to Yayasan → Contract Uploaded → Agreement E-Signed → Buku Induk → Complete</b>.
+        Bulk submission lives on the
+        <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl(panel: 'principal') }}?activeTab=signed">Signed tab</a>
+        of the LOI list.
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
-        <thead style="background:#f8fafc;"><tr>
-            <th style="text-align:left;padding:.6rem .85rem;">Teacher</th>
-            <th style="text-align:left;padding:.6rem .85rem;">Campus</th>
-            <th style="text-align:left;padding:.6rem .85rem;">Contract</th>
-            <th style="text-align:left;padding:.6rem .85rem;">End Date</th>
-            <th style="text-align:left;padding:.6rem .85rem;">Rating</th>
-            <th style="text-align:left;padding:.6rem .85rem;">Action</th>
-        </tr></thead>
-        <tbody>
-            @forelse ($expiring as $t)
-                <tr style="border-top:1px solid #f1f5f9;">
-                    <td style="padding:.55rem .85rem;font-weight:600;">{{ $t->name }}</td>
-                    <td style="padding:.55rem .85rem;">{{ strtoupper($t->campus) }}</td>
-                    <td style="padding:.55rem .85rem;">{{ $t->contract ?? '—' }}</td>
-                    <td style="padding:.55rem .85rem;color:#991b1b;">{{ $t->contract_end?->format('d M Y') }}</td>
-                    <td style="padding:.55rem .85rem;">{{ $t->rating ? $t->rating.'/5' : '—' }}</td>
-                    <td style="padding:.55rem .85rem;">
-                        <span style="background:#dcfce7;color:#166534;padding:.15rem .55rem;border-radius:.4rem;font-size:.72rem;font-weight:600;cursor:pointer;">Recommend renewal</span>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" style="padding:1.5rem;text-align:center;color:#94a3b8;">No contracts expiring soon.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+
+    {{-- Academic year tabs --}}
+    <div class="sp-tabs">
+        <div class="sp-tabs__group">
+            @foreach ($academicYears as $year)
+                <button type="button"
+                    wire:click='$set("academicYear", @js($year))'
+                    class="sp-tab {{ $academicYear === $year ? 'is-active' : '' }}">
+                    {{ $year }}
+                    @if ($year === $currentAy)
+                        <span class="sp-tab__count" style="background:#10b981;color:#fff;">NOW</span>
+                    @endif
+                </button>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- KPIs --}}
+    <div class="sp-kpis">
+        @php
+            $kpis = [
+                ['Total in ' . $academicYear, $stats['total'],            'slate',   'heroicon-o-users'],
+                ['Pending agreement (e-sign)', $stats['pending_agreement'], 'amber', 'heroicon-o-pencil-square'],
+                ['In progress with Yayasan',   $stats['in_progress'],     'sky',     'heroicon-o-paper-airplane'],
+                ['Handed over',                $stats['handed_over'],     'emerald', 'heroicon-o-check-badge'],
+            ];
+        @endphp
+        @foreach ($kpis as [$label, $value, $tone, $icon])
+            <div class="sp-kpi sp-kpi--{{ $tone }}">
+                <div class="sp-kpi-head">
+                    <span class="sp-kpi-label">{{ $label }}</span>
+                    <span class="sp-kpi-icon"><x-filament::icon :icon="$icon" style="width:16px;height:16px;" /></span>
+                </div>
+                <div class="sp-kpi-value">{{ $value }}</div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- Pipeline rows --}}
+    @php
+        $stageDef = [
+            ['key' => 'sent',              'label' => 'Sent'],
+            ['key' => 'signed',            'label' => 'Signed'],
+            ['key' => 'submitted',         'label' => 'Yayasan'],
+            ['key' => 'contract_uploaded', 'label' => 'Contract'],
+            ['key' => 'agreement_signed',  'label' => 'E-Signed'],
+            ['key' => 'buku_induk',        'label' => 'Buku Induk'],
+            ['key' => 'complete',          'label' => 'Complete'],
+        ];
+
+        $stageStateFor = function (\App\Models\LetterOfIntent $loi, string $stageKey): string {
+            $done = match ($stageKey) {
+                'sent'              => ! is_null($loi->sent_at) || in_array($loi->status, ['sent', 'signed']),
+                'signed'            => ! is_null($loi->signed_at),
+                'submitted'         => ! is_null($loi->submitted_to_yayasan_at),
+                'contract_uploaded' => ! is_null($loi->yayasan_contract_uploaded_at),
+                'agreement_signed'  => ! is_null($loi->agreement_signed_at),
+                'buku_induk'        => ! is_null($loi->buku_induk_recorded_at),
+                'complete'          => ! is_null($loi->continuation_completed_at),
+                default             => false,
+            };
+            if ($done) return 'done';
+
+            $next = match (true) {
+                ! is_null($loi->continuation_completed_at) => null,
+                ! is_null($loi->buku_induk_recorded_at)    => 'complete',
+                ! is_null($loi->agreement_signed_at)       => 'buku_induk',
+                ! is_null($loi->yayasan_contract_uploaded_at) => 'agreement_signed',
+                ! is_null($loi->submitted_to_yayasan_at)   => 'contract_uploaded',
+                ! is_null($loi->signed_at)                 => 'submitted',
+                $loi->status === 'sent'                    => 'signed',
+                default                                    => 'sent',
+            };
+            return $stageKey === $next ? 'current' : 'locked';
+        };
+    @endphp
+
+    @forelse ($rows as $loi)
+        @php
+            $isComplete = ! is_null($loi->continuation_completed_at);
+            $rowClass   = $isComplete ? 'is-success' : '';
+            $currentStage = collect($stageDef)
+                ->map(fn ($s) => ['label' => $s['label'], 'state' => $stageStateFor($loi, $s['key'])])
+                ->firstWhere('state', 'current');
+        @endphp
+
+        <div class="sp-card sp-cm-card {{ $rowClass }}">
+            <div class="sp-onb-head">
+                <div class="sp-onb-id" style="display:flex; align-items:center; gap:.75rem;">
+                    <div class="sp-avatar">{{ \Illuminate\Support\Str::of($loi->teacher?->name ?? '?')->substr(0, 1) }}</div>
+                    <div style="min-width:0;">
+                        <div class="sp-onb-name">
+                            {{ $loi->teacher?->name ?? 'Unknown teacher' }}
+                            <span class="sp-tier sp-tier--guru_sk">Guru SK</span>
+                        </div>
+                        <div class="sp-onb-meta">
+                            {{ $loi->teacher?->employee_no ?? '—' }}
+                            · LOI {{ \App\Models\LetterOfIntent::STATUSES[$loi->status] ?? $loi->status }}
+                            @if ($loi->academic_year) · AY {{ $loi->academic_year }} @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="sp-onb-actions">
+                    @if ($isComplete)
+                        <span class="sp-pill sp-pill-green">
+                            <x-filament::icon icon="heroicon-o-check-badge" style="width:13px;height:13px;" />
+                            Complete
+                        </span>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Stepper --}}
+            <div class="sp-stepper" style="margin-top:.9rem;">
+                @foreach ($stageDef as $s)
+                    @php $state = $stageStateFor($loi, $s['key']); @endphp
+                    <div class="sp-step sp-step-{{ $state }}">
+                        <span class="sp-step-dot">
+                            @if ($state === 'done')
+                                <x-filament::icon icon="heroicon-m-check" style="width:12px;height:12px;color:#fff;" />
+                            @elseif ($state === 'current')
+                                <span class="sp-step-pulse"></span>
+                            @else
+                                <x-filament::icon icon="heroicon-m-lock-closed" style="width:11px;height:11px;color:#94a3b8;" />
+                            @endif
+                        </span>
+                        <span class="sp-step-label">{{ $s['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- Active stage hint --}}
+            @if ($currentStage)
+                <div class="sp-step-hint">
+                    <x-filament::icon icon="heroicon-m-information-circle" style="width:14px;height:14px;" />
+                    <span>Next: <b>{{ $currentStage['label'] }}</b></span>
+                </div>
+            @else
+                <div class="sp-step-hint sp-step-hint-done">
+                    <x-filament::icon icon="heroicon-m-sparkles" style="width:14px;height:14px;" />
+                    <span><b>Continuation complete.</b> Teacher fully transferred for {{ $loi->academic_year }}.</span>
+                </div>
+            @endif
+
+            {{-- Timestamps strip --}}
+            <div class="sp-counters" style="grid-template-columns:repeat(4,1fr); margin-top:.75rem;">
+                <div class="sp-counter">
+                    <div class="sp-counter__label">Signed</div>
+                    <div class="sp-counter__value"><strong style="font-size:.95rem;">{{ $loi->signed_at?->format('d M Y') ?? '—' }}</strong></div>
+                </div>
+                <div class="sp-counter">
+                    <div class="sp-counter__label">Submitted</div>
+                    <div class="sp-counter__value"><strong style="font-size:.95rem;">{{ $loi->submitted_to_yayasan_at?->format('d M Y') ?? '—' }}</strong></div>
+                </div>
+                <div class="sp-counter">
+                    <div class="sp-counter__label">Contract uploaded</div>
+                    <div class="sp-counter__value"><strong style="font-size:.95rem;">{{ $loi->yayasan_contract_uploaded_at?->format('d M Y') ?? '—' }}</strong></div>
+                </div>
+                <div class="sp-counter">
+                    <div class="sp-counter__label">E-signed</div>
+                    <div class="sp-counter__value"><strong style="font-size:.95rem;">{{ $loi->agreement_signed_at?->format('d M Y') ?? '—' }}</strong></div>
+                </div>
+            </div>
+
+            {{-- Actions --}}
+            <div class="sp-act-row">
+                <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl('view', ['record' => $loi->id], panel: 'principal') }}"
+                    class="sp-act sp-act--ghost">
+                    <x-filament::icon icon="heroicon-o-eye" style="width:14px;height:14px;" /> View LOI
+                </a>
+
+                <div class="sp-act-spacer"></div>
+
+                @if (! is_null($loi->yayasan_contract_uploaded_at) && is_null($loi->agreement_signed_at))
+                    <a href="{{ \App\Filament\Principal\Pages\SignLetterOfIntent::getUrl(['record' => $loi->id, 'mode' => 'agreement'], panel: 'principal') }}"
+                        class="sp-act sp-act--amber">
+                        <x-filament::icon icon="heroicon-o-finger-print" style="width:14px;height:14px;" /> Open e-sign
+                    </a>
+                @endif
+
+                @if (! is_null($loi->agreement_signed_at) && is_null($loi->buku_induk_recorded_at))
+                    <button type="button"
+                        wire:click="recordBukuInduk({{ $loi->id }})"
+                        wire:confirm="Confirm: Buku Induk has been updated for {{ $loi->teacher?->name }}?"
+                        class="sp-act sp-act--slate">
+                        <x-filament::icon icon="heroicon-o-book-open" style="width:14px;height:14px;" /> Record Buku Induk
+                    </button>
+                @endif
+
+                @if ($loi->canMarkContinuationComplete())
+                    <button type="button"
+                        wire:click="markComplete({{ $loi->id }})"
+                        wire:confirm="Mark continuation as complete?"
+                        class="sp-act sp-act--success">
+                        <x-filament::icon icon="heroicon-o-check-badge" style="width:14px;height:14px;" /> Mark complete
+                    </button>
+                @endif
+            </div>
+        </div>
+    @empty
+        <div class="sp-cm-empty">
+            <x-filament::icon icon="heroicon-o-inbox" style="width:42px;height:42px;color:#cbd5e1;margin:0 auto;" />
+            <h3>No Guru SK continuations for {{ $academicYear }}</h3>
+            <p>This page only lists permanent teachers (status = Guru SK) with an LOI in the selected academic year.
+            Send LOIs from the LOI list to populate this pipeline.</p>
+        </div>
+    @endforelse
 </x-filament-panels::page>

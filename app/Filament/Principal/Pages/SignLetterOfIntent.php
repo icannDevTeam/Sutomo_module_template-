@@ -18,9 +18,55 @@ class SignLetterOfIntent extends Page
     public string $signatureText = '';
     public string $declineReason = '';
 
+    /** 'loi' (default) | 'agreement' — agreement mode signs the post-Yayasan agreement letter (= contract handover). */
+    public string $mode = 'loi';
+
     public function mount(int|string $record): void
     {
         $this->letter = LetterOfIntent::findOrFail($record);
+        $requested = (string) request()->query('mode', 'loi');
+        $this->mode = in_array($requested, ['loi', 'agreement'], true) ? $requested : 'loi';
+    }
+
+    public function isAgreementMode(): bool
+    {
+        return $this->mode === 'agreement';
+    }
+
+    public function signAgreement(): void
+    {
+        $text = trim($this->signatureText);
+        if ($text === '' || mb_strlen($text) > 200) {
+            Notification::make()->title('Please type your full name (max 200 chars) to sign.')->danger()->send();
+            return;
+        }
+        if (! $this->letter) {
+            Notification::make()->title('Letter not found.')->danger()->send();
+            return;
+        }
+        if (is_null($this->letter->yayasan_contract_uploaded_at)) {
+            Notification::make()->title('Yayasan contract has not been uploaded yet.')->danger()->send();
+            return;
+        }
+        if (! is_null($this->letter->agreement_signed_at)) {
+            Notification::make()->title('Agreement already signed.')->warning()->send();
+            return;
+        }
+
+        $teacherUserId = $this->letter->teacher?->user_id ?? null;
+        if ($teacherUserId === null || auth()->id() !== $teacherUserId) {
+            abort(403, 'Only the named teacher may e-sign the agreement letter.');
+        }
+
+        $this->letter->forceFill([
+            'agreement_signed_at'       => now(),
+            'agreement_signature_text'  => $text,
+            'agreement_signature_ip'    => request()->ip(),
+        ])->save();
+
+        Notification::make()->title('Agreement letter e-signed. Contract is officially handed over.')->success()->send();
+
+        $this->redirect(LetterOfIntentResource::getUrl('view', ['record' => $this->letter->id], panel: 'principal'));
     }
 
     public function sign(): void

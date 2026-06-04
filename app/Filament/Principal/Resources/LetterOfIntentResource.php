@@ -77,9 +77,8 @@ class LetterOfIntentResource extends Resource
                 Group::make('academic_year')
                     ->label('Academic Year')
                     ->collapsible()
-                    ->orderQueryUsing(fn (Builder $q) => $q->orderByDesc('academic_year')),
+                    ->orderQueryUsing(fn (Builder $query) => $query->orderByDesc('academic_year')),
             ])
-            ->defaultGroup('academic_year')
             ->columns([
                 Tables\Columns\TextColumn::make('teacher.name')
                     ->label('Teacher')
@@ -126,7 +125,6 @@ class LetterOfIntentResource extends Resource
                     })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('sent_at')->date('d M Y')->placeholder('—')->toggleable(),
-                Tables\Columns\TextColumn::make('signed_at')->date('d M Y')->placeholder('—')->toggleable(),
                 Tables\Columns\TextColumn::make('deadline_at')->date('d M Y')->placeholder('—')->toggleable(),
                 Tables\Columns\TextColumn::make('last_reminder_at')
                     ->label('Last reminder')
@@ -204,16 +202,38 @@ class LetterOfIntentResource extends Resource
                     }),
             ])
             ->bulkActions([
+                Tables\Actions\BulkAction::make('submit_to_yayasan_selected')
+                    ->label('Submit selected to Yayasan')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalDescription('Submits all selected SIGNED LOIs to Yayasan. Already-submitted or non-signed rows are skipped.')
+                    ->visible(fn ($livewire) => ($livewire->activeTab ?? null) === 'signed')
+                    ->action(function ($records) {
+                        $count = 0;
+                        foreach ($records as $record) {
+                            if ($record->status === 'signed'
+                                && is_null($record->submitted_to_yayasan_at)
+                                && is_null($record->continuation_completed_at)) {
+                                $record->update(['submitted_to_yayasan_at' => now()]);
+                                $count++;
+                            }
+                        }
+                        Notification::make()->title("Submitted {$count} LOIs to Yayasan")->success()->send();
+                    }),
                 Tables\Actions\BulkAction::make('archive_selected')
                     ->label('Archive selected')
                     ->icon('heroicon-o-archive-box')
                     ->requiresConfirmation()
+                    ->visible(fn ($livewire) => ($livewire->activeTab ?? null) !== 'archived')
                     ->action(fn ($records) => $records->each->update(['archived_at' => now()])),
                 Tables\Actions\BulkAction::make('unarchive_selected')
                     ->label('Unarchive selected')
                     ->icon('heroicon-o-arrow-uturn-left')
+                    ->visible(fn ($livewire) => ($livewire->activeTab ?? null) === 'archived')
                     ->action(fn ($records) => $records->each->update(['archived_at' => null])),
-                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\DeleteBulkAction::make()
+                    ->visible(fn ($livewire) => ($livewire->activeTab ?? null) === 'archived'),
             ]);
     }
 

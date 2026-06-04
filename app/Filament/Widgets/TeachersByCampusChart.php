@@ -16,11 +16,16 @@ class TeachersByCampusChart extends ChartWidget
     protected function getData(): array
     {
         $campuses = ['sd' => 'SD', 'smp' => 'SMP', 'sma' => 'SMA', 'int' => 'International'];
+        // Stacked dataset palette — covers legacy + PKWT tiers + leave/opl.
         $statuses = [
-            'permanent' => ['Permanent', '#10b981'],
-            'contract'  => ['Contract',  '#0ea5e9'],
-            'probation' => ['Probation', '#f59e0b'],
-            'opl'       => ['OPL',       '#f97316'],
+            'guru_sk'   => ['Guru SK',   '#10b981'],
+            'permanent' => ['Permanent', '#059669'],
+            'pkwt_3'    => ['PKWT-III',  '#0ea5e9'],
+            'pkwt_2'    => ['PKWT-II',   '#3b82f6'],
+            'pkwt_1'    => ['PKWT-I',    '#f59e0b'],
+            'contract'  => ['Contract',  '#94a3b8'],
+            'probation' => ['Probation', '#f97316'],
+            'opl'       => ['OPL',       '#fb7185'],
             'leave'     => ['On Leave',  '#8b5cf6'],
         ];
 

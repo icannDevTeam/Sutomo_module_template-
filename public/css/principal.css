@@ -3745,3 +3745,218 @@
     .sp-ai-summary { background:#f9fafb !important; }
     a { color:#000 !important; text-decoration:none !important; }
 }
+
+/* =========================================================================
+   CONTRACT MANAGEMENT — Probation Watch / Renewal / Continuation / Roster
+   ========================================================================= */
+
+/* Page intro line — sits below the Filament page H1 */
+.sp-cm-intro {
+    font-size: .88rem; color: var(--sp-ink-mute); line-height: 1.55;
+    margin: -.25rem 0 var(--sp-gap);
+}
+.sp-cm-intro b { color: var(--sp-ink); }
+.sp-cm-intro a { color:#4338ca; text-decoration: underline; }
+.sp-cm-intro a:hover { text-decoration: none; }
+
+/* KPI tone variants — left border + faint tinted background */
+.sp-kpi--slate   { border-left: 4px solid #64748b; }
+.sp-kpi--rose    { border-left: 4px solid #e11d48; background: #fff1f2; }
+.sp-kpi--amber   { border-left: 4px solid #d97706; background: #fffbeb; }
+.sp-kpi--sky     { border-left: 4px solid #0284c7; background: #f0f9ff; }
+.sp-kpi--emerald { border-left: 4px solid #059669; background: #ecfdf5; }
+.sp-kpi--violet  { border-left: 4px solid #7c3aed; background: #f5f3ff; }
+.sp-kpi-head { display:flex; align-items:center; justify-content:space-between; }
+.sp-kpi-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:rgba(15,23,42,.05); }
+.sp-kpi--rose    .sp-kpi-icon { background: rgba(225,29,72,.10);  color:#9f1239; }
+.sp-kpi--amber   .sp-kpi-icon { background: rgba(217,119,6,.10);  color:#92400e; }
+.sp-kpi--sky     .sp-kpi-icon { background: rgba(2,132,199,.10);  color:#075985; }
+.sp-kpi--emerald .sp-kpi-icon { background: rgba(5,150,105,.10);  color:#065f46; }
+.sp-kpi--slate   .sp-kpi-icon { background: rgba(100,116,139,.10); color:#334155; }
+.sp-kpi--violet  .sp-kpi-icon { background: rgba(124,58,237,.10); color:#5b21b6; }
+
+/* Filter / tab strip used at the top of CM pages */
+.sp-tabs {
+    display: flex; flex-wrap: wrap; gap: .4rem;
+    background: var(--sp-bg); border: 1px solid var(--sp-border);
+    border-radius: var(--sp-radius); padding: .5rem; margin-bottom: var(--sp-gap);
+    box-shadow: var(--sp-shadow-sm);
+}
+.sp-tabs--with-search { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.sp-tabs__group { display: flex; flex-wrap: wrap; gap: .35rem; }
+.sp-tab {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .45rem .85rem;
+    border-radius: 9999px;
+    font-size: .82rem; font-weight: 600; color: #475569;
+    background: transparent; border: 1px solid transparent;
+    cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.sp-tab:hover { background:#f1f5f9; color:#0f172a; }
+.sp-tab.is-active {
+    background:#0f172a; color:#fff; border-color:#0f172a;
+    box-shadow: 0 6px 18px -10px rgba(15,23,42,.45);
+}
+.sp-tab__count {
+    display: inline-grid; place-items: center;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    border-radius: 9999px; font-size: .68rem; font-weight: 800;
+    background: rgba(15,23,42,.08); color: #0f172a;
+}
+.sp-tab.is-active .sp-tab__count { background: rgba(255,255,255,.18); color: #fff; }
+.sp-tabs__search {
+    flex-shrink: 0;
+    width: 240px;
+    padding: .45rem .7rem;
+    border: 1px solid var(--sp-border); border-radius: 8px;
+    background: var(--sp-bg); color: var(--sp-ink); font-size: .85rem;
+}
+.sp-tabs__search:focus { outline: none; border-color:#6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+
+/* Reusable contract row card (mirrors sp-onb-card visual weight) */
+.sp-cm-card { padding: 1rem 1.15rem; }
+.sp-cm-card + .sp-cm-card { margin-top: var(--sp-gap-sm); }
+.sp-cm-card.is-warning { border-left: 4px solid #d97706; }
+.sp-cm-card.is-danger  { border-left: 4px solid #e11d48; }
+.sp-cm-card.is-success { border-left: 4px solid #059669; }
+.sp-cm-card.is-info    { border-left: 4px solid #0284c7; }
+
+/* Avatar disc */
+.sp-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: #0f172a; color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: .85rem; text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+/* Tier badges (PKWT-I/II/III/Guru SK) */
+.sp-tier {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    border: 1px solid transparent;
+}
+.sp-tier--pkwt_1  { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+.sp-tier--pkwt_2  { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+.sp-tier--pkwt_3  { background:#e0e7ff; color:#3730a3; border-color:#c7d2fe; }
+.sp-tier--guru_sk { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.sp-tier--inactive { background:#e2e8f0; color:#475569; border-color:#cbd5e1; }
+
+/* Days-left chip */
+.sp-days {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: 3px 10px; border-radius: 9999px;
+    font-size: .72rem; font-weight: 700;
+    border: 1px solid transparent;
+}
+.sp-days--ok   { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.sp-days--warn { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+.sp-days--due  { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+.sp-days--past { background:#9f1239; color:#fff; }
+
+/* Counter sub-cards (3-up grid below row header) */
+.sp-counters {
+    margin-top: .9rem;
+    display: grid; gap: .65rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 720px) { .sp-counters { grid-template-columns: 1fr; } }
+.sp-counter {
+    background: var(--sp-bg-soft);
+    border: 1px solid var(--sp-border-soft);
+    border-radius: var(--sp-radius-sm);
+    padding: .65rem .8rem;
+}
+.sp-counter__label { font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--sp-ink-mute); }
+.sp-counter__value { display:flex; align-items:baseline; gap:.4rem; margin-top:.2rem; }
+.sp-counter__value strong { font-size: 1.5rem; font-weight: 800; color: var(--sp-ink); line-height: 1; }
+.sp-counter__value small { font-size: .72rem; color: var(--sp-ink-faint); font-weight: 500; }
+.sp-counter__value .sp-ok    { color:#059669; }
+.sp-counter__value .sp-warn  { color:#d97706; }
+
+/* Inline action button variants for CM pages */
+.sp-act { display: inline-flex; align-items: center; gap: .35rem;
+    padding: .5rem .85rem; border-radius: 8px;
+    font-size: .8rem; font-weight: 600; line-height: 1;
+    cursor: pointer; border: 1px solid transparent;
+    transition: filter .15s ease, transform .15s ease;
+}
+.sp-act:hover { filter: brightness(1.06); }
+.sp-act:active { transform: translateY(1px); }
+.sp-act:disabled { opacity:.55; cursor: not-allowed; }
+.sp-act--ghost   { background:#fff; color:#0f172a; border-color:#e2e8f0; }
+.sp-act--ghost:hover { background:#f1f5f9; }
+.sp-act--primary { background:#0f172a; color:#fff; }
+.sp-act--success { background:#059669; color:#fff; }
+.sp-act--danger  { background:#dc2626; color:#fff; }
+.sp-act--amber   { background:#d97706; color:#fff; }
+.sp-act--sky     { background:#0284c7; color:#fff; }
+.sp-act--slate   { background:#475569; color:#fff; }
+.sp-act-row {
+    margin-top: .9rem; padding-top: .8rem;
+    border-top: 1px dashed var(--sp-border);
+    display: flex; flex-wrap: wrap; gap: .45rem; align-items: center;
+}
+.sp-act-row .sp-act-spacer { flex: 1; }
+
+/* File upload pseudo-button */
+.sp-act-file {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .5rem .85rem; border-radius: 8px;
+    font-size: .8rem; font-weight: 600;
+    background:#fff; color:#0f172a; border:1px solid #e2e8f0;
+    cursor: pointer;
+}
+.sp-act-file:hover { background:#f1f5f9; }
+.sp-act-file input[type=file] { display: none; }
+
+/* Roster table */
+.sp-roster {
+    background: var(--sp-bg);
+    border: 1px solid var(--sp-border);
+    border-radius: var(--sp-radius);
+    overflow: hidden;
+    box-shadow: var(--sp-shadow-sm);
+}
+.sp-roster table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.sp-roster thead th {
+    text-align: left;
+    background: #f8fafc;
+    color: #475569;
+    font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: .65rem .85rem;
+    border-bottom: 1px solid var(--sp-border);
+}
+.sp-roster tbody td { padding: .7rem .85rem; border-top: 1px solid var(--sp-border-soft); vertical-align: middle; }
+.sp-roster tbody tr:hover { background: #f8fafc; }
+.sp-roster__cell-id { display:flex; align-items:center; gap: .65rem; min-width: 0; }
+.sp-roster__name { font-weight: 700; color: var(--sp-ink); }
+.sp-roster__sub { font-size: .72rem; color: var(--sp-ink-faint); }
+.sp-roster__period { font-size: .8rem; color: var(--sp-ink); }
+.sp-roster__period small { display: block; font-size: .68rem; color: var(--sp-ink-faint); margin-top: 2px; }
+.sp-roster__flags { display:flex; flex-wrap:wrap; gap: .25rem; }
+
+/* Tier breakdown chips on roster header */
+.sp-tier-strip {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    padding: .65rem .85rem; margin-bottom: var(--sp-gap);
+    background: var(--sp-bg); border: 1px solid var(--sp-border);
+    border-radius: var(--sp-radius); box-shadow: var(--sp-shadow-sm);
+}
+.sp-tier-strip__item {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .35rem .7rem; border-radius: 9999px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+    background: #f1f5f9; color: #475569;
+}
+.sp-tier-strip__item b { font-size: .82rem; color: var(--sp-ink); }
+
+/* Empty state shared for CM pages */
+.sp-cm-empty {
+    text-align: center; padding: 3rem 1.5rem;
+    background: var(--sp-bg); border: 1px dashed var(--sp-border);
+    border-radius: var(--sp-radius);
+}
+.sp-cm-empty h3 { font-weight: 700; color: var(--sp-ink); margin: .65rem 0 .25rem; font-size: .95rem; }
+.sp-cm-empty p { color: var(--sp-ink-mute); font-size: .82rem; margin: 0; }

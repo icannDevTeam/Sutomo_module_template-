@@ -65,12 +65,40 @@ class Teacher extends Model
     }
 
     public const STATUSES = [
-        'permanent' => 'Permanent',
-        'contract'  => 'Contract',
-        'probation' => 'Probation',
-        'opl'       => 'OPL',
-        'leave'     => 'On Leave',
-        'alumni'    => 'Alumni',
+        'permanent'   => 'Permanent',     // legacy — kept for back-compat with existing rows
+        'contract'    => 'Contract',      // legacy — superseded by pkwt_1/2/3
+        'probation'   => 'Probation',     // PKWT-I within probation window
+        'pkwt_1'      => 'PKWT-I',
+        'pkwt_2'      => 'PKWT-II',
+        'pkwt_3'      => 'PKWT-III',
+        'guru_sk'     => 'Guru SK',
+        'opl'         => 'OPL',
+        'leave'       => 'On Leave',
+        'resigned'    => 'Resigned',
+        'not_renewed' => 'Not Renewed',
+        'alumni'      => 'Alumni',
+    ];
+
+    /** Statuses that count as currently-employed (excludes alumni/resigned/not_renewed). */
+    public const ACTIVE_STATUSES = [
+        'permanent', 'contract', 'probation',
+        'pkwt_1', 'pkwt_2', 'pkwt_3', 'guru_sk',
+        'opl', 'leave',
+    ];
+
+    public const STATUS_COLORS = [
+        'permanent'   => 'success',
+        'contract'    => 'info',
+        'probation'   => 'warning',
+        'pkwt_1'      => 'warning',
+        'pkwt_2'      => 'info',
+        'pkwt_3'      => 'primary',
+        'guru_sk'     => 'success',
+        'opl'         => 'warning',
+        'leave'       => 'gray',
+        'resigned'    => 'danger',
+        'not_renewed' => 'danger',
+        'alumni'      => 'gray',
     ];
 
     public const TITLES = [
@@ -462,6 +490,26 @@ class Teacher extends Model
     public function observations(): HasMany
     {
         return $this->hasMany(TeacherObservation::class);
+    }
+
+    // ===== Contract spine (Phase 1) =====
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(TeacherContract::class);
+    }
+
+    public function lettersOfIntent(): HasMany
+    {
+        return $this->hasMany(LetterOfIntent::class);
+    }
+
+    /** Most recent active contract (or most recent overall if none active). */
+    public function currentContract(): ?TeacherContract
+    {
+        return $this->contracts()
+            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
+            ->orderByDesc('starts_at')
+            ->first();
     }
 
     public function goals(): HasMany

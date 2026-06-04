@@ -11,8 +11,16 @@ class LetterOfIntent extends Model
     protected $table = 'letters_of_intent';
 
     protected $fillable = [
-        'teacher_id', 'principal_id', 'academic_year', 'position',
+        'teacher_id', 'teacher_contract_id', 'principal_id', 'academic_year', 'position',
         'body', 'notes', 'deadline_at',
+        'submitted_to_yayasan_at',
+        'yayasan_contract_path',
+        'yayasan_contract_uploaded_at',
+        'agreement_signed_at',
+        'agreement_signature_text',
+        'agreement_signature_ip',
+        'buku_induk_recorded_at',
+        'continuation_completed_at',
         'follow_up_status',
         'follow_up_outcome',
         'meeting_notes',
@@ -30,6 +38,11 @@ class LetterOfIntent extends Model
         'sent_at'                        => 'datetime',
         'signed_at'                      => 'datetime',
         'deadline_at'                    => 'datetime',
+        'submitted_to_yayasan_at'        => 'datetime',
+        'yayasan_contract_uploaded_at'   => 'datetime',
+        'agreement_signed_at'            => 'datetime',
+        'buku_induk_recorded_at'         => 'datetime',
+        'continuation_completed_at'      => 'datetime',
         'resignation_letter_uploaded_at' => 'datetime',
         'hr_handoff_marked_at'           => 'datetime',
         'hr_uploaded_at'                 => 'datetime',
@@ -61,6 +74,11 @@ class LetterOfIntent extends Model
     public function principal(): BelongsTo
     {
         return $this->belongsTo(User::class, 'principal_id');
+    }
+
+    public function teacherContract(): BelongsTo
+    {
+        return $this->belongsTo(TeacherContract::class);
     }
 
     public const FOLLOW_UP_STATUSES = [
@@ -109,6 +127,18 @@ class LetterOfIntent extends Model
         return $q->whereIn('status', ['draft', 'sent']);
     }
 
+    public function scopeAwaitingYayasanSubmission(Builder $q): Builder
+    {
+        return $q->where('status', 'signed')
+            ->whereNull('submitted_to_yayasan_at')
+            ->whereNull('continuation_completed_at');
+    }
+
+    public function scopeContinuationComplete(Builder $q): Builder
+    {
+        return $q->whereNotNull('continuation_completed_at');
+    }
+
     public function canCloseCase(): bool
     {
         return $this->status === 'declined'
@@ -116,8 +146,23 @@ class LetterOfIntent extends Model
             && ! is_null($this->meeting_notes);
     }
 
+    public function canMarkContinuationComplete(): bool
+    {
+        return $this->status === 'signed'
+            && ! is_null($this->submitted_to_yayasan_at)
+            && ! is_null($this->yayasan_contract_uploaded_at)
+            && ! is_null($this->agreement_signed_at)
+            && ! is_null($this->buku_induk_recorded_at)
+            && is_null($this->continuation_completed_at);
+    }
+
     public function isArchived(): bool
     {
         return ! is_null($this->archived_at);
+    }
+
+    public function isNotArchived(): bool
+    {
+        return is_null($this->archived_at);
     }
 }

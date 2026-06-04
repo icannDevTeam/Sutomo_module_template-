@@ -16,7 +16,35 @@ class TeacherObservation extends Model
         'follow_up_date'      => 'date',
         'dimensions'          => 'array',
         'notes_by_criterion'  => 'array',
+        'semester'            => 'integer',
     ];
+
+    public const TYPES = [
+        'principal_supervision' => 'Principal Supervision',
+        'peer_observation'      => 'Peer Observation',
+        'external'              => 'External Evaluator',
+        'self'                  => 'Self-Reflection',
+    ];
+
+    public function scopeForAcademicYear(\Illuminate\Database\Eloquent\Builder $q, string $ay): \Illuminate\Database\Eloquent\Builder
+    {
+        return $q->where('academic_year', $ay);
+    }
+
+    public function scopeForSemester(\Illuminate\Database\Eloquent\Builder $q, string $ay, int $semester): \Illuminate\Database\Eloquent\Builder
+    {
+        return $q->where('academic_year', $ay)->where('semester', $semester);
+    }
+
+    public function scopeByType(\Illuminate\Database\Eloquent\Builder $q, string $type): \Illuminate\Database\Eloquent\Builder
+    {
+        return $q->where('observation_type', $type);
+    }
+
+    public function scopeApproved(\Illuminate\Database\Eloquent\Builder $q): \Illuminate\Database\Eloquent\Builder
+    {
+        return $q->where('status', 'approved');
+    }
 
     public const DIMENSIONS = [
         'engagement'      => 'Engagement',
