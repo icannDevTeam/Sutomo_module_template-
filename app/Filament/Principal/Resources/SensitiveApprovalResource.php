@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 
 class SensitiveApprovalResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $model = SensitiveApprovalRequest::class;
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
     protected static ?string $navigationLabel = 'Approvals (HR Sensitive)';
@@ -26,8 +27,7 @@ class SensitiveApprovalResource extends Resource
 
     public static function canViewAny(): bool
     {
-        $user = Auth::user();
-        return $user && in_array($user->role ?? 'teacher', ['principal', 'vice_principal', 'hr', 'admin', 'superadmin'], true);
+        return false;
     }
 
     public static function form(Form $form): Form

@@ -15,12 +15,11 @@ class SupervisiEvaluation extends Model
         'scheduled' => 'Scheduled',
         'completed' => 'Completed',
         'failed'    => 'Failed',
-        'training'  => 'Training Required',
     ];
 
     public const STATUS_COLORS = [
         'scheduled' => 'gray', 'completed' => 'success',
-        'failed' => 'danger', 'training' => 'warning',
+        'failed' => 'danger',
     ];
 
     public function teacher(): BelongsTo

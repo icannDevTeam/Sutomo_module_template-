@@ -3,34 +3,26 @@
     <div class="sp-cm-intro">
         Per-teacher continuation pipeline for permanent (Guru SK) staff.
         Stages unlock in order:
-        <b>Submit to Yayasan → Contract Uploaded → Agreement E-Signed → Buku Induk → Complete</b>.
+        <b>Submit to Yayasan → Contract Uploaded → Agreement Letter Signed → Buku Induk → Complete</b>.
         Bulk submission lives on the
         <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl(panel: 'principal') }}?activeTab=signed">Signed tab</a>
         of the LOI list.
     </div>
 
-    {{-- Academic year tabs --}}
-    <div class="sp-tabs">
-        <div class="sp-tabs__group">
-            @foreach ($academicYears as $year)
-                <button type="button"
-                    wire:click='$set("academicYear", @js($year))'
-                    class="sp-tab {{ $academicYear === $year ? 'is-active' : '' }}">
-                    {{ $year }}
-                    @if ($year === $currentAy)
-                        <span class="sp-tab__count" style="background:#10b981;color:#fff;">NOW</span>
-                    @endif
-                </button>
-            @endforeach
-        </div>
-    </div>
+    <x-principal.academic-year-rail
+        :years="$academicYearSummary"
+        :selected-ay="$academicYear"
+        :current-ay="$currentAy"
+        select-action="selectAcademicYear"
+        :show-all="false"
+    />
 
     {{-- KPIs --}}
     <div class="sp-kpis">
         @php
             $kpis = [
                 ['Total in ' . $academicYear, $stats['total'],            'slate',   'heroicon-o-users'],
-                ['Pending agreement (e-sign)', $stats['pending_agreement'], 'amber', 'heroicon-o-pencil-square'],
+                ['Pending Agreement Letter', $stats['pending_agreement'], 'amber', 'heroicon-o-pencil-square'],
                 ['In progress with Yayasan',   $stats['in_progress'],     'sky',     'heroicon-o-paper-airplane'],
                 ['Handed over',                $stats['handed_over'],     'emerald', 'heroicon-o-check-badge'],
             ];
@@ -53,7 +45,7 @@
             ['key' => 'signed',            'label' => 'Signed'],
             ['key' => 'submitted',         'label' => 'Yayasan'],
             ['key' => 'contract_uploaded', 'label' => 'Contract'],
-            ['key' => 'agreement_signed',  'label' => 'E-Signed'],
+            ['key' => 'agreement_signed',  'label' => 'Agreement Letter'],
             ['key' => 'buku_induk',        'label' => 'Buku Induk'],
             ['key' => 'complete',          'label' => 'Complete'],
         ];
@@ -167,7 +159,7 @@
                     <div class="sp-counter__value"><strong style="font-size:.95rem;">{{ $loi->yayasan_contract_uploaded_at?->format('d M Y') ?? '—' }}</strong></div>
                 </div>
                 <div class="sp-counter">
-                    <div class="sp-counter__label">E-signed</div>
+                    <div class="sp-counter__label">Agreement Letter</div>
                     <div class="sp-counter__value"><strong style="font-size:.95rem;">{{ $loi->agreement_signed_at?->format('d M Y') ?? '—' }}</strong></div>
                 </div>
             </div>
@@ -184,7 +176,7 @@
                 @if (! is_null($loi->yayasan_contract_uploaded_at) && is_null($loi->agreement_signed_at))
                     <a href="{{ \App\Filament\Principal\Pages\SignLetterOfIntent::getUrl(['record' => $loi->id, 'mode' => 'agreement'], panel: 'principal') }}"
                         class="sp-act sp-act--amber">
-                        <x-filament::icon icon="heroicon-o-finger-print" style="width:14px;height:14px;" /> Open e-sign
+                        <x-filament::icon icon="heroicon-o-finger-print" style="width:14px;height:14px;" /> Open Agreement Letter
                     </a>
                 @endif
 

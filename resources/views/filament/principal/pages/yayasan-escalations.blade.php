@@ -1,8 +1,11 @@
 <x-filament-panels::page>
-<div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border-radius:.75rem;padding:1rem 1.25rem;margin-bottom:1rem;">
-    <div style="font-weight:600;">Items requiring Yayasan board attention</div>
-    <div style="opacity:.85;font-size:.85rem;margin-top:.25rem;">Behavior escalations + procurement above principal limit + contract renewals</div>
-</div>
+<x-principal.module-hero
+    title="Items Requiring Yayasan Board Attention"
+    description="Behavior escalations, procurement above principal limit, and contract renewal escalations needing board-level review."
+    icon="heroicon-o-exclamation-triangle"
+    tone="indigo"
+/>
+<div style="height:.9rem;"></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
     <div style="background:white;border:1px solid #e2e8f0;border-radius:.75rem;overflow:hidden;">
         <div style="padding:.75rem 1rem;border-bottom:1px solid #e2e8f0;font-weight:600;">Behavior — Principal Action</div>

@@ -101,6 +101,9 @@ class ContractManagementDemoSeeder extends Seeder
         $this->loiScenario(teacherId: 8,  stage: 'agreement_signed');  // ready for buku induk
         $this->loiScenario(teacherId: 12, stage: 'completed');         // fully closed
 
+        // Multi-year LOI matrix so AY cards have enough volume for UI testing.
+        $this->seedLoiYearMatrix();
+
         $this->command?->info('ContractManagementDemoSeeder: demo data populated.');
     }
 
@@ -325,5 +328,66 @@ class ContractManagementDemoSeeder extends Seeder
         LetterOfIntent::create($base);
 
         $this->command?->info("LOI: T{$teacher->id} {$teacher->name} — stage={$stage}");
+    }
+
+    /**
+     * Generate additional LOIs across multiple academic years.
+     * This is intentionally synthetic data for AY rail and archive-flow testing.
+     */
+    private function seedLoiYearMatrix(): void
+    {
+        $teachers = Teacher::query()
+            ->whereIn('status', ['guru_sk', 'permanent'])
+            ->orderBy('id')
+            ->get();
+
+        if ($teachers->isEmpty()) {
+            return;
+        }
+
+        $principalId = DB::table('users')->value('id');
+        $years = ['2026/2027', '2025/2026', '2024/2025', '2023/2024', '2022/2023', '2021/2022'];
+
+        foreach ($years as $yIndex => $year) {
+            $take = min(3 + ($yIndex % 2), $teachers->count());
+            $subset = $teachers->slice(0, $take)->values();
+
+            foreach ($subset as $tIndex => $teacher) {
+                $baseAt = now()->subDays(45 + ($yIndex * 20) + ($tIndex * 3));
+                $status = $tIndex % 3 === 0 ? 'signed' : ($tIndex % 3 === 1 ? 'sent' : 'declined');
+                $archived = $yIndex >= 3; // older half starts archived
+
+                $contract = TeacherContract::firstOrCreate(
+                    ['teacher_id' => $teacher->id, 'type' => 'guru_sk'],
+                    [
+                        'academic_year' => $year,
+                        'starts_at' => $baseAt->copy()->subYear()->toDateString(),
+                        'status' => 'active',
+                    ]
+                );
+
+                LetterOfIntent::create([
+                    'teacher_id' => $teacher->id,
+                    'principal_id' => $principalId,
+                    'teacher_contract_id' => $contract->id,
+                    'academic_year' => $year,
+                    'position' => 'Guru SK',
+                    'body' => "Demo LOI {$year} for {$teacher->name}.",
+                    'status' => $status,
+                    'sent_at' => $baseAt,
+                    'signed_at' => $status === 'signed' ? $baseAt->copy()->addDays(2) : null,
+                    'signature_text' => $status === 'signed' ? $teacher->name : null,
+                    'decline_reason' => $status === 'declined' ? 'Demo decline flow' : null,
+                    'submitted_to_yayasan_at' => $status === 'signed' ? $baseAt->copy()->addDays(5) : null,
+                    'yayasan_contract_uploaded_at' => $status === 'signed' && $yIndex <= 2 ? $baseAt->copy()->addDays(8) : null,
+                    'agreement_signed_at' => $status === 'signed' && $yIndex <= 1 ? $baseAt->copy()->addDays(11) : null,
+                    'agreement_signature_text' => $status === 'signed' && $yIndex <= 1 ? $teacher->name : null,
+                    'archived_at' => $archived ? now()->subDays(7 + $yIndex) : null,
+                    'notes' => self::MARKER,
+                ]);
+            }
+        }
+
+        $this->command?->info('LOI matrix: seeded multi-year sample records.');
     }
 }

@@ -3960,3 +3960,120 @@
 }
 .sp-cm-empty h3 { font-weight: 700; color: var(--sp-ink); margin: .65rem 0 .25rem; font-size: .95rem; }
 .sp-cm-empty p { color: var(--sp-ink-mute); font-size: .82rem; margin: 0; }
+
+/* =========================================================================
+   ACADEMIC-YEAR CTA RAIL — used on LOI list & similar AY-scoped pages
+   ========================================================================= */
+.sp-ay-rail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11.25rem, 1fr));
+    gap: .75rem;
+    align-items: stretch;
+}
+.sp-ay-card {
+    --ay-tone: 100,116,139;          /* slate default rgb */
+    position: relative;
+    display: inline-flex; align-items: stretch;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgba(var(--ay-tone), .25);
+    box-shadow: 0 1px 0 rgba(15,23,42,.02);
+    transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease;
+    overflow: hidden;
+    min-width: 0;
+}
+.sp-ay-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px -6px rgba(15,23,42,.18); border-color: rgba(var(--ay-tone), .55); }
+.sp-ay-card.is-active {
+    background: linear-gradient(135deg, rgb(var(--ay-tone)) 0%, rgba(var(--ay-tone), .82) 100%);
+    border-color: rgb(var(--ay-tone));
+    box-shadow: 0 6px 18px -8px rgba(var(--ay-tone), .65);
+}
+.sp-ay-card.is-active .sp-ay-btn,
+.sp-ay-card.is-active .sp-ay-btn * { color: #fff !important; }
+.sp-ay-card.is-active .sp-ay-count { background: rgba(255,255,255,.22); color:#fff; }
+.sp-ay-card.is-active .sp-ay-pip { background: rgba(255,255,255,.28); color:#fff; }
+.sp-ay-card.is-active .sp-ay-bar i { background: rgba(255,255,255,.85); }
+.sp-ay-card.is-active .sp-ay-bar { background: rgba(255,255,255,.18); }
+
+/* tones */
+.sp-ay-card.tone-indigo  { --ay-tone: 79,70,229; }
+.sp-ay-card.tone-emerald { --ay-tone: 16,185,129; }
+.sp-ay-card.tone-slate   { --ay-tone: 100,116,139; }
+.sp-ay-card.tone-stone   { --ay-tone: 120,113,108; }
+
+/* main click area */
+.sp-ay-btn {
+    appearance: none; background: transparent; border: 0;
+    text-align: left; cursor: pointer;
+    padding: .7rem .9rem .65rem .9rem;
+    display: flex; flex-direction: column; gap: .4rem;
+    flex: 1 1 auto;
+    color: #0f172a;
+}
+.sp-ay-head {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .74rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase;
+    color: rgb(var(--ay-tone));
+}
+.sp-ay-head svg { width: 14px; height: 14px; }
+.sp-ay-year { font-size: 1.02rem; font-weight: 700; color: #0f172a; line-height: 1.1; }
+.sp-ay-meta {
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .7rem; color: #64748b; font-weight: 600;
+}
+.sp-ay-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.1rem; padding: 0 .35rem; height: 1.1rem;
+    border-radius: 999px; font-size: .65rem; font-weight: 800; line-height: 1;
+    background: rgba(var(--ay-tone), .12); color: rgb(var(--ay-tone));
+}
+.sp-ay-pip {
+    display: inline-flex; align-items: center; gap: .15rem;
+    padding: 0 .4rem; height: 1.1rem; border-radius: 999px;
+    background: rgba(245,158,11,.15); color: #b45309;
+    font-size: .62rem; font-weight: 800;
+}
+.sp-ay-now {
+    display: inline-flex; align-items: center; gap: .2rem;
+    padding: .05rem .35rem; border-radius: 999px;
+    background: rgba(16,185,129,.18); color:#047857;
+    font-size: .58rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+}
+.sp-ay-card.is-active .sp-ay-now { background: rgba(255,255,255,.28); color:#fff; }
+/* progress bar */
+.sp-ay-bar {
+    height: 3px; border-radius: 2px;
+    background: rgba(var(--ay-tone), .15);
+    overflow: hidden; margin-top: .15rem;
+}
+.sp-ay-bar i { display:block; height:100%; background: rgb(var(--ay-tone)); border-radius: inherit; transition: width .25s ease; }
+
+/* corner action (archive / restore) */
+.sp-ay-corner {
+    appearance: none; cursor: pointer; border: 0;
+    border-left: 1px solid rgba(var(--ay-tone), .22);
+    background: transparent;
+    width: 2.25rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: rgb(var(--ay-tone));
+    transition: background .12s ease;
+}
+.sp-ay-corner:hover { background: rgba(var(--ay-tone), .12); }
+.sp-ay-card.is-active .sp-ay-corner { border-left-color: rgba(255,255,255,.28); color:#fff; }
+.sp-ay-card.is-active .sp-ay-corner:hover { background: rgba(255,255,255,.18); }
+.sp-ay-corner svg { width: 16px; height: 16px; }
+
+/* archived state (all rows archived) */
+.sp-ay-card.is-archived .sp-ay-year { color:#64748b; text-decoration: line-through; text-decoration-thickness: 1px; }
+.sp-ay-card.is-archived .sp-ay-head { color:#94a3b8; }
+
+/* "All years" gets a subtle gradient */
+.sp-ay-card.is-all .sp-ay-head { color: #4f46e5; }
+.sp-ay-card.is-all:not(.is-active) { background: linear-gradient(180deg, #fff 0%, #eef2ff 130%); }
+
+@media (max-width: 640px) {
+    .sp-ay-rail { grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .55rem; }
+    .sp-ay-btn { padding: .6rem .7rem .55rem .75rem; }
+    .sp-ay-year { font-size: .9rem; }
+}

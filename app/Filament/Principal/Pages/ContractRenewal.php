@@ -38,6 +38,9 @@ class ContractRenewal extends Page
     #[Url]
     public ?string $tier = 'all'; // all | pkwt_1 | pkwt_2 | pkwt_3
 
+    #[Url(as: 'ay')]
+    public ?string $academicYear = null; // all | 2025/2026
+
     /** Per-row file uploads keyed by contract id. */
     public array $recommendationUploads = [];
 
@@ -49,6 +52,13 @@ class ContractRenewal extends Page
         if (! in_array($this->tier, ['all', 'pkwt_1', 'pkwt_2', 'pkwt_3'], true)) {
             $this->tier = 'all';
         }
+
+        $this->academicYear ??= DutyAssignment::currentAcademicYear();
+    }
+
+    public function selectAcademicYear(string $year): void
+    {
+        $this->academicYear = $year !== '' ? $year : 'all';
     }
 
     protected function rows(): Collection
@@ -89,8 +99,42 @@ class ContractRenewal extends Page
                 'supervisions' => $supervisions,
                 'peer_obs'     => $peerObs,
                 'days_left'    => $daysLeft,
+                'academic_year'=> $ay,
             ];
-        });
+        })->filter(function (object $row) {
+            if ($this->academicYear === null || $this->academicYear === 'all') {
+                return true;
+            }
+
+            return ($row->academic_year ?? null) === $this->academicYear;
+        })->values();
+    }
+
+    protected function academicYearSummary(): array
+    {
+        return TeacherContract::query()
+            ->inRenewalWindow()
+            ->with('teacher')
+            ->get()
+            ->map(function (TeacherContract $c) {
+                $ay = $c->academic_year ?: DutyAssignment::academicYearFor($c->starts_at);
+
+                return [
+                    'year' => $ay,
+                    'pending' => is_null($c->recommendation_decision) ? 1 : 0,
+                ];
+            })
+            ->filter(fn (array $row) => ! empty($row['year']))
+            ->groupBy('year')
+            ->map(fn ($group, $year) => [
+                'year' => (string) $year,
+                'total' => $group->count(),
+                'active' => $group->count(),
+                'pending' => (int) $group->sum('pending'),
+            ])
+            ->sortByDesc('year')
+            ->values()
+            ->all();
     }
 
     /** Allowed next tiers for a given current tier. */
@@ -238,6 +282,8 @@ class ContractRenewal extends Page
         $rows = $this->rows();
         $settings = ObservationSetting::current();
         $dueDays = 30; // sensible default for contract renewal-due flag
+        $currentAy = DutyAssignment::currentAcademicYear();
+        $academicYearSummary = $this->academicYearSummary();
 
         $stats = [
             'total'    => $rows->count(),
@@ -251,6 +297,9 @@ class ContractRenewal extends Page
             'stats'     => $stats,
             'dueDays'   => $dueDays,
             'tier'      => $this->tier,
+            'academicYear' => $this->academicYear,
+            'currentAy' => $currentAy,
+            'academicYearSummary' => $academicYearSummary,
             'tierLabels' => [
                 'all'    => 'All tiers',
                 'pkwt_1' => 'PKWT-I',

@@ -21,13 +21,10 @@ class PendingApprovalsWidget extends BaseWidget
         $docs = Schema::hasTable('teacher_documents')
             ? \DB::table('teacher_documents')->where('status', 'pending')->count() : 0;
 
-        $voluntary = Schema::hasTable('voluntary_requests')
-            ? \DB::table('voluntary_requests')->where('status', 'pending')->count() : 0;
-
         $duties = Schema::hasTable('duty_assignments')
             ? \DB::table('duty_assignments')->where('status', 'pending')->count() : 0;
 
-        $total = $leaves + $docs + $voluntary + $duties;
+        $total = $leaves + $docs + $duties;
 
         return [
             Stat::make('Total Pending', (string) $total)
@@ -39,9 +36,9 @@ class PendingApprovalsWidget extends BaseWidget
                 ->color($leaves > 0 ? 'warning' : 'gray'),
             Stat::make('Document Verifications', (string) $docs)
                 ->color($docs > 0 ? 'warning' : 'gray'),
-            Stat::make('Voluntary + Duty', (string) ($voluntary + $duties))
-                ->description("$voluntary voluntary · $duties duty")
-                ->color(($voluntary + $duties) > 0 ? 'warning' : 'gray'),
+            Stat::make('Duty Assignments', (string) $duties)
+                ->description('Pending substitution duty handoffs')
+                ->color($duties > 0 ? 'warning' : 'gray'),
         ];
     }
 }

@@ -41,6 +41,11 @@ class ProbationWatch extends Page
         $this->academicYear ??= DutyAssignment::currentAcademicYear();
     }
 
+    public function selectAcademicYear(string $year): void
+    {
+        $this->academicYear = $year !== '' ? $year : 'all';
+    }
+
     protected function settings(): ObservationSetting
     {
         return ObservationSetting::current();
@@ -86,8 +91,43 @@ class ProbationWatch extends Page
                     'supervisions'  => $supervisions,
                     'peer_obs'      => $peerObs,
                     'days_left'     => $daysLeft,
+                    'academic_year' => $sem1Ay,
                 ];
-            });
+            })
+            ->filter(function (object $row) {
+                if ($this->academicYear === null || $this->academicYear === 'all') {
+                    return true;
+                }
+
+                return ($row->academic_year ?? null) === $this->academicYear;
+            })
+            ->values();
+    }
+
+    protected function academicYearSummary(): array
+    {
+        return TeacherContract::query()
+            ->probationActive()
+            ->get()
+            ->map(function (TeacherContract $c) {
+                $ay = $c->academic_year ?: DutyAssignment::academicYearFor($c->starts_at);
+
+                return [
+                    'year' => $ay,
+                    'pending' => is_null($c->probation_decision) ? 1 : 0,
+                ];
+            })
+            ->filter(fn (array $row) => ! empty($row['year']))
+            ->groupBy('year')
+            ->map(fn ($group, $year) => [
+                'year' => (string) $year,
+                'total' => $group->count(),
+                'active' => $group->count(),
+                'pending' => (int) $group->sum('pending'),
+            ])
+            ->sortByDesc('year')
+            ->values()
+            ->all();
     }
 
     public function recordContinue(int $contractId): void
@@ -153,6 +193,8 @@ class ProbationWatch extends Page
         $minSup = (int) $settings->probation_min_supervisions;
         $minPeer = (int) $settings->probation_min_peer_observations;
         $dueDays = (int) $settings->probation_decision_due_days;
+        $currentAy = DutyAssignment::currentAcademicYear();
+        $academicYearSummary = $this->academicYearSummary();
 
         $stats = [
             'total'    => $rows->count(),
@@ -168,6 +210,9 @@ class ProbationWatch extends Page
             'minSup'   => $minSup,
             'minPeer'  => $minPeer,
             'dueDays'  => $dueDays,
+            'academicYear' => $this->academicYear,
+            'currentAy' => $currentAy,
+            'academicYearSummary' => $academicYearSummary,
         ];
     }
 }

@@ -148,7 +148,7 @@ class SubmitLeaveOnBehalf extends Page
                 ->where('is_active', true)
                 ->orderBy('sort_order')
                 ->orderBy('label')
-                ->get(['key', 'label', 'affects_quota', 'requires_substitute', 'color']),
+                ->get(['key', 'label', 'affects_quota', 'requires_substitute', 'max_days', 'color']),
             'requiresSubstitute' => $this->requiresSubstitute(),
             'suggestions'        => $suggestions = $this->buildSuggestions($teacher),
             'eligibility'        => $this->buildEligibility($teacher, $suggestions),
@@ -315,6 +315,23 @@ class SubmitLeaveOnBehalf extends Page
 
         $teacher = Teacher::find($this->teacherId);
         if (! $teacher) return;
+
+        try {
+            $spanDays = Carbon::parse($this->startsAt)->diffInDays(Carbon::parse($this->endsAt)) + 1;
+        } catch (\Throwable $e) {
+            Notification::make()->title('Invalid date range selected.')->danger()->send();
+            return;
+        }
+
+        $maxDays = LeaveType::maxDaysFor($this->type);
+        if ($maxDays !== null && $spanDays > $maxDays) {
+            Notification::make()
+                ->title('Leave exceeds configured limit')
+                ->body(LeaveType::labelFor($this->type) . ' is capped at ' . $maxDays . ' day(s).')
+                ->danger()
+                ->send();
+            return;
+        }
 
         // ── No-substitute path: leave types like Brief Absence / Assigned Work ──
         if (! $this->requiresSubstitute()) {

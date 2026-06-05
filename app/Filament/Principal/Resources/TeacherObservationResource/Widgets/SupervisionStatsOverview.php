@@ -4,6 +4,7 @@ namespace App\Filament\Principal\Resources\TeacherObservationResource\Widgets;
 
 use App\Models\SupervisiEvaluation;
 use App\Models\Teacher;
+use App\Models\TeacherObservation;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -21,9 +22,9 @@ class SupervisionStatsOverview extends BaseWidget
             Stat::make('Completed', SupervisiEvaluation::where('status', 'completed')->count())
                 ->color('success')
                 ->icon('heroicon-o-check-circle'),
-            Stat::make('Training Needed', SupervisiEvaluation::where('status', 'training')->count())
+            Stat::make('Pending Review', TeacherObservation::where('status', 'pending')->count())
                 ->color('warning')
-                ->icon('heroicon-o-academic-cap'),
+                ->icon('heroicon-o-clock'),
         ];
     }
 }

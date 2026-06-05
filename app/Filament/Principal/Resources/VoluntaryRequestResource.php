@@ -15,11 +15,17 @@ use Filament\Tables\Table;
 
 class VoluntaryRequestResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $model = VoluntaryRequest::class;
     protected static ?string $navigationIcon = 'heroicon-o-hand-raised';
     protected static ?string $navigationLabel = 'Voluntary Requests';
     protected static ?string $navigationGroup = 'Contract Management';
     protected static ?int $navigationSort = 5;
+
+    public static function canViewAny(): bool
+    {
+        return false;
+    }
 
     public static function getNavigationBadge(): ?string
     {

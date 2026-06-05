@@ -7,7 +7,6 @@ use App\Models\TeacherAttendance;
 use App\Models\TeacherCertification;
 use App\Models\TeacherDocument;
 use App\Models\TeacherObservation;
-use App\Models\TeacherTraining;
 use App\Models\DutyAssignment;
 use App\Support\CsvExporter;
 use Filament\Pages\Page;
@@ -41,7 +40,6 @@ class TeacherCompare extends Page implements HasForms
         'attendance',
         'observation_avg',
         'certifications',
-        'cpd_hours',
         'initiatives',
         'punctuality',
         'voluntary_requests',
@@ -52,7 +50,6 @@ class TeacherCompare extends Page implements HasForms
         'attendance'         => 'Attendance',
         'observation_avg'    => 'Observation Avg',
         'certifications'     => 'Certifications',
-        'cpd_hours'          => 'CPD Hours',
         'initiatives'        => 'Initiatives',
         'punctuality'        => 'Punctuality',
         'voluntary_requests' => 'Voluntary Requests',
@@ -63,7 +60,6 @@ class TeacherCompare extends Page implements HasForms
         'attendance',
         'observation_avg',
         'certifications',
-        'cpd_hours',
         'initiatives',
         'punctuality',
         'voluntary_requests',
@@ -243,7 +239,6 @@ class TeacherCompare extends Page implements HasForms
                 'attendance'         => $this->metricAttendance($t),
                 'observation_avg'    => $this->metricObservationAvg($t),
                 'certifications'     => $this->metricCertifications($t),
-                'cpd_hours'          => $this->metricCpdHours($t),
                 'initiatives'        => $this->metricInitiatives($t),
                 'punctuality'        => $this->metricPunctuality($t),
                 'voluntary_requests' => $this->metricVoluntaryRequests($t),
@@ -288,24 +283,6 @@ class TeacherCompare extends Page implements HasForms
         try {
             $n = TeacherCertification::where('teacher_id', $t->id)->count();
             return (int) min(100, $n * 10);
-        } catch (\Throwable $e) {
-            return 0;
-        }
-    }
-
-    protected function metricCpdHours(Teacher $t): int
-    {
-        try {
-            $hasHours = Schema::hasColumn('teacher_trainings', 'hours');
-            $hasCertified = Schema::hasColumn('teacher_trainings', 'hours_certified');
-            $hours = 0.0;
-            if ($hasHours) {
-                $hours = (float) TeacherTraining::where('teacher_id', $t->id)->sum('hours');
-            }
-            if ($hours <= 0 && $hasCertified) {
-                $hours = (float) TeacherTraining::where('teacher_id', $t->id)->sum('hours_certified');
-            }
-            return (int) min(100, (int) round($hours));
         } catch (\Throwable $e) {
             return 0;
         }

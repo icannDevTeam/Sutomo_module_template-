@@ -9,6 +9,14 @@
         <a href="{{ \App\Filament\Principal\Pages\ObservationConfig::getUrl(panel: 'principal') }}">Observation Configuration</a>.
     </div>
 
+    <x-principal.academic-year-rail
+        :years="$academicYearSummary"
+        :selected-ay="$academicYear"
+        :current-ay="$currentAy"
+        select-action="selectAcademicYear"
+        all-label="All AY"
+    />
+
     @if (! $enabled)
         <div class="sp-card sp-banner" style="--accent:#dc2626;">
             <div class="sp-banner-icon"><x-filament::icon icon="heroicon-o-exclamation-triangle" style="width:18px;height:18px;color:#fff;" /></div>

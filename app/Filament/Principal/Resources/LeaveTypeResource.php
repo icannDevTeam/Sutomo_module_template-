@@ -75,7 +75,7 @@ class LeaveTypeResource extends Resource
                         ->offColor('gray'),
                 ])->compact(),
 
-            Forms\Components\Grid::make(3)->schema([
+            Forms\Components\Grid::make(4)->schema([
                 Forms\Components\Select::make('color')
                     ->options(LeaveType::COLOR_OPTIONS)
                     ->default('gray')
@@ -84,6 +84,11 @@ class LeaveTypeResource extends Resource
                     ->placeholder('heroicon-o-calendar')
                     ->helperText('Heroicon name (optional).')
                     ->maxLength(64),
+                Forms\Components\TextInput::make('max_days')
+                    ->numeric()
+                    ->minValue(1)
+                    ->nullable()
+                    ->helperText('Optional cap for this leave type (calendar days). Leave empty for no limit.'),
                 Forms\Components\TextInput::make('sort_order')
                     ->numeric()
                     ->default(0),
@@ -133,6 +138,10 @@ class LeaveTypeResource extends Resource
                 Tables\Columns\TextColumn::make('color')
                     ->badge()
                     ->color(fn ($state) => $state),
+                Tables\Columns\TextColumn::make('max_days')
+                    ->label('Max days')
+                    ->formatStateUsing(fn ($state) => $state ?: '—')
+                    ->alignCenter(),
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label('Order')
                     ->alignCenter()

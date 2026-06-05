@@ -7,6 +7,14 @@
         before contract end.
     </div>
 
+    <x-principal.academic-year-rail
+        :years="$academicYearSummary"
+        :selected-ay="$academicYear"
+        :current-ay="$currentAy"
+        select-action="selectAcademicYear"
+        all-label="All AY"
+    />
+
     {{-- Tier filter --}}
     <div class="sp-tabs">
         <div class="sp-tabs__group">

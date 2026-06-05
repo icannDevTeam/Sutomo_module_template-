@@ -285,12 +285,13 @@
         </div>
 
         {{-- ====================== HERO HEADER ====================== --}}
-        <div class="eo-hero">
-            <div>
-                <h2>Enrollment — Academic Year {{ $academicYear }}</h2>
-                <p>Student Applicant Onboarding{{ $periodWindow ? ' · ' . $periodWindow : '' }} · {{ $room }}</p>
-            </div>
-            <div class="eo-hero__actions">
+        <x-principal.module-hero
+            :title="'Enrollment - Academic Year '.$academicYear"
+            :description="'Student Applicant Onboarding'.($periodWindow ? ' · '.$periodWindow : '').' · '.$room"
+            icon="heroicon-o-rocket-launch"
+            tone="indigo"
+        >
+            <x-slot:actions>
                 <button type="button" class="eo-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -321,8 +322,8 @@
                         @endif
                     </div>
                 </div>
-            </div>
-        </div>
+            </x-slot:actions>
+        </x-principal.module-hero>
 
         {{-- ====================== STAT TILES ====================== --}}
         <div class="eo-stats">

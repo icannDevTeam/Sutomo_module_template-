@@ -16,6 +16,8 @@ class ObservationConfig extends Page
     protected static ?int $navigationSort = 90;
     protected static string $view = 'filament.principal.pages.observation-config';
 
+    public string $activeTab = 'teacher-observation';
+
     public array $criteria = [];
 
     // Probation Watch settings (Phase 3)
@@ -48,6 +50,13 @@ class ObservationConfig extends Page
         $this->probationMinSupervisions      = (int) $settings->probation_min_supervisions;
         $this->probationMinPeerObservations  = (int) $settings->probation_min_peer_observations;
         $this->probationDecisionDueDays      = (int) $settings->probation_decision_due_days;
+    }
+
+    public function setTab(string $tab): void
+    {
+        $this->activeTab = in_array($tab, ['teacher-observation', 'probation-watch'], true)
+            ? $tab
+            : 'teacher-observation';
     }
 
     public function addRow(): void

@@ -1,22 +1,11 @@
 <x-filament-panels::page>
     <div class="space-y-6">
-        <div class="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/15 dark:via-yellow-900/10 dark:to-orange-900/10 dark:border-amber-700/40 p-5">
-            <div class="flex items-start gap-4">
-                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                    <x-heroicon-o-cog-6-tooth class="h-6 w-6"/>
-                </div>
-                <div class="flex-1">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Letter of Intent — Templates &amp; Schedules
-                    </h2>
-                    <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                        Draft reusable letter bodies, then set up automatic sends — yearly for annual re-commitment,
-                        monthly for rolling reminders, or one-off for ad-hoc batches. Saved schedules will compute
-                        their next run time automatically.
-                    </p>
-                </div>
-            </div>
-        </div>
+        <x-principal.module-hero
+            title="Letter of Intent - Templates and Schedules"
+            description="Draft reusable LOI bodies, then schedule yearly, monthly, or one-off sends. Saved schedules automatically compute next run time."
+            icon="heroicon-o-cog-6-tooth"
+            tone="amber"
+        />
 
         <form wire:submit="save" class="space-y-6">
             {{ $this->form }}

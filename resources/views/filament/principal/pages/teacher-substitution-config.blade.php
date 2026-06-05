@@ -10,6 +10,15 @@
         $total = max(1, array_sum(array_column($summary, 'count')));
     @endphp
 
+    <x-principal.module-hero
+        title="Teacher Substitution Configuration"
+        description="Monitor substitute eligibility signals and rebalance readiness across teachers before coverage gaps appear."
+        icon="heroicon-o-adjustments-horizontal"
+        tone="slate"
+    />
+
+    <div class="h-4"></div>
+
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         @foreach ($summary as $row)
             @php

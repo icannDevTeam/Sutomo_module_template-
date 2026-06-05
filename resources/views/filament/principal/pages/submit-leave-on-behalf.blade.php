@@ -83,6 +83,15 @@
         .slob-badge--gray    { background:#f1f5f9; color:#475569; }
     </style>
 
+    <x-principal.module-hero
+        title="Submit Leave On Behalf"
+        description="File leave requests for teachers, check quota impact, and assign or broadcast substitute coverage from one workspace."
+        icon="heroicon-o-calendar-days"
+        tone="emerald"
+    />
+
+    <div style="height:.9rem;"></div>
+
     <div class="slob-grid">
         {{-- LEFT: form + quotas --}}
         <div style="display:flex; flex-direction:column; gap:16px;">
@@ -134,7 +143,9 @@
                 <label class="slob-label" style="margin-top:12px;">Leave type</label>
                 <select class="slob-select" wire:model.live="type">
                     @foreach($leaveTypes as $lt)
-                        <option value="{{ $lt->key }}">{{ $lt->label }}{{ $lt->affects_quota ? '' : ' (no quota)' }}</option>
+                        <option value="{{ $lt->key }}">
+                            {{ $lt->label }}{{ $lt->affects_quota ? '' : ' (no quota)' }}{{ $lt->max_days ? ' · max '.$lt->max_days.' days' : '' }}
+                        </option>
                     @endforeach
                 </select>
                 @php
@@ -148,6 +159,11 @@
                 @if($selectedType && ! $selectedType->requires_substitute)
                     <div style="margin-top:6px; padding:6px 10px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; font-size:11px; color:#334155;">
                         ⓘ No substitute required for this type — leave will be approved on submit.
+                    </div>
+                @endif
+                @if($selectedType && $selectedType->max_days)
+                    <div style="margin-top:6px; padding:6px 10px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; font-size:11px; color:#92400e;">
+                        ⓘ Max allowed for this type: <strong>{{ $selectedType->max_days }} day{{ $selectedType->max_days > 1 ? 's' : '' }}</strong>.
                     </div>
                 @endif
 
