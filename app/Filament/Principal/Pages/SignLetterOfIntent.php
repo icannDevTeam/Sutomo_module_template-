@@ -63,6 +63,10 @@ class SignLetterOfIntent extends Page
         }
 
         $this->letter->forceFill([
+            'yayasan_review_status'      => $this->letter->yayasan_review_status ?: 'accepted',
+            'yayasan_review_notes'       => $this->letter->yayasan_review_notes ?: 'Auto-accepted during Agreement Letter signing (legacy compatibility).',
+            'yayasan_reviewed_by'        => $this->letter->yayasan_reviewed_by ?: auth()->id(),
+            'yayasan_reviewed_at'        => $this->letter->yayasan_reviewed_at ?: now(),
             'agreement_signed_at'       => now(),
             'agreement_signature_text'  => $text,
             'agreement_signature_ip'    => request()->ip(),

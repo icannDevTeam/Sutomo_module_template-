@@ -58,7 +58,10 @@
                 'signed'            => ! is_null($loi->signed_at),
                 'submitted'         => ! is_null($loi->submitted_to_yayasan_at),
                 'contract_uploaded' => ! is_null($loi->yayasan_contract_uploaded_at),
-                'review'            => $loi->yayasan_review_status === 'accepted',
+                'review'            => $loi->yayasan_review_status === 'accepted'
+                    || ! is_null($loi->agreement_signed_at)
+                    || ! is_null($loi->buku_induk_recorded_at)
+                    || ! is_null($loi->continuation_completed_at),
                 'agreement_signed'  => ! is_null($loi->agreement_signed_at),
                 'buku_induk'        => ! is_null($loi->buku_induk_recorded_at),
                 'complete'          => ! is_null($loi->continuation_completed_at),
