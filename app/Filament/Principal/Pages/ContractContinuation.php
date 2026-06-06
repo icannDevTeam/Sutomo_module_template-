@@ -169,21 +169,16 @@ class ContractContinuation extends Page
 
         $rows = $this->baseQuery()->get();
 
-        $yearSummaryRow = LetterOfIntent::query()
-            ->selectRaw('academic_year as year')
-            ->selectRaw('COUNT(*) as total')
-            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending', ['signed'])
-            ->whereHas('teacher', fn (Builder $q) => $q->whereIn('status', ['guru_sk', 'permanent']))
-            ->whereNull('archived_at')
-            ->where('academic_year', $currentAy)
-            ->first();
-
-        $yearSummary = [[
-            'year' => $currentAy,
-            'total' => (int) ($yearSummaryRow->total ?? 0),
-            'active' => (int) ($yearSummaryRow->total ?? 0),
-            'pending' => (int) ($yearSummaryRow->pending ?? 0),
-        ]];
+            // Derive summary directly from the already-loaded collection
+            // to avoid MySQL GROUP BY restriction on multi-selectRaw without groupBy.
+            $total = $rows->count();
+            $pending = $rows->filter(fn ($r) => $r->status === 'signed')->count();
+            $yearSummary = [[
+                'year' => $currentAy,
+                'total' => $total,
+                'active' => $total,
+                'pending' => $pending,
+            ]];
 
         $stats = [
             'pending_agreement' => $rows->filter(fn ($r) => $this->getStageFor($r) === 'pending_agreement')->count(),
