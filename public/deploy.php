@@ -11,6 +11,7 @@ $SECRET = getenv('DEPLOY_SECRET') ?: 'CHANGE_ME_TO_A_LONG_RANDOM_STRING';
 $BRANCH = 'refs/heads/principal-module';
 $DEPLOY_SCRIPT = '/home/sutomosc/sutomoschool/deploy.sh';
 $LOG_FILE = '/home/sutomosc/sutomoschool/storage/logs/deploy.log';
+$APP_DIR = '/home/sutomosc/sutomoschool';
 
 http_response_code(202);
 header('Content-Type: text/plain');
@@ -30,6 +31,25 @@ if (!hash_equals($expected, $sigHeader)) {
 }
 
 $data = json_decode($payload, true);
+$action = $data['action'] ?? 'deploy';
+
+if ($action === 'seed') {
+    $seeder = preg_replace('/[^A-Za-z0-9_\\\\]/', '', (string) ($data['seeder'] ?? 'DatabaseSeeder'));
+    if ($seeder === '') {
+        $seeder = 'DatabaseSeeder';
+    }
+
+    @file_put_contents($LOG_FILE, "\n[" . date('c') . "] webhook seed trigger (" . $seeder . ")\n", FILE_APPEND);
+
+    $cmd = sprintf(
+        'nohup /bin/bash -lc %s >> %s 2>&1 < /dev/null &',
+        escapeshellarg('cd ' . $APP_DIR . ' && php artisan db:seed --force --class=' . $seeder),
+        escapeshellarg($LOG_FILE)
+    );
+    shell_exec($cmd);
+    exit("seed triggered\n");
+}
+
 if (($data['ref'] ?? '') !== $BRANCH) {
     exit("ignored (branch " . ($data['ref'] ?? 'unknown') . ")\n");
 }
