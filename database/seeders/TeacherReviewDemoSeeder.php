@@ -182,7 +182,7 @@ class TeacherReviewDemoSeeder extends Seeder
             $teacher = Teacher::create([
                 'code'        => $a['code'],
                 'name'        => $a['name'],
-                'gender'      => $a['gender'],
+                'gender'      => strtoupper(substr((string) $a['gender'], 0, 1)),
                 'subject'     => $a['subject'],
                 'dept'        => $a['dept'],
                 'campus'      => $a['campus'],
