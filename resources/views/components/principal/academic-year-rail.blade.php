@@ -5,7 +5,7 @@
     'selectAction' => 'selectAcademicYear',
     'showAll' => true,
     'allKey' => 'all',
-    'allLabel' => 'All years',
+    'allLabel' => 'All Years',
     'archiveAction' => null,
     'unarchiveAction' => null,
     'focusPrefix' => 'focused on',
@@ -40,19 +40,19 @@
             Academic year
             <span class="text-slate-300 dark:text-slate-600">.</span>
             <span class="normal-case tracking-normal font-medium text-slate-500 dark:text-slate-400">
-                {{ $selectedAy === $allKey ? 'showing all years' : $focusPrefix.' '.$selectedAy }}
+                {{ $selectedAy === $allKey ? 'Showing all academic years' : ucfirst($focusPrefix).' '.$selectedAy }}
             </span>
         </div>
         @if ($showStatusLegend)
             <div class="flex items-center gap-3 text-[10px] font-medium text-slate-500 dark:text-slate-400">
                 <span class="inline-flex items-center gap-1">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> active
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Active
                 </span>
                 <span class="inline-flex items-center gap-1">
-                    <span class="h-2 w-2 rounded-full bg-amber-400"></span> pending
+                    <span class="h-2 w-2 rounded-full bg-amber-400"></span> Pending
                 </span>
                 <span class="inline-flex items-center gap-1">
-                    <span class="h-2 w-2 rounded-full bg-slate-300"></span> archived
+                    <span class="h-2 w-2 rounded-full bg-slate-300"></span> Archived
                 </span>
             </div>
         @endif

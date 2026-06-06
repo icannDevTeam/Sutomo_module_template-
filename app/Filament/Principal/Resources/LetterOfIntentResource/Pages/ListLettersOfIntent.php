@@ -39,7 +39,7 @@ class ListLettersOfIntent extends ListRecords
     {
         return view('filament.principal.loi.list-header', [
             'heading'        => $this->getHeading(),
-            'subheading'     => 'Track continuation, declined & resigned-pending cases across academic years. Pick a year below to focus the list; archive past years when fully closed.',
+            'subheading'     => 'Track continuation, declined, and resignation-pending cases across academic years. Choose a year below to focus the list, then archive past years once fully closed.',
             'actions'        => $this->getCachedHeaderActions(),
             'years'          => $this->academicYearSummary(),
             'currentAy'      => LetterOfIntentResource::currentAcademicYear(),
@@ -160,7 +160,7 @@ class ListLettersOfIntent extends ListRecords
                 ->badge(LetterOfIntent::query()->tap($continuation)->count())
                 ->badgeColor('info'),
 
-            'declined' => Tab::make('Declined / Resigned Pending')
+            'declined' => Tab::make('Declined / Resignation Pending')
                 ->icon('heroicon-o-exclamation-triangle')
                 ->modifyQueryUsing($declined)
                 ->badge(LetterOfIntent::query()->tap($declined)->count())
