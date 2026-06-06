@@ -9,6 +9,7 @@
     'archiveAction' => null,
     'unarchiveAction' => null,
     'focusPrefix' => 'focused on',
+    'showStatusLegend' => true,
 ])
 
 @php
@@ -42,17 +43,19 @@
                 {{ $selectedAy === $allKey ? 'showing all years' : $focusPrefix.' '.$selectedAy }}
             </span>
         </div>
-        <div class="flex items-center gap-3 text-[10px] font-medium text-slate-500 dark:text-slate-400">
-            <span class="inline-flex items-center gap-1">
-                <span class="h-2 w-2 rounded-full bg-emerald-500"></span> active
-            </span>
-            <span class="inline-flex items-center gap-1">
-                <span class="h-2 w-2 rounded-full bg-amber-400"></span> pending
-            </span>
-            <span class="inline-flex items-center gap-1">
-                <span class="h-2 w-2 rounded-full bg-slate-300"></span> archived
-            </span>
-        </div>
+        @if ($showStatusLegend)
+            <div class="flex items-center gap-3 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                <span class="inline-flex items-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> active
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-amber-400"></span> pending
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-slate-300"></span> archived
+                </span>
+            </div>
+        @endif
     </div>
 
     <div class="sp-ay-rail">

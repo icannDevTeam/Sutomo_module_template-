@@ -15,6 +15,7 @@
         :current-ay="$currentAy"
         select-action="selectAcademicYear"
         :show-all="false"
+        :show-status-legend="false"
     />
 
     {{-- KPIs --}}
@@ -88,6 +89,9 @@
         @php
             $isComplete = ! is_null($loi->continuation_completed_at);
             $rowClass   = $isComplete ? 'is-success' : '';
+            $contractUrl = $loi->yayasan_contract_path
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($loi->yayasan_contract_path)
+                : null;
             $currentStage = collect($stageDef)
                 ->map(fn ($s) => ['label' => $s['label'], 'state' => $stageStateFor($loi, $s['key'])])
                 ->firstWhere('state', 'current');
@@ -184,29 +188,6 @@
 
             {{-- Actions --}}
             <div class="sp-act-row">
-                <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl('view', ['record' => $loi->id], panel: 'principal') }}"
-                    class="sp-act sp-act--ghost">
-                    <x-filament::icon icon="heroicon-o-eye" style="width:14px;height:14px;" /> View LOI
-                </a>
-
-                @if ($loi->yayasan_contract_path)
-                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($loi->yayasan_contract_path) }}"
-                        target="_blank"
-                        class="sp-act sp-act--ghost">
-                        <x-filament::icon icon="heroicon-o-document-text" style="width:14px;height:14px;" /> View Contract
-                    </a>
-                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($loi->yayasan_contract_path) }}"
-                        target="_blank"
-                        class="sp-act sp-act--ghost">
-                        <x-filament::icon icon="heroicon-o-printer" style="width:14px;height:14px;" /> Print Contract
-                    </a>
-                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($loi->yayasan_contract_path) }}"
-                        download
-                        class="sp-act sp-act--ghost">
-                        <x-filament::icon icon="heroicon-o-arrow-down-tray" style="width:14px;height:14px;" /> Download
-                    </a>
-                @endif
-
                 <div class="sp-act-spacer"></div>
 
                 @if ($loi->canOpenAgreementLetter())
@@ -235,36 +216,96 @@
                 @endif
             </div>
 
-            @if (! is_null($loi->yayasan_contract_uploaded_at) && is_null($loi->agreement_signed_at))
-                <div style="margin-top:.8rem; border:1px solid #e2e8f0; border-radius:12px; padding:.8rem; background:#f8fafc;">
-                    <label style="display:block; font-size:.78rem; font-weight:700; color:#334155; margin-bottom:.35rem;">
-                        Principal Review Note (required to resubmit)
-                    </label>
-                    <textarea
-                        wire:model="resubmitNotes.{{ $loi->id }}"
-                        rows="3"
-                        placeholder="Write note for Yayasan if contract needs correction."
-                        style="width:100%; border:1px solid #cbd5e1; border-radius:10px; font-size:.82rem; padding:.55rem .65rem; background:#fff;"></textarea>
-                    <div style="display:flex; justify-content:flex-end; gap:.55rem; margin-top:.55rem;">
-                        <button type="button"
-                            wire:click="resubmitContract({{ $loi->id }})"
-                            class="sp-act"
-                            style="background:#ffe4e6; color:#be123c; border:1px solid #fecdd3;">
-                            <x-filament::icon icon="heroicon-o-arrow-uturn-left" style="width:14px;height:14px;" /> Resubmit to Yayasan
-                        </button>
-                        <button type="button"
-                            wire:click="acceptContract({{ $loi->id }})"
-                            class="sp-act sp-act--success">
-                            <x-filament::icon icon="heroicon-o-check-circle" style="width:14px;height:14px;" /> Accept Contract
-                        </button>
+            {{-- Side-by-side documents (LOI + Yayasan contract) --}}
+            <div x-data="{ previewOpen: false }" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.7rem; margin-top:.8rem;">
+                <div style="border:1px solid #e2e8f0; border-radius:12px; padding:.7rem; background:#fff;">
+                    <div style="font-size:.72rem; font-weight:700; color:#334155; letter-spacing:.03em; text-transform:uppercase;">Letter of Intent</div>
+                    <div style="font-size:.8rem; color:#64748b; margin-top:.25rem;">
+                        {{ \App\Models\LetterOfIntent::STATUSES[$loi->status] ?? $loi->status }}
+                        @if ($loi->signed_at) · Signed {{ $loi->signed_at->format('d M Y') }} @endif
                     </div>
-                    @if ($loi->yayasan_resubmit_notes)
-                        <div style="margin-top:.55rem; font-size:.76rem; color:#be123c;">
-                            Last resubmit note: {{ $loi->yayasan_resubmit_notes }}
+                    <div style="margin-top:.45rem;">
+                        <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl('view', ['record' => $loi->id], panel: 'principal') }}"
+                            class="sp-act sp-act--ghost">
+                            <x-filament::icon icon="heroicon-o-eye" style="width:14px;height:14px;" /> View LOI
+                        </a>
+                    </div>
+                </div>
+
+                <div style="border:1px solid #e2e8f0; border-radius:12px; padding:.7rem; background:#fff;">
+                    <div style="font-size:.72rem; font-weight:700; color:#334155; letter-spacing:.03em; text-transform:uppercase;">Yayasan Contract</div>
+                    <div style="font-size:.8rem; color:#64748b; margin-top:.25rem;">
+                        @if ($loi->yayasan_contract_uploaded_at)
+                            Uploaded {{ $loi->yayasan_contract_uploaded_at->format('d M Y') }}
+                        @else
+                            Not uploaded yet
+                        @endif
+                    </div>
+                    <div style="margin-top:.45rem; display:flex; gap:.45rem; flex-wrap:wrap;">
+                        @if ($contractUrl)
+                            <button type="button"
+                                x-on:click="previewOpen = !previewOpen"
+                                class="sp-act sp-act--ghost">
+                                <x-filament::icon icon="heroicon-o-document-magnifying-glass" style="width:14px;height:14px;" />
+                                <span x-show="!previewOpen">View Preview</span>
+                                <span x-show="previewOpen" x-cloak>Hide Preview</span>
+                            </button>
+                            <a href="{{ $contractUrl }}" target="_blank" class="sp-act sp-act--ghost">
+                                <x-filament::icon icon="heroicon-o-printer" style="width:14px;height:14px;" /> Print
+                            </a>
+                            <a href="{{ $contractUrl }}" download class="sp-act sp-act--ghost">
+                                <x-filament::icon icon="heroicon-o-arrow-down-tray" style="width:14px;height:14px;" /> Download
+                            </a>
+                        @else
+                            <span class="sp-act" style="background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; cursor:default;">
+                                <x-filament::icon icon="heroicon-o-exclamation-triangle" style="width:14px;height:14px;" /> Contract file missing
+                            </span>
+                        @endif
+                    </div>
+
+                    <div x-show="previewOpen" x-cloak style="margin-top:.75rem;">
+                        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:.9rem; box-shadow:0 12px 30px -22px rgba(0,0,0,.18);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.65rem;">
+                                <div style="font-size:.78rem; font-weight:700; color:#334155; letter-spacing:.03em; text-transform:uppercase;">Contract Preview</div>
+                                <div style="font-size:.76rem; color:#64748b;">LOI-{{ $loi->id }} · {{ $loi->academic_year }}</div>
+                            </div>
+                            @if ($contractUrl)
+                                <iframe
+                                    src="{{ $contractUrl }}#toolbar=1&navpanes=0&view=FitH"
+                                    loading="lazy"
+                                    style="width:100%; height:560px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc;"
+                                    title="Yayasan Contract Preview"></iframe>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if (! is_null($loi->yayasan_contract_uploaded_at) && is_null($loi->agreement_signed_at))
+                        <div style="margin-top:.65rem; border-top:1px dashed #e2e8f0; padding-top:.6rem;">
+                            <label style="display:block; font-size:.72rem; font-weight:700; color:#334155; margin-bottom:.35rem;">
+                                Resubmit Note (required)
+                            </label>
+                            <textarea
+                                wire:model="resubmitNotes.{{ $loi->id }}"
+                                rows="2"
+                                placeholder="Write the correction note for Yayasan."
+                                style="width:100%; border:1px solid #cbd5e1; border-radius:10px; font-size:.8rem; padding:.5rem .6rem; background:#fff;"></textarea>
+                            <div style="display:flex; justify-content:flex-end; gap:.45rem; margin-top:.5rem;">
+                                <button type="button"
+                                    wire:click="resubmitContract({{ $loi->id }})"
+                                    class="sp-act"
+                                    style="background:#ffe4e6; color:#be123c; border:1px solid #fecdd3;">
+                                    <x-filament::icon icon="heroicon-o-arrow-uturn-left" style="width:14px;height:14px;" /> Resubmit with Note
+                                </button>
+                                <button type="button"
+                                    wire:click="acceptContract({{ $loi->id }})"
+                                    class="sp-act sp-act--success">
+                                    <x-filament::icon icon="heroicon-o-check-circle" style="width:14px;height:14px;" /> Accept Contract
+                                </button>
+                            </div>
                         </div>
                     @endif
                 </div>
-            @endif
+            </div>
         </div>
     @empty
         <div class="sp-cm-empty">

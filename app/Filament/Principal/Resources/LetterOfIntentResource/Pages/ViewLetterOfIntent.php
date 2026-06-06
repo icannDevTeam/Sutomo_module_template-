@@ -6,18 +6,24 @@ use App\Filament\Principal\Pages\LetterOfIntentFollowUp;
 use App\Filament\Principal\Resources\LetterOfIntentResource;
 use App\Models\LetterOfIntent;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Support\Facades\Storage;
 
 class ViewLetterOfIntent extends ViewRecord
 {
     protected static string $resource = LetterOfIntentResource::class;
+
+    public bool $printMode = false;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+        $this->printMode = request()->boolean('print');
+    }
 
     protected function getHeaderActions(): array
     {
@@ -29,48 +35,16 @@ class ViewLetterOfIntent extends ViewRecord
                 ->visible(fn () => $this->record->status === 'declined')
                 ->url(fn () => LetterOfIntentFollowUp::getUrl(['record' => $this->record->id])),
 
-            Action::make('view_contract')
-                ->label('View Contract')
-                ->icon('heroicon-o-document-text')
-                ->visible(fn () => ! is_null($this->record->yayasan_contract_path))
-                ->url(fn () => Storage::disk('public')->url((string) $this->record->yayasan_contract_path))
-                ->openUrlInNewTab(),
-
-            Action::make('upload_yayasan_contract')
-                ->label('Upload Yayasan Contract')
-                ->icon('heroicon-o-cloud-arrow-up')
-                ->color('warning')
-                ->visible(fn () => ! is_null($this->record->submitted_to_yayasan_at) && is_null($this->record->yayasan_contract_uploaded_at))
-                ->form([
-                    FileUpload::make('file')
-                        ->label('Contract PDF')
-                        ->disk('public')
-                        ->directory('yayasan-contracts')
-                        ->acceptedFileTypes(['application/pdf'])
-                        ->required(),
-                ])
-                ->action(function (array $data): void {
-                    $path = (string) ($data['file'] ?? '');
-                    $this->record->update([
-                        'yayasan_contract_path'        => $path,
-                        'yayasan_contract_uploaded_at' => now(),
-                        'yayasan_review_status'        => 'uploaded',
-                    ]);
-                    Notification::make()->title('Yayasan contract uploaded. Ready for principal review.')->success()->send();
-                }),
-
-            Action::make('print_contract')
-                ->label('Print Contract')
+            Action::make('print_loi')
+                ->label('Print LOI')
                 ->icon('heroicon-o-printer')
-                ->visible(fn () => ! is_null($this->record->yayasan_contract_path))
-                ->url(fn () => Storage::disk('public')->url((string) $this->record->yayasan_contract_path))
+                ->url(fn () => route('letter-of-intent.print', ['record' => $this->record->id]))
                 ->openUrlInNewTab(),
 
-            Action::make('download_contract')
-                ->label('Download Contract')
+            Action::make('download_loi')
+                ->label('Download LOI')
                 ->icon('heroicon-o-arrow-down-tray')
-                ->visible(fn () => ! is_null($this->record->yayasan_contract_path))
-                ->url(fn () => Storage::disk('public')->url((string) $this->record->yayasan_contract_path))
+                ->url(fn () => route('letter-of-intent.print', ['record' => $this->record->id, 'download' => 1]))
                 ->openUrlInNewTab(),
 
             Action::make('accept_contract')

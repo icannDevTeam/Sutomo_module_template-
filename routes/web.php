@@ -24,6 +24,26 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.teacher-leave-letter', ['record' => $record->load('teacher', 'substitute')]);
     })->name('teacher-leave.print');
 
+        Route::get('/print/letter-of-intent/{record}', function (\App\Models\LetterOfIntent $record) {
+            $record->load(['teacher', 'principal', 'teacherContract']);
+
+            $payload = ['record' => $record];
+
+            if (request()->boolean('download')) {
+                $html = view('print.letter-of-intent', $payload)->render();
+
+                return response()->streamDownload(
+                    function () use ($html): void {
+                        echo $html;
+                    },
+                    'letter-of-intent-' . $record->id . '.html',
+                    ['Content-Type' => 'text/html; charset=UTF-8']
+                );
+            }
+
+            return view('print.letter-of-intent', $payload);
+        })->name('letter-of-intent.print');
+
     Route::get('/print/duty-assignment/{record}', function (\App\Models\DutyAssignment $record) {
         return view('print.duty-briefing', ['record' => $record->load('teacher')]);
     })->name('duty-assignment.print');

@@ -34,14 +34,13 @@ class ContractContinuation extends Page
 
     public function mount(): void
     {
-        $this->academicYear ??= LetterOfIntentResource::currentAcademicYear();
+        $this->academicYear = LetterOfIntentResource::currentAcademicYear();
     }
 
     public function selectAcademicYear(string $year): void
     {
-        if ($year !== '') {
-            $this->academicYear = $year;
-        }
+        // Contract continuation is intentionally locked to current AY only.
+        $this->academicYear = LetterOfIntentResource::currentAcademicYear();
     }
 
     /**
@@ -165,36 +164,26 @@ class ContractContinuation extends Page
 
     public function getViewData(): array
     {
-        $academicYears = LetterOfIntent::query()
-            ->select('academic_year')
-            ->distinct()
-            ->orderByDesc('academic_year')
-            ->pluck('academic_year')
-            ->toArray();
-
-        if (empty($academicYears)) {
-            $academicYears = [LetterOfIntentResource::currentAcademicYear()];
-        }
+        $currentAy = LetterOfIntentResource::currentAcademicYear();
+        $academicYears = [$currentAy];
 
         $rows = $this->baseQuery()->get();
 
-        $yearSummary = LetterOfIntent::query()
+        $yearSummaryRow = LetterOfIntent::query()
             ->selectRaw('academic_year as year')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending', ['signed'])
             ->whereHas('teacher', fn (Builder $q) => $q->whereIn('status', ['guru_sk', 'permanent']))
             ->whereNull('archived_at')
-            ->groupBy('academic_year')
-            ->orderByDesc('academic_year')
-            ->get()
-            ->map(fn ($row) => [
-                'year' => (string) $row->year,
-                'total' => (int) $row->total,
-                'active' => (int) $row->total,
-                'pending' => (int) $row->pending,
-            ])
-            ->values()
-            ->all();
+            ->where('academic_year', $currentAy)
+            ->first();
+
+        $yearSummary = [[
+            'year' => $currentAy,
+            'total' => (int) ($yearSummaryRow->total ?? 0),
+            'active' => (int) ($yearSummaryRow->total ?? 0),
+            'pending' => (int) ($yearSummaryRow->pending ?? 0),
+        ]];
 
         $stats = [
             'pending_agreement' => $rows->filter(fn ($r) => $this->getStageFor($r) === 'pending_agreement')->count(),
@@ -209,7 +198,7 @@ class ContractContinuation extends Page
             'academicYearSummary' => $yearSummary,
             'rows'          => $rows,
             'stats'         => $stats,
-            'currentAy'     => LetterOfIntentResource::currentAcademicYear(),
+            'currentAy'     => $currentAy,
         ];
     }
 }
