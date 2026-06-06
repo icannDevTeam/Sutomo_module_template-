@@ -175,6 +175,18 @@ class LetterOfIntentResource extends Resource
                     ->color('primary')
                     ->visible(fn (Model $record) => $record->status === 'sent')
                     ->url(fn (Model $record) => \App\Filament\Principal\Pages\SignLetterOfIntent::getUrl(['record' => $record->id], panel: 'principal'), shouldOpenInNewTab: true),
+                Tables\Actions\Action::make('open_agreement')
+                    ->label('Open Agreement Letter')
+                    ->icon('heroicon-o-finger-print')
+                    ->color('warning')
+                    ->visible(fn (Model $record) => $record->status === 'signed'
+                        && ! is_null($record->yayasan_contract_uploaded_at)
+                        && $record->yayasan_review_status === 'accepted'
+                        && is_null($record->agreement_signed_at))
+                    ->url(fn (Model $record) => \App\Filament\Principal\Pages\SignLetterOfIntent::getUrl([
+                        'record' => $record->id,
+                        'mode' => 'agreement',
+                    ], panel: 'principal'), shouldOpenInNewTab: true),
                 Tables\Actions\Action::make('follow_up')
                     ->label('Follow-up')
                     ->icon('heroicon-o-clipboard-document-list')

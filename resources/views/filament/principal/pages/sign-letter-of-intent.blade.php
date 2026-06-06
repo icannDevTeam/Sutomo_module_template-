@@ -8,6 +8,10 @@
         $isAgreement = $this->isAgreementMode();
         $agreementSigned = $letter && ! is_null($letter->agreement_signed_at);
         $contractReady = $letter && ! is_null($letter->yayasan_contract_uploaded_at);
+        $reviewAccepted = $letter && $letter->yayasan_review_status === 'accepted';
+        $canSignAgreement = $letter && $contractReady && $reviewAccepted && ! $agreementSigned;
+        $teacherUserId = $teacher?->user_id;
+        $isTeacherSigner = ! is_null($teacherUserId) && auth()->id() === $teacherUserId;
     @endphp
 
     @if ($isAgreement)
@@ -46,6 +50,10 @@
                         <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                             The Yayasan contract has not been uploaded yet. The principal must record the contract before the agreement can be signed.
                         </div>
+                    @elseif (! $reviewAccepted)
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            The contract is uploaded, but it still needs principal acceptance before Agreement Letter signing is enabled.
+                        </div>
                     @elseif ($agreementSigned)
                         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                             <div class="flex items-center gap-2 font-medium">
@@ -67,29 +75,48 @@ Academic Year: {{ $letter->academic_year }}
 By signing, the teacher acknowledges contract receipt and agrees that this handover is recorded in the school Buku Induk administration flow.</div>
                         </div>
 
-                        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                            By signing below, you acknowledge receipt of your contract for {{ $letter->academic_year }} and confirm the official handover from Yayasan.
-                        </div>
+                        <div x-data="{ sig: @entangle('signatureText') }" class="mt-4">
+                            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                By signing below, you acknowledge receipt of your contract for {{ $letter->academic_year }} and confirm the official handover from Yayasan.
+                            </div>
 
-                        <label for="agreementSignatureText" class="mt-5 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                            Type your full name to e-sign the agreement
-                        </label>
-                        <input
-                            id="agreementSignatureText"
-                            type="text"
-                            wire:model="signatureText"
-                            placeholder="{{ $teacher?->name }}"
-                            class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
-                        />
+                            @if (! $isTeacherSigner)
+                                <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+                                    Signing is restricted to the assigned teacher account ({{ $teacher?->name ?? 'teacher' }}).
+                                </div>
+                            @endif
 
-                        <div class="mt-4 flex justify-end">
-                            <button
-                                type="button"
-                                wire:click="signAgreement"
-                                class="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-amber-700">
-                                <x-heroicon-o-finger-print class="h-4 w-4" />
-                                I Confirm Receipt — E-Sign Agreement
-                            </button>
+                            <label for="agreementSignatureText" class="mt-5 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                                Type your full name to e-sign the agreement
+                            </label>
+                            <input
+                                id="agreementSignatureText"
+                                type="text"
+                                wire:model="signatureText"
+                                placeholder="{{ $teacher?->name }}"
+                                class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
+                            />
+
+                            <div class="mt-5 flex flex-wrap items-center justify-end gap-2">
+                                <a
+                                    href="{{ \App\Filament\Principal\Pages\ContractContinuation::getUrl(panel: 'principal') }}"
+                                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    <x-heroicon-o-arrow-uturn-left class="h-4 w-4" />
+                                    Back to Continuation
+                                </a>
+
+                                <button
+                                    type="button"
+                                    x-bind:disabled="sig.trim().length === 0"
+                                    @disabled(! $isTeacherSigner)
+                                    x-on:click="if (confirm('Confirm Agreement Letter signing for this teacher?')) { $wire.signAgreement() }"
+                                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <x-heroicon-o-finger-print class="h-4 w-4" />
+                                    Confirm and E-Sign Agreement
+                                </button>
+                            </div>
                         </div>
                     @endif
                 </div>

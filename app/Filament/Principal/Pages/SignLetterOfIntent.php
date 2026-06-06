@@ -59,7 +59,8 @@ class SignLetterOfIntent extends Page
 
         $teacherUserId = $this->letter->teacher?->user_id ?? null;
         if ($teacherUserId === null || auth()->id() !== $teacherUserId) {
-            abort(403, 'Only the named teacher may e-sign the agreement letter.');
+            Notification::make()->title('Only the named teacher account can e-sign this agreement letter.')->danger()->send();
+            return;
         }
 
         $this->letter->forceFill([

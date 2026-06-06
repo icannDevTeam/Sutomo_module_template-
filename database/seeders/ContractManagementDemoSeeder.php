@@ -97,7 +97,8 @@ class ContractManagementDemoSeeder extends Seeder
         // --------------------------------------------------------------
         // (Reuses existing permanent teachers; creates LOIs in different stages.)
         $this->loiScenario(teacherId: 5,  stage: 'submitted');         // Yayasan to upload contract
-        $this->loiScenario(teacherId: 6,  stage: 'contract_uploaded'); // teacher to e-sign agreement
+        $this->loiScenario(teacherId: 6,  stage: 'contract_uploaded'); // contract uploaded, waiting principal decision
+        $this->loiScenario(teacherId: 7,  stage: 'pending_agreement'); // accepted, ready for agreement e-sign
         $this->loiScenario(teacherId: 8,  stage: 'agreement_signed');  // ready for buku induk
         $this->loiScenario(teacherId: 12, stage: 'completed');         // fully closed
 
@@ -316,11 +317,14 @@ class ContractManagementDemoSeeder extends Seeder
             $base['yayasan_review_status']        = 'uploaded';
         }
 
-        if (in_array($stage, ['agreement_signed', 'completed'], true)) {
+        if (in_array($stage, ['pending_agreement', 'agreement_signed', 'completed'], true)) {
             $base['yayasan_review_status']      = 'accepted';
             $base['yayasan_review_notes']       = 'Looks correct. Proceed to Agreement Letter signing.';
             $base['yayasan_reviewed_by']        = $principalId;
             $base['yayasan_reviewed_at']        = now()->subDays(4);
+        }
+
+        if (in_array($stage, ['agreement_signed', 'completed'], true)) {
             $base['agreement_signed_at']       = now()->subDays(3);
             $base['agreement_signature_text']  = $teacher->name;
             $base['agreement_signature_ip']    = '127.0.0.1';
