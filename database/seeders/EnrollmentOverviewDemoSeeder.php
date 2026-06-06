@@ -44,6 +44,11 @@ class EnrollmentOverviewDemoSeeder extends Seeder
             ->whereIn('status', Application::ONBOARDING_STATUSES)
             ->count();
 
+        $maxExistingCode = (int) (Application::query()
+            ->where('code', 'like', 'APP-EO-%')
+            ->selectRaw("MAX(CAST(SUBSTR(code, 8) AS UNSIGNED)) as max_no")
+            ->value('max_no') ?? 0);
+
         $target = 48;
         $toCreate = max(0, $target - $existingCount);
 
@@ -52,8 +57,9 @@ class EnrollmentOverviewDemoSeeder extends Seeder
 
         for ($i = 0; $i < $toCreate; $i++) {
             $name = $first[$i % count($first)] . ' ' . $last[($i * 3) % count($last)];
+            $codeNo = $maxExistingCode + $i + 1;
             Application::create([
-                'code'                 => 'APP-EO-' . str_pad((string)($existingCount + $i + 1), 4, '0', STR_PAD_LEFT),
+                'code'                 => 'APP-EO-' . str_pad((string) $codeNo, 4, '0', STR_PAD_LEFT),
                 'name'                 => $name,
                 'gender'               => $i % 2 ? 'F' : 'M',
                 'dob'                  => now()->subYears(16)->subDays(random_int(1, 300))->toDateString(),

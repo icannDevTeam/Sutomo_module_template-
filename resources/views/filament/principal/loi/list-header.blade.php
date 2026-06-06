@@ -6,6 +6,11 @@
     /** @var string $currentAy */
     /** @var string $selectedAy */
 
+    $currentYearRows = collect($years)
+        ->filter(fn ($r) => (string) ($r['year'] ?? '') === (string) $currentAy)
+        ->values()
+        ->all();
+
 @endphp
 
 <div class="rounded-2xl border border-indigo-200/70 bg-gradient-to-r from-indigo-50 via-sky-50 to-cyan-50 dark:from-indigo-900/15 dark:via-sky-900/10 dark:to-cyan-900/10 dark:border-indigo-700/40 p-5">
@@ -27,7 +32,7 @@
     </div>
 
     <x-principal.academic-year-rail
-        :years="$years"
+        :years="$currentYearRows"
         :selected-ay="$selectedAy"
         :current-ay="$currentAy"
         select-action="selectAcademicYear"

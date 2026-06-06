@@ -24,8 +24,9 @@ class ListLettersOfIntent extends ListRecords
     {
         parent::mount();
 
-        if ($this->academicYear === 'current' || blank($this->academicYear)) {
-            $this->academicYear = LetterOfIntentResource::currentAcademicYear();
+        $currentAy = LetterOfIntentResource::currentAcademicYear();
+        if ($this->academicYear === 'current' || blank($this->academicYear) || $this->academicYear !== 'all' && $this->academicYear !== $currentAy) {
+            $this->academicYear = $currentAy;
         }
     }
 
@@ -74,7 +75,8 @@ class ListLettersOfIntent extends ListRecords
 
     public function selectAcademicYear(string $year): void
     {
-        $this->academicYear = $year;
+        $currentAy = LetterOfIntentResource::currentAcademicYear();
+        $this->academicYear = $year === 'all' ? 'all' : $currentAy;
         $this->resetTable();
     }
 

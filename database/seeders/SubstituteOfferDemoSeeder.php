@@ -10,6 +10,8 @@ use Illuminate\Database\Seeder;
 
 class SubstituteOfferDemoSeeder extends Seeder
 {
+    private const MARKER = '__demo__ substitute_offer';
+
     /**
      * Idempotent: wipes substitute_offers, resets auto_search_* fields,
      * then re-seeds a variety of states so the principal demo shows
@@ -32,6 +34,15 @@ class SubstituteOfferDemoSeeder extends Seeder
             ->orderByDesc('id')
             ->take(6)
             ->get();
+
+        if ($pending->count() < 6) {
+            $this->seedPendingLeavesForScenarios(6 - $pending->count());
+            $pending = TeacherLeave::where('status', 'pending')
+                ->whereNull('substitute_teacher_id')
+                ->orderByDesc('id')
+                ->take(6)
+                ->get();
+        }
 
         if ($pending->isEmpty()) {
             return;
@@ -97,6 +108,45 @@ class SubstituteOfferDemoSeeder extends Seeder
             }
 
             $this->command?->info("  Leave #{$leave->id}: {$name} ({$searchStatus})");
+        }
+    }
+
+    private function seedPendingLeavesForScenarios(int $needed): void
+    {
+        if ($needed <= 0) {
+            return;
+        }
+
+        $teachers = Teacher::query()
+            ->whereNotNull('id')
+            ->orderBy('id')
+            ->take(max(8, $needed + 2))
+            ->get();
+
+        if ($teachers->isEmpty()) {
+            return;
+        }
+
+        foreach (range(1, $needed) as $offset) {
+            $teacher = $teachers->get(($offset - 1) % $teachers->count());
+            if (! $teacher) {
+                continue;
+            }
+
+            TeacherLeave::create([
+                'teacher_id' => $teacher->id,
+                'type' => collect(['sick', 'emergency', 'prior', 'midday'])->random(),
+                'starts_at' => now()->addDays($offset)->toDateString(),
+                'ends_at' => now()->addDays($offset + 1)->toDateString(),
+                'reason' => self::MARKER,
+                'status' => 'pending',
+                'substitute_teacher_id' => null,
+                'decided_by' => null,
+                'decided_at' => null,
+                'auto_search_enabled' => true,
+                'auto_search_status' => 'disabled',
+                'auto_search_cap' => 5,
+            ]);
         }
     }
 }
