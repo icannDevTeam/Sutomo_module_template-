@@ -16,6 +16,11 @@ class LetterOfIntent extends Model
         'submitted_to_yayasan_at',
         'yayasan_contract_path',
         'yayasan_contract_uploaded_at',
+        'yayasan_review_status',
+        'yayasan_review_notes',
+        'yayasan_resubmit_notes',
+        'yayasan_reviewed_by',
+        'yayasan_reviewed_at',
         'agreement_signed_at',
         'agreement_signature_text',
         'agreement_signature_ip',
@@ -40,6 +45,7 @@ class LetterOfIntent extends Model
         'deadline_at'                    => 'datetime',
         'submitted_to_yayasan_at'        => 'datetime',
         'yayasan_contract_uploaded_at'   => 'datetime',
+        'yayasan_reviewed_at'            => 'datetime',
         'agreement_signed_at'            => 'datetime',
         'buku_induk_recorded_at'         => 'datetime',
         'continuation_completed_at'      => 'datetime',
@@ -98,6 +104,13 @@ class LetterOfIntent extends Model
         'uploaded' => 'Uploaded to Buku Induk',
     ];
 
+    public const YAYASAN_REVIEW_STATUSES = [
+        'awaiting_upload' => 'Awaiting Yayasan Upload',
+        'uploaded'        => 'Contract Uploaded',
+        'accepted'        => 'Accepted by Principal',
+        'needs_revision'  => 'Needs Revision',
+    ];
+
     public function scopeForAcademicYear(Builder $q, $ay): Builder
     {
         return $q->where('academic_year', $ay);
@@ -151,9 +164,23 @@ class LetterOfIntent extends Model
         return $this->status === 'signed'
             && ! is_null($this->submitted_to_yayasan_at)
             && ! is_null($this->yayasan_contract_uploaded_at)
+            && $this->yayasan_review_status === 'accepted'
             && ! is_null($this->agreement_signed_at)
             && ! is_null($this->buku_induk_recorded_at)
             && is_null($this->continuation_completed_at);
+    }
+
+    public function isAwaitingYayasanUpload(): bool
+    {
+        return ! is_null($this->submitted_to_yayasan_at)
+            && is_null($this->yayasan_contract_uploaded_at);
+    }
+
+    public function canOpenAgreementLetter(): bool
+    {
+        return ! is_null($this->yayasan_contract_uploaded_at)
+            && $this->yayasan_review_status === 'accepted'
+            && is_null($this->agreement_signed_at);
     }
 
     public function isArchived(): bool

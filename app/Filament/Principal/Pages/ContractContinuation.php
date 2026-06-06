@@ -30,6 +30,8 @@ class ContractContinuation extends Page
     #[Url]
     public ?string $academicYear = null;
 
+    public array $resubmitNotes = [];
+
     public function mount(): void
     {
         $this->academicYear ??= LetterOfIntentResource::currentAcademicYear();
@@ -70,8 +72,14 @@ class ContractContinuation extends Page
         if (! is_null($loi->agreement_signed_at)) {
             return 'handed_over';
         }
+        if ($loi->yayasan_review_status === 'needs_revision') {
+            return 'needs_revision';
+        }
         if (! is_null($loi->yayasan_contract_uploaded_at)) {
-            return 'pending_agreement'; // contract is here, teacher needs to sign the Agreement Letter
+            if ($loi->yayasan_review_status === 'accepted') {
+                return 'pending_agreement';
+            }
+            return 'contract_review';
         }
         if (! is_null($loi->submitted_to_yayasan_at)) {
             return 'in_progress_yayasan';
@@ -83,6 +91,50 @@ class ContractContinuation extends Page
             return 'declined';
         }
         return 'continuation_open';
+    }
+
+    public function acceptContract(int $loiId): void
+    {
+        $loi = $this->baseQuery()->whereKey($loiId)->firstOrFail();
+
+        if (is_null($loi->yayasan_contract_uploaded_at)) {
+            Notification::make()->title('Contract has not been uploaded yet')->danger()->send();
+            return;
+        }
+
+        $loi->update([
+            'yayasan_review_status' => 'accepted',
+            'yayasan_review_notes'  => trim((string) ($this->resubmitNotes[$loiId] ?? 'Looks correct. Proceed to Agreement Letter signing.')),
+            'yayasan_reviewed_by'   => auth()->id(),
+            'yayasan_reviewed_at'   => now(),
+        ]);
+
+        Notification::make()->title('Contract accepted. Agreement Letter is now ready for signing.')->success()->send();
+    }
+
+    public function resubmitContract(int $loiId): void
+    {
+        $loi = $this->baseQuery()->whereKey($loiId)->firstOrFail();
+
+        if (is_null($loi->yayasan_contract_uploaded_at)) {
+            Notification::make()->title('Contract has not been uploaded yet')->danger()->send();
+            return;
+        }
+
+        $note = trim((string) ($this->resubmitNotes[$loiId] ?? ''));
+        if ($note === '') {
+            Notification::make()->title('Please add a note before resubmitting to Yayasan')->danger()->send();
+            return;
+        }
+
+        $loi->update([
+            'yayasan_review_status' => 'needs_revision',
+            'yayasan_resubmit_notes' => $note,
+            'yayasan_reviewed_by'   => auth()->id(),
+            'yayasan_reviewed_at'   => now(),
+        ]);
+
+        Notification::make()->title('Contract sent back to Yayasan for revision')->warning()->send();
     }
 
     public function recordBukuInduk(int $loiId): void
@@ -147,6 +199,7 @@ class ContractContinuation extends Page
         $stats = [
             'pending_agreement' => $rows->filter(fn ($r) => $this->getStageFor($r) === 'pending_agreement')->count(),
             'in_progress'       => $rows->filter(fn ($r) => $this->getStageFor($r) === 'in_progress_yayasan')->count(),
+            'review_required'   => $rows->filter(fn ($r) => in_array($this->getStageFor($r), ['contract_review', 'needs_revision'], true))->count(),
             'handed_over'       => $rows->filter(fn ($r) => in_array($this->getStageFor($r), ['handed_over', 'buku_induk', 'complete'], true))->count(),
             'total'             => $rows->count(),
         ];

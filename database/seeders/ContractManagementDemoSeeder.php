@@ -313,12 +313,27 @@ class ContractManagementDemoSeeder extends Seeder
         if (in_array($stage, ['contract_uploaded', 'agreement_signed', 'completed'], true)) {
             $base['yayasan_contract_path']        = 'demo/yayasan-contract-' . $teacher->id . '.pdf';
             $base['yayasan_contract_uploaded_at'] = now()->subDays(6);
+            $base['yayasan_review_status']        = 'uploaded';
         }
 
         if (in_array($stage, ['agreement_signed', 'completed'], true)) {
+            $base['yayasan_review_status']      = 'accepted';
+            $base['yayasan_review_notes']       = 'Looks correct. Proceed to Agreement Letter signing.';
+            $base['yayasan_reviewed_by']        = $principalId;
+            $base['yayasan_reviewed_at']        = now()->subDays(4);
             $base['agreement_signed_at']       = now()->subDays(3);
             $base['agreement_signature_text']  = $teacher->name;
             $base['agreement_signature_ip']    = '127.0.0.1';
+            $base['buku_induk_recorded_at']    = now()->subDays(3);
+            $base['hr_handoff_status']         = 'uploaded';
+            $base['hr_uploaded_at']            = now()->subDays(3);
+        }
+
+        if ($stage === 'contract_uploaded') {
+            $base['yayasan_review_status']       = 'needs_revision';
+            $base['yayasan_resubmit_notes']      = 'Please correct salary clause wording on page 2.';
+            $base['yayasan_reviewed_by']         = $principalId;
+            $base['yayasan_reviewed_at']         = now()->subDays(5);
         }
 
         if ($stage === 'completed') {

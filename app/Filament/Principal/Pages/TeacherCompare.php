@@ -21,6 +21,7 @@ class TeacherCompare extends Page implements HasForms
 {
     use InteractsWithForms;
 
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $navigationIcon = 'heroicon-o-scale';
     protected static ?string $navigationGroup = 'Supervision';
     protected static ?string $title = 'Compare Teachers';

@@ -53,8 +53,20 @@
                                 Agreement e-signed by {{ $letter->agreement_signature_text }}
                             </div>
                             <div class="mt-1 text-xs">on {{ $letter->agreement_signed_at?->format('d M Y H:i') }}</div>
+                            <div class="mt-1 text-xs">Buku Induk logged at {{ $letter->buku_induk_recorded_at?->format('d M Y H:i') ?? '—' }}</div>
                         </div>
                     @else
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800">
+                            <div class="font-semibold">Temporary Agreement Letter Template</div>
+                            <div class="mt-2 whitespace-pre-line text-xs leading-5 text-slate-700">This temporary agreement confirms that the teacher has received and acknowledged the approved Yayasan contract for {{ $letter->academic_year }}.
+
+Teacher: {{ $teacher?->name ?? '-' }}
+Position: {{ $letter->position ?? 'Teacher' }}
+Academic Year: {{ $letter->academic_year }}
+
+By signing, the teacher acknowledges contract receipt and agrees that this handover is recorded in the school Buku Induk administration flow.</div>
+                        </div>
+
                         <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                             By signing below, you acknowledge receipt of your contract for {{ $letter->academic_year }} and confirm the official handover from Yayasan.
                         </div>

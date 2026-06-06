@@ -215,7 +215,10 @@ class LetterOfIntentResource extends Resource
                             if ($record->status === 'signed'
                                 && is_null($record->submitted_to_yayasan_at)
                                 && is_null($record->continuation_completed_at)) {
-                                $record->update(['submitted_to_yayasan_at' => now()]);
+                                $record->update([
+                                    'submitted_to_yayasan_at' => now(),
+                                    'yayasan_review_status'   => 'awaiting_upload',
+                                ]);
                                 $count++;
                             }
                         }

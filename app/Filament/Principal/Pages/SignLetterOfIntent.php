@@ -48,6 +48,10 @@ class SignLetterOfIntent extends Page
             Notification::make()->title('Yayasan contract has not been uploaded yet.')->danger()->send();
             return;
         }
+        if ($this->letter->yayasan_review_status !== 'accepted') {
+            Notification::make()->title('Principal must accept the contract before agreement signing.')->danger()->send();
+            return;
+        }
         if (! is_null($this->letter->agreement_signed_at)) {
             Notification::make()->title('Agreement already signed.')->warning()->send();
             return;
@@ -62,9 +66,12 @@ class SignLetterOfIntent extends Page
             'agreement_signed_at'       => now(),
             'agreement_signature_text'  => $text,
             'agreement_signature_ip'    => request()->ip(),
+            'buku_induk_recorded_at'    => $this->letter->buku_induk_recorded_at ?? now(),
+            'hr_handoff_status'         => 'uploaded',
+            'hr_uploaded_at'            => $this->letter->hr_uploaded_at ?? now(),
         ])->save();
 
-        Notification::make()->title('Agreement letter e-signed. Contract is officially handed over.')->success()->send();
+        Notification::make()->title('Agreement letter signed. Buku Induk was logged automatically.')->success()->send();
 
         $this->redirect(LetterOfIntentResource::getUrl('view', ['record' => $this->letter->id], panel: 'principal'));
     }

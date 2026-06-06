@@ -3,7 +3,7 @@
     <div class="sp-cm-intro">
         Per-teacher continuation pipeline for permanent (Guru SK) staff.
         Stages unlock in order:
-        <b>Submit to Yayasan → Contract Uploaded → Agreement Letter Signed → Buku Induk → Complete</b>.
+        <b>Submit to Yayasan → Contract Uploaded → Principal Review → Agreement Letter Signed → Buku Induk → Complete</b>.
         Bulk submission lives on the
         <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl(panel: 'principal') }}?activeTab=signed">Signed tab</a>
         of the LOI list.
@@ -23,6 +23,7 @@
             $kpis = [
                 ['Total in ' . $academicYear, $stats['total'],            'slate',   'heroicon-o-users'],
                 ['Pending Agreement Letter', $stats['pending_agreement'], 'amber', 'heroicon-o-pencil-square'],
+                ['Needs Principal Review',   $stats['review_required'],   'rose',    'heroicon-o-exclamation-triangle'],
                 ['In progress with Yayasan',   $stats['in_progress'],     'sky',     'heroicon-o-paper-airplane'],
                 ['Handed over',                $stats['handed_over'],     'emerald', 'heroicon-o-check-badge'],
             ];
@@ -45,6 +46,7 @@
             ['key' => 'signed',            'label' => 'Signed'],
             ['key' => 'submitted',         'label' => 'Yayasan'],
             ['key' => 'contract_uploaded', 'label' => 'Contract'],
+            ['key' => 'review',            'label' => 'Review'],
             ['key' => 'agreement_signed',  'label' => 'Agreement Letter'],
             ['key' => 'buku_induk',        'label' => 'Buku Induk'],
             ['key' => 'complete',          'label' => 'Complete'],
@@ -56,6 +58,7 @@
                 'signed'            => ! is_null($loi->signed_at),
                 'submitted'         => ! is_null($loi->submitted_to_yayasan_at),
                 'contract_uploaded' => ! is_null($loi->yayasan_contract_uploaded_at),
+                'review'            => $loi->yayasan_review_status === 'accepted',
                 'agreement_signed'  => ! is_null($loi->agreement_signed_at),
                 'buku_induk'        => ! is_null($loi->buku_induk_recorded_at),
                 'complete'          => ! is_null($loi->continuation_completed_at),
@@ -67,7 +70,8 @@
                 ! is_null($loi->continuation_completed_at) => null,
                 ! is_null($loi->buku_induk_recorded_at)    => 'complete',
                 ! is_null($loi->agreement_signed_at)       => 'buku_induk',
-                ! is_null($loi->yayasan_contract_uploaded_at) => 'agreement_signed',
+                ! is_null($loi->yayasan_contract_uploaded_at) && $loi->yayasan_review_status === 'accepted' => 'agreement_signed',
+                ! is_null($loi->yayasan_contract_uploaded_at) => 'review',
                 ! is_null($loi->submitted_to_yayasan_at)   => 'contract_uploaded',
                 ! is_null($loi->signed_at)                 => 'submitted',
                 $loi->status === 'sent'                    => 'signed',
@@ -107,6 +111,17 @@
                         <span class="sp-pill sp-pill-green">
                             <x-filament::icon icon="heroicon-o-check-badge" style="width:13px;height:13px;" />
                             Complete
+                        </span>
+                    @endif
+                    @if ($loi->yayasan_review_status === 'needs_revision')
+                        <span class="sp-pill" style="background:#fff1f2;color:#be123c;">
+                            <x-filament::icon icon="heroicon-o-arrow-path" style="width:13px;height:13px;" />
+                            Sent Back to Yayasan
+                        </span>
+                    @elseif ($loi->yayasan_review_status === 'accepted')
+                        <span class="sp-pill" style="background:#ecfdf5;color:#047857;">
+                            <x-filament::icon icon="heroicon-o-check-circle" style="width:13px;height:13px;" />
+                            Contract Accepted
                         </span>
                     @endif
                 </div>
@@ -171,9 +186,27 @@
                     <x-filament::icon icon="heroicon-o-eye" style="width:14px;height:14px;" /> View LOI
                 </a>
 
+                @if ($loi->yayasan_contract_path)
+                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($loi->yayasan_contract_path) }}"
+                        target="_blank"
+                        class="sp-act sp-act--ghost">
+                        <x-filament::icon icon="heroicon-o-document-text" style="width:14px;height:14px;" /> View Contract
+                    </a>
+                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($loi->yayasan_contract_path) }}"
+                        target="_blank"
+                        class="sp-act sp-act--ghost">
+                        <x-filament::icon icon="heroicon-o-printer" style="width:14px;height:14px;" /> Print Contract
+                    </a>
+                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($loi->yayasan_contract_path) }}"
+                        download
+                        class="sp-act sp-act--ghost">
+                        <x-filament::icon icon="heroicon-o-arrow-down-tray" style="width:14px;height:14px;" /> Download
+                    </a>
+                @endif
+
                 <div class="sp-act-spacer"></div>
 
-                @if (! is_null($loi->yayasan_contract_uploaded_at) && is_null($loi->agreement_signed_at))
+                @if ($loi->canOpenAgreementLetter())
                     <a href="{{ \App\Filament\Principal\Pages\SignLetterOfIntent::getUrl(['record' => $loi->id, 'mode' => 'agreement'], panel: 'principal') }}"
                         class="sp-act sp-act--amber">
                         <x-filament::icon icon="heroicon-o-finger-print" style="width:14px;height:14px;" /> Open Agreement Letter
@@ -198,6 +231,37 @@
                     </button>
                 @endif
             </div>
+
+            @if (! is_null($loi->yayasan_contract_uploaded_at) && is_null($loi->agreement_signed_at))
+                <div style="margin-top:.8rem; border:1px solid #e2e8f0; border-radius:12px; padding:.8rem; background:#f8fafc;">
+                    <label style="display:block; font-size:.78rem; font-weight:700; color:#334155; margin-bottom:.35rem;">
+                        Principal Review Note (required to resubmit)
+                    </label>
+                    <textarea
+                        wire:model="resubmitNotes.{{ $loi->id }}"
+                        rows="3"
+                        placeholder="Write note for Yayasan if contract needs correction."
+                        style="width:100%; border:1px solid #cbd5e1; border-radius:10px; font-size:.82rem; padding:.55rem .65rem; background:#fff;"></textarea>
+                    <div style="display:flex; justify-content:flex-end; gap:.55rem; margin-top:.55rem;">
+                        <button type="button"
+                            wire:click="resubmitContract({{ $loi->id }})"
+                            class="sp-act"
+                            style="background:#ffe4e6; color:#be123c; border:1px solid #fecdd3;">
+                            <x-filament::icon icon="heroicon-o-arrow-uturn-left" style="width:14px;height:14px;" /> Resubmit to Yayasan
+                        </button>
+                        <button type="button"
+                            wire:click="acceptContract({{ $loi->id }})"
+                            class="sp-act sp-act--success">
+                            <x-filament::icon icon="heroicon-o-check-circle" style="width:14px;height:14px;" /> Accept Contract
+                        </button>
+                    </div>
+                    @if ($loi->yayasan_resubmit_notes)
+                        <div style="margin-top:.55rem; font-size:.76rem; color:#be123c;">
+                            Last resubmit note: {{ $loi->yayasan_resubmit_notes }}
+                        </div>
+                    @endif
+                </div>
+            @endif
         </div>
     @empty
         <div class="sp-cm-empty">
