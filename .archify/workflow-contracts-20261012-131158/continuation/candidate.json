@@ -1,0 +1,55 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {
+    "title": "Contracts 02 / Annual continuation and Yayasan document review",
+    "locale": "en", "quality_profile": "showcase",
+    "output": ".archify/workflow-contracts-20261012-131158/continuation/continuation.html",
+    "legend": { "entries": { "frontend": { "label": "Principal / teacher UI" }, "backend": { "label": "Actions" }, "security": { "label": "Approval / signature gates" }, "database": { "label": "Saved records" }, "external": { "label": "External dependency" } } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "provider": "github", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3" }
+  },
+  "lanes": [
+    { "id": "loi", "label": "Letter of Intent / principal and named teacher" },
+    { "id": "review", "label": "Yayasan document / principal quality check" },
+    { "id": "finish", "label": "Agreement and completion" }
+  ],
+  "nodes": [
+    { "id": "send", "lane": "loi", "col": 0, "type": "backend", "label": "Send draft LOI", "sublabel": "sent_at / principal_id", "width": 150, "sources": [{ "path": "app/Filament/Principal/Resources/LetterOfIntentResource.php", "line": 158, "end_line": 170 }] },
+    { "id": "sign", "lane": "loi", "col": 1, "type": "security", "label": "Teacher signs LOI", "sublabel": "named account only", "width": 150, "sources": [{ "path": "app/Filament/Principal/Pages/SignLetterOfIntent.php", "line": 87, "end_line": 114 }] },
+    { "id": "submit", "lane": "loi", "col": 2, "type": "backend", "label": "Submit signed LOIs", "sublabel": "awaiting_upload", "width": 150, "sources": [{ "path": "app/Filament/Principal/Resources/LetterOfIntentResource.php", "line": 217, "end_line": 235 }] },
+    { "id": "upload", "lane": "review", "col": 2, "type": "external", "label": "Yayasan document", "sublabel": "upload writer not present", "width": 150, "sources": [{ "path": "app/Models/LetterOfIntent.php", "line": 15, "end_line": 22 }, { "path": "app/Filament/Principal/Pages/ContractContinuation.php", "line": 95, "end_line": 103 }] },
+    { "id": "accept", "lane": "review", "col": 3, "type": "security", "label": "Principal accepts", "sublabel": "uploaded contract required", "width": 150, "sources": [{ "path": "app/Filament/Principal/Pages/ContractContinuation.php", "line": 95, "end_line": 111 }] },
+    { "id": "revision", "lane": "review", "col": 1, "type": "backend", "label": "Return for revision", "sublabel": "needs_revision + note", "width": 150, "sources": [{ "path": "app/Filament/Principal/Pages/ContractContinuation.php", "line": 114, "end_line": 136 }] },
+    { "id": "agreement", "lane": "finish", "col": 3, "type": "security", "label": "Sign agreement", "sublabel": "teacher's bound account", "width": 150, "sources": [{ "path": "app/Filament/Principal/Pages/SignLetterOfIntent.php", "line": 36, "end_line": 83 }] },
+    { "id": "register", "lane": "finish", "col": 2, "type": "database", "label": "Buku Induk logged", "sublabel": "automatic on agreement", "width": 150, "sources": [{ "path": "app/Filament/Principal/Pages/SignLetterOfIntent.php", "line": 66, "end_line": 78 }] },
+    { "id": "complete", "lane": "finish", "col": 1, "type": "backend", "label": "Mark complete", "sublabel": "all prior gates required", "width": 150, "sources": [{ "path": "app/Filament/Principal/Pages/ContractContinuation.php", "line": 154, "end_line": 163 }, { "path": "app/Models/LetterOfIntent.php", "line": 162, "end_line": 172 }] }
+  ],
+  "edges": [
+    { "id": "send-sign", "from": "send", "to": "sign", "label": "sent", "variant": "emphasis" },
+    { "id": "sign-submit", "from": "sign", "to": "submit", "label": "signed", "variant": "emphasis" },
+    { "id": "submit-upload", "from": "submit", "to": "upload", "label": "external step", "variant": "dashed" },
+    { "id": "upload-accept", "from": "upload", "to": "accept", "label": "review", "variant": "emphasis" },
+    { "id": "upload-revision", "from": "upload", "to": "revision", "label": "issues", "variant": "security" },
+    { "id": "revision-upload", "from": "revision", "to": "upload", "label": "revised document", "variant": "dashed", "fromSide": "bottom", "toSide": "bottom", "route": "bottom-channel" },
+    { "id": "accept-agreement", "from": "accept", "to": "agreement", "label": "accepted", "variant": "emphasis" },
+    { "id": "agreement-register", "from": "agreement", "to": "register", "variant": "emphasis" },
+    { "id": "register-complete", "from": "register", "to": "complete", "label": "verify gates", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Annual continuation is not PKWT tier renewal", "items": [
+      "Contract Continuation selects non-archived LOIs for Guru SK / permanent teachers in the current academic year.",
+      "Send changes LOI status and timestamps; that action alone is not an email-delivery implementation.",
+      "LOI signing requires status sent and the teacher's bound user account. A decline enters the separate follow-up flow."
+    ] },
+    { "dot": "amber", "title": "Yayasan boundary and revision loop", "items": [
+      "The repository tracks submission, document path and upload timestamp, but no current application action writes the Yayasan contract upload.",
+      "The external document/re-upload arrows are required hand-offs, not a working local uploader or automated Yayasan API.",
+      "Uploaded is not accepted. The principal accepts the document or records needs_revision with a non-empty issue note."
+    ] },
+    { "dot": "emerald", "title": "Final gate is explicit", "items": [
+      "Agreement signing requires an uploaded, principal-accepted contract, no prior agreement signature, a valid name, and the named teacher account.",
+      "Signing stores name, time and IP and automatically timestamps Buku Induk / HR handoff. A manual Record Buku Induk action also exists after signing.",
+      "Mark Complete additionally requires signed LOI, Yayasan submission, upload, accepted review, agreement signature and Buku Induk timestamp; it cannot already be completed.",
+      "Continuation completion timestamps the LOI; it does not spawn a new TeacherContract."
+    ] }
+  ]
+}

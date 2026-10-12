@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sutomo | Leave and substitution flows</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0c1323; --panel: #142035; --line: #293951; --text: #edf3ff; --muted: #a8b9cf; --accent: #67e8c3; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 1140px; margin: auto; padding: 64px 28px 40px; }
+    .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .15em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(32px, 5vw, 54px); letter-spacing: -.045em; line-height: 1.12; margin: 14px 0 20px; }
+    .intro { max-width: 750px; color: var(--muted); font-size: 18px; }
+    .journey { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 32px 0; color: var(--muted); }
+    .journey span { padding: 8px 14px; border: 1px solid var(--line); border-radius: 30px; font-size: 13px; }
+    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .card { display: flex; flex-direction: column; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--text); text-decoration: none; transition: border-color .2s, transform .2s; }
+    .card:hover { border-color: var(--accent); transform: translateY(-4px); }
+    a:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+    .number { color: var(--accent); font: 700 13px/1.5 ui-monospace, monospace; }
+    h2 { font-size: 22px; line-height: 1.3; margin: 20px 0 12px; }
+    .card p { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+    .open { margin-top: auto; font-size: 13px; font-weight: 700; color: var(--accent); }
+    .notes { margin-top: 28px; padding: 24px 28px; border: 1px solid var(--line); border-radius: 18px; }
+    .notes h2 { margin: 0 0 12px; font-size: 17px; }
+    .notes p { color: var(--muted); font-size: 14px; margin: 8px 0; }
+    footer { color: var(--muted); margin-top: 26px; font-size: 12px; }
+    @media (max-width: 780px) { .cards { grid-template-columns: 1fr; } main { padding-top: 32px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Sutomo / Module explorer / Local only</div>
+    <h1>Leave &amp; substitution.<br>Every hand-off explained.</h1>
+    <p class="intro">Explore three source-backed Archify workflows: how the principal files leave, how teachers express interest in cover, and how approval becomes visible in the substitution timetable.</p>
+    <div class="journey" aria-label="Leave journey">
+      <span>File leave</span><b aria-hidden="true">&rarr;</b>
+      <span>Find cover if required</span><b aria-hidden="true">&rarr;</b>
+      <span>Principal approval</span><b aria-hidden="true">&rarr;</b>
+      <span>Duty hand-off &amp; roster</span>
+    </div>
+    <section class="cards" aria-label="Individual leave and substitution modules">
+      <a class="card" href="leave/leave.html">
+        <span class="number">01 / LEAVE</span>
+        <h2>One request.<br>Three paths.</h2>
+        <p>Validate the teacher, dates and type limits. Follow the no-cover path, the pre-picked-substitute fast path, or pending leave with auto search.</p>
+        <span class="open">Explore submission &rarr;</span>
+      </a>
+      <a class="card" href="search/search.html">
+        <span class="number">02 / SUBSTITUTION</span>
+        <h2>Invite, respond,<br>then select.</h2>
+        <p>Rank candidates, email signed invitations, collect interest or declines, close at the cap, and let the principal choose the substitute.</p>
+        <span class="open">Explore substitute search &rarr;</span>
+      </a>
+      <a class="card" href="approval/approval.html">
+        <span class="number">03 / HAND-OFF</span>
+        <h2>Approve leave.<br>Make cover visible.</h2>
+        <p>Approve or reject, optionally create a pending duty, print the letter, and see how leave, lessons and duties produce coverage cells.</p>
+        <span class="open">Explore approval &amp; roster &rarr;</span>
+      </a>
+    </section>
+    <section class="notes" aria-label="Important implementation distinctions">
+      <h2>Three distinctions that matter.</h2>
+      <p><strong>Interest is not assignment:</strong> clicking Accept records interest. The principal makes the final choice.</p>
+      <p><strong>Assignment is not approval:</strong> picking an interested teacher does not approve the leave. Approval is a separate action unless the substitute was pre-picked during submission.</p>
+      <p><strong>Coverage is a projection:</strong> the substitution roster is read-only. A missing matching duty produces a hand-off gap, even when the leave already has a substitute.</p>
+    </section>
+    <footer><a href="../index.html">All flows</a> &middot; Repository evidence pinned to commit 33d3bbd &middot; Standalone HTML &middot; Application unchanged</footer>
+  </main>
+</body>
+</html>

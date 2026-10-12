@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sutomo / Flow library</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; background: #09121f; color: #e6edf5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at top right, #16413e, transparent 58%); }
+    main { max-width: 1120px; margin: auto; padding: 64px 28px; }
+    .eyebrow { color: #8ce2c7; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { font-size: clamp(32px, 5vw, 58px); letter-spacing: -.035em; margin: 18px 0; }
+    p { color: #b2c1d3; line-height: 1.7; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin: 34px 0; }
+    .card { display: block; padding: 26px; color: inherit; text-decoration: none; border: 1px solid #2a3b50; border-radius: 18px; background: #111e2de8; }
+    .card:hover, .card:focus-visible { border-color: #8ce2c7; }
+    .card span { color: #8ce2c7; font-size: 12px; letter-spacing: .12em; }
+    h2 { font-size: 23px; margin: 16px 0 10px; }
+    .card p { font-size: 14px; margin-bottom: 0; }
+    footer { color: #8597af; font-size: 13px; line-height: 1.7; }
+    footer a { color: #9de5ce; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Sutomo / Developer flow library</div>
+    <h1>One system. Every flow.</h1>
+    <p>Source-backed, interactive Archify diagrams of the existing implementation. Browse the system overview or explore each module separately. Includes 13 diagrams across five collections.</p>
+    <section class="grid" aria-label="Diagram collections">
+      <a class="card" href="architecture-sutomo-hr-20261012-081500/sutomo-hr.html"><span>01 / SYSTEM</span><h2>System architecture</h2><p>Panels, application services, persistence and core integrations.</p></a>
+      <a class="card" href="workflow-enrollment-20261012-084142/index.html"><span>02 / ENROLLMENT</span><h2>Enrollment</h2><p>Intake and payment, placement review, and two-track onboarding.</p></a>
+      <a class="card" href="workflow-leave-substitution-20261012-090931/index.html"><span>03 / LEAVE</span><h2>Leave &amp; substitution</h2><p>Submission, candidate invitations, selection, approval and cover projection.</p></a>
+      <a class="card" href="workflow-contracts-20261012-131158/index.html"><span>04 / CONTRACTS</span><h2>Contract management</h2><p>PKWT renewal, Yayasan decisions, annual continuation and resignation follow-up.</p></a>
+      <a class="card" href="workflow-planning-20261012-143425/index.html"><span>05 / PLANNING</span><h2>Planning</h2><p>Units and topics, timetable generation, health review and snapshot publishing.</p></a>
+    </section>
+    <footer>Standalone HTML with source references, theme controls and exports. Diagrams describe the pinned source revision, not a proposed implementation. See the <a href="README.md">viewing and maintenance guide</a>.</footer>
+  </main>
+</body>
+</html>

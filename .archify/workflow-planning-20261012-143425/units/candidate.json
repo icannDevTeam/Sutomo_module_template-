@@ -1,0 +1,48 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {
+    "title": "Planning 01 / Units, topics and collaboration",
+    "locale": "en", "quality_profile": "showcase",
+    "output": ".archify/workflow-planning-20261012-143425/units/units.html",
+    "legend": { "entries": { "frontend": { "label": "Planning UI" }, "backend": { "label": "Actions" }, "database": { "label": "Saved content" } } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3", "provider": "github" }
+  },
+  "lanes": [
+    { "id": "browse", "label": "Browse and select a unit" },
+    { "id": "content", "label": "Read the three content tabs" },
+    { "id": "team", "label": "Discussion and activity" }
+  ],
+  "nodes": [
+    { "id": "load", "lane": "browse", "col": 0, "type": "database", "label": "Load unit plans", "sublabel": "latest activity selected", "width": 155, "sources": [{ "path": "app/Filament/Principal/Pages/UnitPlanning.php", "line": 25, "end_line": 29 }] },
+    { "id": "filter", "lane": "browse", "col": 1, "type": "frontend", "label": "Search and filter", "sublabel": "status / title / grade / theme", "width": 155, "sources": [{ "path": "app/Filament/Principal/Pages/UnitPlanning.php", "line": 66, "end_line": 82 }] },
+    { "id": "select", "lane": "browse", "col": 2, "type": "frontend", "label": "Select unit", "sublabel": "opens Plan tab", "width": 155, "sources": [{ "path": "app/Filament/Principal/Pages/UnitPlanning.php", "line": 37, "end_line": 46 }] },
+    { "id": "plan", "lane": "content", "col": 1, "type": "frontend", "label": "Plan", "sublabel": "objectives / topics / assessment", "width": 155, "sources": [{ "path": "resources/views/filament/principal/pages/unit-planning.blade.php", "line": 218, "end_line": 283 }] },
+    { "id": "lessons", "lane": "content", "col": 2, "type": "frontend", "label": "Lessons", "sublabel": "weekly groups and statuses", "width": 155, "sources": [{ "path": "resources/views/filament/principal/pages/unit-planning.blade.php", "line": 284, "end_line": 317 }] },
+    { "id": "resources", "lane": "content", "col": 3, "type": "frontend", "label": "Resources", "sublabel": "stored materials list", "width": 155, "sources": [{ "path": "resources/views/filament/principal/pages/unit-planning.blade.php", "line": 318, "end_line": 337 }] },
+    { "id": "comment", "lane": "team", "col": 2, "type": "backend", "label": "Post comment", "sublabel": "non-empty + selected unit", "width": 155, "sources": [{ "path": "app/Filament/Principal/Pages/UnitPlanning.php", "line": 48, "end_line": 63 }] },
+    { "id": "activity", "lane": "team", "col": 3, "type": "database", "label": "Save discussion", "sublabel": "update last_activity_at", "width": 155, "sources": [{ "path": "app/Filament/Principal/Pages/UnitPlanning.php", "line": 54, "end_line": 63 }, { "path": "app/Models/UnitPlan.php", "line": 35, "end_line": 42 }] }
+  ],
+  "edges": [
+    { "id": "load-filter", "from": "load", "to": "filter", "variant": "emphasis" },
+    { "id": "filter-select", "from": "filter", "to": "select", "variant": "emphasis" },
+    { "id": "select-plan", "from": "select", "to": "plan", "label": "default", "fromSide": "left", "toSide": "top" },
+    { "id": "select-lessons", "from": "select", "to": "lessons", "label": "switch tab" },
+    { "id": "select-resources", "from": "select", "to": "resources", "label": "switch tab", "fromSide": "right", "toSide": "top" },
+    { "id": "lessons-comment", "from": "lessons", "to": "comment", "label": "discuss any tab", "variant": "dashed" },
+    { "id": "comment-activity", "from": "comment", "to": "activity", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Read existing plans, not a staged approval workflow", "items": [
+      "All / In progress / Draft / Completed / Mine filters and title, grade, theme search are working.",
+      "Plan, Lessons and Resources are views of stored sections. Switching tabs does not advance unit status or completion.",
+      "Unit statuses include draft, active, completed and archived, but this page does not implement transitions or approvals."
+    ] },
+    { "dot": "amber", "title": "Current implementation boundaries", "items": [
+      "New, Add objective/topic/lesson and Attach resource buttons have no wired handlers in the current Blade view.",
+      "The displayed Auto-saved hint is not evidence of an editable auto-save mechanism.",
+      "Comments are persisted, but author identity and the Mine filter are hard-coded to Pak Dwi; not derived from the logged-in user.",
+      "Collaborator badges are loaded from stored records. They do not establish realtime presence or concurrent editing.",
+      "Unit lesson content is not automatically converted into timetable lessons."
+    ] }
+  ]
+}

@@ -45,3 +45,10 @@ Default admin login:
   For real use, switch `.env` to `DB_CONNECTION=mysql` (or pgsql) and migrate.
 - `vendor/` and `node_modules/` are git-ignored — run `composer install` after pulling.
 - Laravel's default README has been kept as `README.laravel-default.md`.
+
+## Architecture and module flows
+
+The [Archify flow library](.archify/README.md) includes the system architecture
+and individual enrollment, leave/substitution, contract and planning workflows.
+After pulling, run `php -S 127.0.0.1:8085 -t .archify` from the repository root
+and open http://127.0.0.1:8085/. No application dependencies are needed to view it.

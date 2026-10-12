@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Leave 02 / Substitute invitations and principal selection",
+    "locale": "en",
+    "output": ".archify/workflow-leave-substitution-20261012-090931/search/search.html",
+    "quality_profile": "showcase",
+    "legend": { "entries": {
+      "frontend": { "label": "Teacher / principal UI" }, "backend": { "label": "Actions" },
+      "security": { "label": "Checks / decisions" }, "database": { "label": "Saved records" }
+    } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "provider": "github", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3" }
+  },
+  "lanes": [
+    { "id": "invite", "label": "Search and invite" },
+    { "id": "response", "label": "Teacher responds through signed link" },
+    { "id": "selection", "label": "Principal selects - leave still pending" }
+  ],
+  "nodes": [
+    { "id": "start", "lane": "invite", "col": 0, "type": "frontend", "label": "Start search", "sublabel": "pending; no substitute", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Resources/TeacherLeaveResource.php", "line": 293, "end_line": 328 }] },
+    { "id": "rank", "lane": "invite", "col": 1, "type": "security", "label": "Rank + filter", "sublabel": "assignable / not invited", "width": 156,
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 28, "end_line": 37 }, { "path": "app/Support/SubstituteSuggester.php", "line": 29, "end_line": 43 }, { "path": "app/Support/SubstituteSuggester.php", "line": 195, "end_line": 264 }] },
+    { "id": "offers", "lane": "invite", "col": 2, "type": "database", "label": "Create invitations", "sublabel": "token / expiry / round", "width": 156,
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 39, "end_line": 54 }, { "path": "app/Support/SubstituteBroadcaster.php", "line": 67, "end_line": 74 }] },
+    { "id": "mail", "lane": "invite", "col": 3, "type": "backend", "label": "Email offers", "sublabel": "temporary signed URLs", "width": 156,
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 56, "end_line": 63 }, { "path": "app/Mail/SubstituteOfferMail.php", "line": 32, "end_line": 46 }] },
+    { "id": "guards", "lane": "response", "col": 3, "type": "security", "label": "Validate response", "sublabel": "signature / token / state", "width": 156,
+      "sources": [{ "path": "routes/web.php", "line": 13, "end_line": 19 }, { "path": "app/Http/Controllers/SubstituteOfferController.php", "line": 21, "end_line": 49 }] },
+    { "id": "interested", "lane": "response", "col": 2, "type": "database", "label": "Interested", "sublabel": "not yet assigned", "width": 156,
+      "sources": [{ "path": "app/Http/Controllers/SubstituteOfferController.php", "line": 47, "end_line": 60 }] },
+    { "id": "closed", "lane": "response", "col": 1, "type": "database", "label": "Close at cap", "sublabel": "cancel pending offers", "width": 156,
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 82, "end_line": 110 }] },
+    { "id": "pick", "lane": "selection", "col": 2, "type": "frontend", "label": "Principal picks", "sublabel": "one interested offer", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Resources/TeacherLeaveResource.php", "line": 434, "end_line": 462 }] },
+    { "id": "assigned", "lane": "selection", "col": 1, "type": "database", "label": "Substitute assigned", "sublabel": "search closed_assigned", "width": 156,
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 118, "end_line": 141 }] },
+    { "id": "approval", "lane": "selection", "col": 0, "type": "security", "label": "Approve leave next", "sublabel": "assignment is not approval", "width": 156,
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 131, "end_line": 135 }, { "path": "app/Filament/Principal/Resources/TeacherLeaveResource.php", "line": 255, "end_line": 260 }] },
+    { "id": "declined", "lane": "selection", "col": 3, "type": "database", "label": "Declined", "sublabel": "other candidates remain", "width": 156,
+      "sources": [{ "path": "app/Http/Controllers/SubstituteOfferController.php", "line": 63, "end_line": 69 }] }
+  ],
+  "edges": [
+    { "id": "start-rank", "from": "start", "to": "rank", "variant": "emphasis" },
+    { "id": "rank-offers", "from": "rank", "to": "offers", "variant": "emphasis" },
+    { "id": "offers-mail", "from": "offers", "to": "mail", "label": "send", "variant": "dashed" },
+    { "id": "mail-guards", "from": "mail", "to": "guards", "label": "click", "variant": "security" },
+    { "id": "guards-interest", "from": "guards", "to": "interested", "label": "accept", "variant": "emphasis" },
+    { "id": "guards-decline", "from": "guards", "to": "declined", "label": "decline", "variant": "dashed" },
+    { "id": "interest-cap", "from": "interested", "to": "closed", "label": "cap reached", "variant": "dashed" },
+    { "id": "interest-pick", "from": "interested", "to": "pick", "label": "manual pick", "variant": "emphasis" },
+    { "id": "pick-assigned", "from": "pick", "to": "assigned", "label": "confirm", "variant": "emphasis" },
+    { "id": "assigned-approval", "from": "assigned", "to": "approval", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Ranking and invitation limits", "items": [
+      "Priority: VIP, pinned teacher preferences, global preferred, subject, department, then campus pool. Restricted teachers sink within each tier.",
+      "Approved leave, existing approved cover and absence attendance are hard conflicts. Overlapping pending/accepted duties are soft conflicts.",
+      "Defaults: 24-hour response window, 15 invitations and 5 interested responses. Previously invited teachers are excluded from later rounds."
+    ] },
+    { "dot": "amber", "title": "Interest, closure and expiry are separate", "items": [
+      "Accept means interested, never automatic assignment. Principal selection requires the chosen offer still to be interested.",
+      "Cap reached or manual Close Search cancels pending offers but retains interested offers for selection.",
+      "Assignment marks the chosen offer assigned, sets substitute_teacher_id, and cancels other pending/interested offers. It does not change leave.status.",
+      "Expired signatures are rejected by signed middleware. The controller also checks offer expiry; this diagram does not claim a scheduled expiry job."
+    ] },
+    { "dot": "rose", "title": "Delivery is not guaranteed", "items": [
+      "Mail is sent synchronously when a teacher has an email. Exceptions are reported but offers remain stored.",
+      "The template defaults MAIL_MAILER to log, so external delivery depends on local mail configuration.",
+      "Cancellation updates database status; assignFromInterested contains no email notification to the other teachers."
+    ] }
+  ]
+}

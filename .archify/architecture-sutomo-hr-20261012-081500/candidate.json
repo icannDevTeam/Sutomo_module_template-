@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Sutomo HR — Laravel + Filament system overview",
+    "output": ".archify/architecture-sutomo-hr-20261012-081500/sutomo-hr.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git",
+      "provider": "github",
+      "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3"
+    }
+  },
+  "components": [
+    { "id": "staff", "type": "external", "label": "School staff", "sublabel": "HR · principals · admins", "pos": [30, 240], "size": [150, 64] },
+    { "id": "gate", "type": "security", "label": "Panel access gate", "sublabel": "canAccessPanel(role)", "pos": [240, 240], "size": [160, 64],
+      "sources": [{ "path": "app/Models/User.php", "line": 59, "end_line": 60, "label": "role lists" }, { "path": "app/Models/User.php", "line": 62, "end_line": 70, "label": "panel match" }] },
+    { "id": "admin", "type": "frontend", "label": "Admin panel", "sublabel": "Filament /admin · HR", "pos": [450, 100], "size": [150, 64],
+      "sources": [{ "path": "app/Providers/Filament/AdminPanelProvider.php", "line": 27, "end_line": 30, "label": "id, path, login" }, { "path": "app/Providers/Filament/AdminPanelProvider.php", "line": 69, "end_line": 74, "label": "discovery" }] },
+    { "id": "principal", "type": "frontend", "label": "Principal panel", "sublabel": "Filament /principal", "pos": [450, 380], "size": [150, 64],
+      "sources": [{ "path": "app/Providers/Filament/PrincipalPanelProvider.php", "line": 27, "end_line": 29, "label": "id, path, login" }, { "path": "app/Providers/Filament/PrincipalPanelProvider.php", "line": 90, "label": "page discovery" }] },
+    { "id": "models", "type": "backend", "label": "Eloquent models", "sublabel": "teachers, candidates, leave…", "pos": [700, 240], "size": [150, 64],
+      "sources": [{ "path": "app/Filament/Pages/Pipeline.php", "line": 58, "label": "AuditLog write" }] },
+    { "id": "services", "type": "backend", "label": "Timetable services", "sublabel": "generate · check · publish", "pos": [700, 380], "size": [150, 64],
+      "sources": [{ "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 266, "label": "generateDraft" }, { "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 303, "label": "publishSnapshot" }, { "path": "app/Services/Timetable/PublishService.php", "line": 15, "end_line": 46, "label": "publish tx" }] },
+    { "id": "db", "type": "database", "label": "SQLite", "sublabel": "data · sessions · cache · queue", "pos": [950, 240], "size": [150, 64],
+      "sources": [{ "path": ".env.example", "line": 24, "label": "DB_CONNECTION" }, { "path": ".env.example", "line": 31, "end_line": 41, "label": "DB-backed drivers" }] },
+    { "id": "api", "type": "backend", "label": "Enrollment config API", "sublabel": "GET /api/enrollment-config", "pos": [950, 100], "size": [150, 64],
+      "sources": [{ "path": "routes/web.php", "line": 9, "end_line": 11, "label": "public route" }, { "path": "app/Http/Controllers/Api/EnrollmentConfigController.php", "line": 29, "end_line": 43, "label": "cached read" }] },
+    { "id": "apply", "type": "external", "label": "Apply wizard", "sublabel": "public front-end", "pos": [1200, 100], "size": [150, 64],
+      "sources": [{ "path": "app/Http/Controllers/Api/EnrollmentConfigController.php", "line": 13, "end_line": 19, "label": "consumer note" }] },
+    { "id": "broadcaster", "type": "backend", "label": "Substitute broadcaster", "sublabel": "offers + token", "pos": [450, 520], "size": [150, 64],
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 46, "end_line": 60, "label": "create offer, mail" }, { "path": "app/Filament/Principal/Resources/TeacherLeaveResource.php", "line": 324, "label": "startAutoSearch" }] },
+    { "id": "mail", "type": "messagebus", "label": "Mailer", "sublabel": "log driver by default", "pos": [700, 520], "size": [150, 64],
+      "sources": [{ "path": "app/Support/SubstituteBroadcaster.php", "line": 59, "label": "Mail::send" }, { "path": ".env.example", "line": 51, "label": "MAIL_MAILER" }] },
+    { "id": "teachers", "type": "external", "label": "Cover teachers", "sublabel": "email recipients", "pos": [950, 520], "size": [150, 64] },
+    { "id": "offerctl", "type": "backend", "label": "Offer controller", "sublabel": "accept / decline", "pos": [950, 380], "size": [150, 64],
+      "sources": [{ "path": "routes/web.php", "line": 14, "end_line": 19, "label": "signed routes" }, { "path": "app/Http/Controllers/SubstituteOfferController.php", "line": 21, "end_line": 70, "label": "respond()" }] }
+  ],
+  "connections": [
+    { "id": "staff-login", "from": "staff", "to": "gate", "label": "login", "variant": "emphasis" },
+    { "id": "gate-admin", "from": "gate", "to": "admin", "label": "admin roles", "variant": "security" },
+    { "id": "gate-principal", "from": "gate", "to": "principal", "label": "principal roles", "variant": "security" },
+    { "id": "admin-models", "from": "admin", "to": "models", "label": "CRUD" },
+    { "id": "principal-models", "from": "principal", "to": "models", "label": "CRUD" },
+    { "id": "principal-services", "from": "principal", "to": "services", "label": "timetable" },
+    { "id": "services-models", "from": "services", "to": "models", "label": "lessons" },
+    { "id": "models-db", "from": "models", "to": "db", "label": "Eloquent" },
+    { "id": "apply-api", "from": "apply", "to": "api", "label": "GET JSON", "variant": "dashed" },
+    { "id": "api-db", "from": "api", "to": "db", "label": "period + cache" },
+    { "id": "principal-broadcaster", "from": "principal", "to": "broadcaster", "label": "cover search" },
+    { "id": "broadcaster-mail", "from": "broadcaster", "to": "mail", "label": "send", "variant": "dashed" },
+    { "id": "mail-teachers", "from": "mail", "to": "teachers", "label": "email link", "variant": "dashed" },
+    { "id": "teachers-offerctl", "from": "teachers", "to": "offerctl", "label": "signed link", "variant": "security" },
+    { "id": "offerctl-db", "from": "offerctl", "to": "db", "label": "offer status" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Two Filament panels", "items": ["/admin: HR resources for candidates, teachers, vacancies, interviews, deposits, audit log", "/principal: teacher, student, enrollment and timetable pages", "Access is decided per panel by the user's role"] },
+    { "dot": "emerald", "title": "Data and runtime", "items": ["Eloquent models over SQLite by default", "Sessions, cache and queue default to the database driver", "Pages write AuditLog rows for approvals and stage moves"] },
+    { "dot": "amber", "title": "Substitute cover loop", "items": ["Broadcaster creates token offers and emails invited teachers", "Teachers answer through public signed routes, no login", "Responses update the offer; the principal confirms the substitute"] }
+  ]
+}

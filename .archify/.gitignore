@@ -1,0 +1,14 @@
+# Keep portable diagrams and source specifications; exclude machine-local evidence.
+*.delivery.json
+*.delivery-pending.json
+*.finalize.json
+*.finalize-summary.json
+*.browser-check.json
+*.validate.json
+*.check.json
+*.png
+*.jpg
+*.webp
+review-*/
+visual-check/
+*-lock.json

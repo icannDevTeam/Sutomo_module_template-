@@ -1,0 +1,49 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {
+    "title": "Contracts 01 / PKWT renewal and Yayasan approval",
+    "locale": "en", "quality_profile": "showcase",
+    "output": ".archify/workflow-contracts-20261012-131158/renewal/renewal.html",
+    "legend": { "entries": { "frontend": { "label": "Principal UI" }, "backend": { "label": "Actions" }, "security": { "label": "Approval / decisions" }, "database": { "label": "Saved records" } } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "provider": "github", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3" }
+  },
+  "lanes": [
+    { "id": "principal", "label": "Principal recommendation" },
+    { "id": "yayasan", "label": "Yayasan decision - recorded by principal" },
+    { "id": "probation", "label": "Separate PKWT-I probation decision" }
+  ],
+  "nodes": [
+    { "id": "window", "lane": "principal", "col": 0, "type": "database", "label": "Renewal window", "sublabel": "active PKWT contracts", "width": 156, "sources": [{ "path": "app/Models/TeacherContract.php", "line": 91, "end_line": 100 }] },
+    { "id": "recommend", "lane": "principal", "col": 1, "type": "frontend", "label": "Recommendation", "sublabel": "renew / not_renew", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/ContractRenewal.php", "line": 153, "end_line": 182 }] },
+    { "id": "submit", "lane": "principal", "col": 2, "type": "backend", "label": "Submit to Yayasan", "sublabel": "recommendation required", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/ContractRenewal.php", "line": 185, "end_line": 201 }] },
+    { "id": "decision", "lane": "yayasan", "col": 2, "type": "security", "label": "Record Yayasan decision", "sublabel": "approved / rejected", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/ContractRenewal.php", "line": 204, "end_line": 223 }] },
+    { "id": "spawn", "lane": "yayasan", "col": 3, "type": "backend", "label": "Spawn next tier", "sublabel": "validate selected tier", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/ContractRenewal.php", "line": 233, "end_line": 245 }, { "path": "app/Models/TeacherContract.php", "line": 144, "end_line": 167 }] },
+    { "id": "stop", "lane": "yayasan", "col": 1, "type": "database", "label": "Not renewed", "sublabel": "contract + teacher status", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/ContractRenewal.php", "line": 225, "end_line": 230 }] },
+    { "id": "continue", "lane": "probation", "col": 1, "type": "backend", "label": "Continue probation", "sublabel": "decision only; no spawn", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/ProbationWatch.php", "line": 133, "end_line": 146 }] },
+    { "id": "terminate", "lane": "probation", "col": 2, "type": "backend", "label": "Terminate probation", "sublabel": "refund flag for Finance", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/ProbationWatch.php", "line": 148, "end_line": 168 }] }
+  ],
+  "edges": [
+    { "id": "window-recommend", "from": "window", "to": "recommend", "variant": "emphasis" },
+    { "id": "recommend-submit", "from": "recommend", "to": "submit", "label": "set", "variant": "emphasis" },
+    { "id": "submit-decision", "from": "submit", "to": "decision", "label": "submitted", "variant": "security" },
+    { "id": "decision-spawn", "from": "decision", "to": "spawn", "label": "approved + renew", "variant": "emphasis" },
+    { "id": "decision-stop", "from": "decision", "to": "stop", "label": "reject / not renew", "variant": "security" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Yayasan controls the renewal outcome", "items": [
+      "The principal records Yayasan's decision locally after submission; no remote Yayasan API is invoked.",
+      "Approved plus renew creates the next contract. Rejected OR a not_renew recommendation closes both contract and teacher as not_renewed.",
+      "A recommendation decision is required to submit. Uploading a recommendation letter is supported, but the submit method does not require its file."
+    ] },
+    { "dot": "emerald", "title": "Exact tier progression and dates", "items": [
+      "PKWT-I -> PKWT-II; PKWT-II -> PKWT-III or Guru SK; PKWT-III -> Guru SK.",
+      "New contract starts the day after the old end date, or today if no end exists. PKWT duration is one year; Guru SK has no end date.",
+      "The old contract becomes renewed; teacher.status becomes the next type. Probation Continue does not spawn a contract or enforce an additional renewal gate."
+    ] },
+    { "dot": "amber", "title": "Probation is a separate recorded decision", "items": [
+      "PKWT-I decisions can be recorded once. Continue only records the decision; Renewal performs PKWT-II creation later.",
+      "Terminate sets contract terminated, teacher not_renewed and commitment_fee_refund_triggered_at.",
+      "The refund timestamp is a Finance flag, not evidence of an executed payment."
+    ] }
+  ]
+}

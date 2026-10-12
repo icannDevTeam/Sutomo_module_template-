@@ -1,0 +1,48 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {
+    "title": "Contracts 03 / Declined LOI, follow-up and HR handoff",
+    "locale": "en", "quality_profile": "showcase",
+    "output": ".archify/workflow-contracts-20261012-131158/follow-up/follow-up.html",
+    "legend": { "entries": { "frontend": { "label": "Principal / teacher UI" }, "backend": { "label": "Actions" }, "security": { "label": "Required evidence" }, "database": { "label": "Saved records" } } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "provider": "github", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3" }
+  },
+  "lanes": [
+    { "id": "meeting", "label": "Teacher decline / principal follow-up" },
+    { "id": "resignation", "label": "Resignation documentation" },
+    { "id": "closure", "label": "Handoff and closure" }
+  ],
+  "nodes": [
+    { "id": "decline", "lane": "meeting", "col": 0, "type": "database", "label": "LOI declined", "sublabel": "teacher records reason", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/SignLetterOfIntent.php", "line": 124, "end_line": 145 }] },
+    { "id": "notes", "lane": "meeting", "col": 1, "type": "frontend", "label": "Log meeting", "sublabel": "notes / actions / outcome", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 45, "end_line": 81 }, { "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 123, "end_line": 147 }] },
+    { "id": "outcome", "lane": "meeting", "col": 2, "type": "security", "label": "Follow-up outcome", "sublabel": "continuing / resigning", "width": 156, "sources": [{ "path": "app/Models/LetterOfIntent.php", "line": 99, "end_line": 102 }] },
+    { "id": "continuing", "lane": "resignation", "col": 1, "type": "backend", "label": "Continuing outcome", "sublabel": "close follow-up case", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 185, "end_line": 203 }] },
+    { "id": "upload", "lane": "resignation", "col": 2, "type": "security", "label": "Resignation letter", "sublabel": "scan / PDF required", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 72, "end_line": 85 }, { "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 135, "end_line": 137 }] },
+    { "id": "pending", "lane": "resignation", "col": 3, "type": "database", "label": "Resignation pending", "sublabel": "optional intermediate flag", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 149, "end_line": 161 }] },
+    { "id": "hr", "lane": "closure", "col": 2, "type": "database", "label": "Ready for HR", "sublabel": "handoff flag + timestamp", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 163, "end_line": 182 }] },
+    { "id": "close", "lane": "closure", "col": 1, "type": "database", "label": "Case closed", "sublabel": "follow_up_status = closed", "width": 156, "sources": [{ "path": "app/Filament/Principal/Pages/LetterOfIntentFollowUp.php", "line": 185, "end_line": 203 }] }
+  ],
+  "edges": [
+    { "id": "decline-notes", "from": "decline", "to": "notes", "variant": "emphasis" },
+    { "id": "notes-outcome", "from": "notes", "to": "outcome", "variant": "emphasis" },
+    { "id": "outcome-continue", "from": "outcome", "to": "continuing", "label": "continuing", "variant": "emphasis", "fromSide": "left", "toSide": "top" },
+    { "id": "outcome-upload", "from": "outcome", "to": "upload", "label": "resigning", "variant": "security" },
+    { "id": "continue-close", "from": "continuing", "to": "close", "variant": "emphasis" },
+    { "id": "upload-pending", "from": "upload", "to": "pending", "label": "optional", "variant": "dashed" },
+    { "id": "upload-hr", "from": "upload", "to": "hr", "label": "mark ready", "variant": "emphasis" },
+    { "id": "hr-close", "from": "hr", "to": "close", "label": "close case", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Document the principal's conversation", "items": [
+      "Meeting notes, actions taken and an outcome are collected in the follow-up form.",
+      "Resigning requires an uploaded resignation letter. Save initializes meeting_logged and records upload time.",
+      "Resignation Pending is optional; Ready for HR is a flag on the LOI, not a remote HR integration."
+    ] },
+    { "dot": "amber", "title": "Case closure is not contract termination", "items": [
+      "Close Case saves follow_up_status=closed. A resigning outcome cannot close without the resignation letter.",
+      "Ready for HR is not mandatory before Close Case: staff can close once the form and evidence allow.",
+      "A continuing outcome does not restore LOI status to sent/signed. These follow-up actions do not change TeacherContract or teacher employment status.",
+      "The loi:send-reminders command supports pending signatures, overdue signatures and stale decline follow-ups; running/scheduling it is separate."
+    ] }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Enrollment 03 / Student onboarding - two programme tracks",
+    "locale": "en",
+    "output": ".archify/workflow-enrollment-20261012-084142/onboarding/onboarding.html",
+    "quality_profile": "showcase",
+    "legend": { "entries": {
+      "frontend": { "label": "Staff UI" },
+      "backend": { "label": "Actions" },
+      "security": { "label": "Checks / decisions" },
+      "database": { "label": "Saved records" }
+    } },
+    "repository": {
+      "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git",
+      "provider": "github",
+      "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3"
+    }
+  },
+  "lanes": [
+    { "id": "entry", "label": "Student Onboarding" },
+    { "id": "track-a", "label": "Track A" },
+    { "id": "track-b", "label": "Track B / Fees" },
+    { "id": "completion", "label": "Track B / Attendance and ID" },
+    { "id": "activation", "label": "Track B / Activate" }
+  ],
+  "nodes": [
+    { "id": "eligible", "lane": "entry", "col": 0, "type": "database", "label": "Passed / accepted", "sublabel": "onboarding cohort", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 215, "end_line": 218 }] },
+    { "id": "track", "lane": "entry", "col": 1, "type": "security", "label": "Choose track", "sublabel": "campus + stream", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 134, "end_line": 146 }] },
+    { "id": "interview", "lane": "track-a", "col": 1, "type": "frontend", "label": "Interview + test", "sublabel": "score + pass/fail choice", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 341, "end_line": 386 }] },
+    { "id": "donation", "lane": "track-a", "col": 2, "type": "backend", "label": "Combined payment", "sublabel": "registration + donation", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 412, "end_line": 434 }] },
+    { "id": "activated-a", "lane": "track-a", "col": 3, "type": "database", "label": "Activated / Track A", "sublabel": "no further stages here", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 429, "end_line": 434 }] },
+    { "id": "failed-a", "lane": "track-a", "col": 4, "type": "database", "label": "Interview failed", "sublabel": "status = failed", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 375, "end_line": 380 }] },
+    { "id": "devfee", "lane": "track-b", "col": 0, "type": "backend", "label": "Development fee", "sublabel": "paid_at + invoice", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 314, "end_line": 333 }] },
+    { "id": "books", "lane": "track-b", "col": 1, "type": "backend", "label": "Book purchase", "sublabel": "package + payment account", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 516, "end_line": 543 }] },
+    { "id": "class", "lane": "track-b", "col": 2, "type": "backend", "label": "Assign class", "sublabel": "class + homeroom teacher", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 547, "end_line": 577 }] },
+    { "id": "observation", "lane": "completion", "col": 2, "type": "security", "label": "Observation", "sublabel": "5 present days required", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 260, "end_line": 269 }, { "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 717, "end_line": 755 }] },
+    { "id": "identity", "lane": "completion", "col": 3, "type": "backend", "label": "Student ID + VA", "sublabel": "tuition VA; no expiry", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 930, "end_line": 955 }] },
+    { "id": "extras", "lane": "completion", "col": 4, "type": "backend", "label": "CCA + e-books", "sublabel": "choices + assigned pack", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 816, "end_line": 841 }] },
+    { "id": "tuition", "lane": "activation", "col": 4, "type": "backend", "label": "Tuition paid", "sublabel": "confirm and activate", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 960, "end_line": 977 }] },
+    { "id": "activated-b", "lane": "activation", "col": 3, "type": "database", "label": "Activated / Track B", "sublabel": "Application.status updated", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 967, "end_line": 977 }] },
+    { "id": "waitlist", "lane": "entry", "col": 2, "type": "database", "label": "Waitlisted", "sublabel": "hold for review", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 981, "end_line": 991 }] },
+    { "id": "reinstate", "lane": "entry", "col": 3, "type": "security", "label": "Reinstate", "sublabel": "accepted; clears waitlist", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 1008, "end_line": 1018 }] },
+    { "id": "withdraw", "lane": "entry", "col": 4, "type": "database", "label": "Withdrawn", "sublabel": "reason saved; retained", "width": 160,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 994, "end_line": 1005 }] }
+  ],
+  "edges": [
+    { "id": "entry-track", "from": "eligible", "to": "track", "variant": "emphasis" },
+    { "id": "track-interview", "from": "track", "to": "interview", "label": "Track A", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "interview-donation", "from": "interview", "to": "donation", "label": "pass recorded", "variant": "emphasis" },
+    { "id": "donation-activate", "from": "donation", "to": "activated-a", "label": "payment saved", "variant": "emphasis" },
+    { "id": "interview-fail", "from": "interview", "to": "failed-a", "label": "fail", "role": "error", "variant": "security", "fromSide": "bottom", "toSide": "bottom", "route": "bottom-channel" },
+    { "id": "track-devfee", "from": "track", "to": "devfee", "label": "Track B", "variant": "emphasis", "fromSide": "left", "toSide": "right", "via": [[227, 119], [227, 367]], "labelSegment": 1, "labelDx": -26 },
+    { "id": "devfee-books", "from": "devfee", "to": "books", "label": "paid", "variant": "emphasis" },
+    { "id": "books-class", "from": "books", "to": "class", "label": "recorded", "variant": "emphasis" },
+    { "id": "class-observation", "from": "class", "to": "observation", "label": "assigned", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "observation-id", "from": "observation", "to": "identity", "label": ">= 5 present", "variant": "emphasis" },
+    { "id": "id-extras", "from": "identity", "to": "extras", "label": "ID issued", "variant": "emphasis" },
+    { "id": "extras-tuition", "from": "extras", "to": "tuition", "label": "both saved", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "tuition-activate", "from": "tuition", "to": "activated-b", "label": "paid", "variant": "emphasis" },
+    { "id": "waitlist-reinstate", "from": "waitlist", "to": "reinstate", "label": "review", "variant": "security" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Track A - interview-first onboarding", "items": [
+      "TK, playgroup, pre-nursery and non-Plus SD use Track A; all other campus / stream combinations use Track B.",
+      "Passing the interview records interview.passed_at, unlocking the combined payment in the UI.",
+      "Combined registration + donation activates the record directly; books, observation and tuition are not Track A stages."
+    ] },
+    { "dot": "emerald", "title": "Track B - complete the displayed stages in order", "items": [
+      "Stages are computed from Application.meta; the first incomplete stage is current and later ones are locked in the UI.",
+      "Observation completion counts at least five present marks, not merely five calendar days.",
+      "Student ID issuance writes a tuition VA and an audit log; tuition confirmation sets Application.status=activated."
+    ] },
+    { "dot": "amber", "title": "What activation and reinstatement actually mean", "items": [
+      "Activation here updates an Application; these actions do not create a Student record.",
+      "Cross-tab staff actions can waitlist, withdraw or reinstate. The top-row review actions are not mandatory onboarding stages.",
+      "Reinstatement changes status and clears waitlisted; it does not erase previously completed metadata.",
+      "Displayed stage locks are UI progression rules, not a claim of server-side action enforcement."
+    ] }
+  ]
+}

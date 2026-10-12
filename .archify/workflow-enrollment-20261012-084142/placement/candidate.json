@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Enrollment 02 / Placement exam and review",
+    "locale": "en",
+    "output": ".archify/workflow-enrollment-20261012-084142/placement/placement.html",
+    "quality_profile": "showcase",
+    "legend": { "entries": {
+      "frontend": { "label": "Staff UI" },
+      "backend": { "label": "Actions" },
+      "security": { "label": "Checks / decisions" },
+      "database": { "label": "Saved records" }
+    } },
+    "repository": {
+      "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git",
+      "provider": "github",
+      "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3"
+    }
+  },
+  "lanes": [
+    { "id": "exam", "label": "Placement Exam" },
+    { "id": "pass", "label": "Score outcomes" },
+    { "id": "review", "label": "Onboarding / manual review", "variant": "exception" }
+  ],
+  "mainPath": ["paid", "schedule", "score", "threshold"],
+  "nodes": [
+    { "id": "paid", "lane": "exam", "col": 0, "type": "database", "label": "Payment confirmed", "sublabel": "selected enrollment period", "width": 165,
+      "sources": [{ "path": "app/Filament/Principal/Pages/PlacementExam.php", "line": 103, "end_line": 105 }] },
+    { "id": "schedule", "lane": "exam", "col": 1, "type": "backend", "label": "Schedule applicants", "sublabel": "exam_scheduled + date", "width": 165,
+      "sources": [{ "path": "app/Filament/Principal/Pages/PlacementExam.php", "line": 93, "end_line": 107 }] },
+    { "id": "score", "lane": "exam", "col": 2, "type": "frontend", "label": "Enter score", "sublabel": "numeric 0 to 100", "width": 165,
+      "sources": [{ "path": "app/Filament/Principal/Pages/PlacementExam.php", "line": 124, "end_line": 143 }] },
+    { "id": "threshold", "lane": "exam", "col": 3, "type": "security", "label": "Apply score bands", "sublabel": "period pass / fail limits", "width": 165,
+      "sources": [{ "path": "app/Models/Application.php", "line": 129, "end_line": 154 }] },
+    { "id": "passed", "lane": "pass", "col": 2, "type": "database", "label": "Passed", "sublabel": "score >= pass threshold", "width": 165,
+      "sources": [{ "path": "app/Models/Application.php", "line": 140, "end_line": 141 }] },
+    { "id": "onboarding", "lane": "review", "col": 2, "type": "backend", "label": "Student Onboarding", "sublabel": "passed OR accepted", "width": 165,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 215, "end_line": 218 }] },
+    { "id": "waitlist", "lane": "pass", "col": 3, "type": "database", "label": "Waitlisted", "sublabel": "fail <= score < pass", "width": 165,
+      "sources": [{ "path": "app/Models/Application.php", "line": 144, "end_line": 147 }] },
+    { "id": "review-accept", "lane": "review", "col": 3, "type": "security", "label": "Manual review", "sublabel": "reinstate to accepted", "width": 165,
+      "sources": [{ "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 1008, "end_line": 1018 }] },
+    { "id": "failed", "lane": "pass", "col": 4, "type": "database", "label": "Failed", "sublabel": "score < fail threshold", "width": 165,
+      "sources": [{ "path": "app/Models/Application.php", "line": 142, "end_line": 143 }] },
+    { "id": "override", "lane": "review", "col": 4, "type": "security", "label": "Principal override", "sublabel": "explicit reinstate action", "width": 165,
+      "sources": [{ "path": "resources/views/filament/principal/pages/student-onboarding.blade.php", "line": 32, "end_line": 35 }, { "path": "app/Filament/Principal/Pages/StudentOnboarding.php", "line": 1008, "end_line": 1018 }] }
+  ],
+  "edges": [
+    { "id": "paid-schedule", "from": "paid", "to": "schedule", "label": "date configured", "variant": "emphasis" },
+    { "id": "schedule-score", "from": "schedule", "to": "score", "label": "score entry", "variant": "emphasis" },
+    { "id": "score-threshold", "from": "score", "to": "threshold", "variant": "emphasis", "fromSide": "top", "toSide": "top", "route": "up-channel" },
+    { "id": "threshold-pass", "from": "threshold", "to": "passed", "label": ">= pass", "variant": "emphasis", "fromSide": "left", "toSide": "top" },
+    { "id": "passed-onboarding", "from": "passed", "to": "onboarding", "label": "eligible", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "threshold-waitlist", "from": "threshold", "to": "waitlist", "label": "middle band", "role": "branch", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "threshold-fail", "from": "threshold", "to": "failed", "label": "< fail", "role": "error", "variant": "security", "fromSide": "right", "toSide": "top" },
+    { "id": "waitlist-review", "from": "waitlist", "to": "review-accept", "label": "manual review", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "review-onboarding", "from": "review-accept", "to": "onboarding", "label": "reinstate", "variant": "emphasis" },
+    { "id": "failed-override", "from": "failed", "to": "override", "label": "optional", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "override-onboarding", "from": "override", "to": "onboarding", "label": "reinstate", "variant": "security", "fromSide": "bottom", "toSide": "bottom", "route": "bottom-channel", "channelY": 440 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Exact score boundaries", "items": [
+      "Default pass threshold is 70; default fail threshold is 50, unless the period overrides them.",
+      "70 passes; 50 is waitlisted; anything below 50 fails under the defaults.",
+      "A missing score leaves status unchanged. Enter Score saves a score and applies its band immediately."
+    ] },
+    { "dot": "amber", "title": "Not a mandatory extra acceptance gate", "items": [
+      "The onboarding Accepted tab includes passed records as well as onboarding statuses.",
+      "Waitlisted and failed records remain available for review; reinstatement explicitly writes accepted.",
+      "Bulk Apply Threshold reclassifies scored records in the eligible statuses. Scheduling requires an exam date."
+    ] }
+  ]
+}

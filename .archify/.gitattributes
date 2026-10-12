@@ -1,0 +1,3 @@
+# Preserve generated viewer output verbatim and collapse it in GitHub diffs.
+*.html linguist-generated=true -whitespace
+index.html linguist-generated=false whitespace=trailing-space,space-before-tab

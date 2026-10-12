@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Leave 01 / Submit on behalf - three coverage paths",
+    "locale": "en",
+    "output": ".archify/workflow-leave-substitution-20261012-090931/leave/leave.html",
+    "quality_profile": "showcase",
+    "legend": { "entries": {
+      "frontend": { "label": "Principal UI" }, "backend": { "label": "Actions" },
+      "security": { "label": "Checks / decisions" }, "database": { "label": "Saved records" }
+    } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "provider": "github", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3" }
+  },
+  "lanes": [
+    { "id": "request", "label": "Principal files leave" },
+    { "id": "coverage", "label": "Choose coverage path" },
+    { "id": "saved", "label": "Persist leave and continue" }
+  ],
+  "nodes": [
+    { "id": "details", "lane": "request", "col": 0, "type": "frontend", "label": "Teacher + dates", "sublabel": "leave type and reason", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 309, "end_line": 335 }] },
+    { "id": "limits", "lane": "request", "col": 1, "type": "security", "label": "Validate request", "sublabel": "required fields / max days", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 311, "end_line": 333 }] },
+    { "id": "route", "lane": "request", "col": 2, "type": "security", "label": "Coverage choice", "sublabel": "type + selected substitute", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 336, "end_line": 380 }, { "path": "app/Models/LeaveType.php", "line": 54, "end_line": 68 }] },
+    { "id": "none", "lane": "coverage", "col": 1, "type": "backend", "label": "No cover needed", "sublabel": "type requires no substitute", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 337, "end_line": 348 }] },
+    { "id": "picked", "lane": "coverage", "col": 2, "type": "security", "label": "Pre-picked teacher", "sublabel": "recheck candidate conflicts", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 381, "end_line": 407 }] },
+    { "id": "auto", "lane": "coverage", "col": 3, "type": "backend", "label": "Auto search enabled", "sublabel": "no pre-picked substitute", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 458, "end_line": 468 }] },
+    { "id": "approved-none", "lane": "saved", "col": 1, "type": "database", "label": "Approved / no cover", "sublabel": "decision actor and time", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 338, "end_line": 348 }] },
+    { "id": "approved-picked", "lane": "saved", "col": 2, "type": "database", "label": "Approved + substitute", "sublabel": "optional pending duty", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 409, "end_line": 433 }] },
+    { "id": "pending", "lane": "saved", "col": 3, "type": "database", "label": "Pending + broadcast", "sublabel": "continue to substitute flow", "width": 156,
+      "sources": [{ "path": "app/Filament/Principal/Pages/SubmitLeaveOnBehalf.php", "line": 458, "end_line": 468 }] }
+  ],
+  "edges": [
+    { "id": "details-limits", "from": "details", "to": "limits", "variant": "emphasis" },
+    { "id": "limits-route", "from": "limits", "to": "route", "label": "valid", "variant": "emphasis" },
+    { "id": "route-none", "from": "route", "to": "none", "label": "not required", "variant": "emphasis", "fromSide": "left", "toSide": "top" },
+    { "id": "route-picked", "from": "route", "to": "picked", "label": "pre-picked", "variant": "emphasis", "fromSide": "bottom", "toSide": "top" },
+    { "id": "route-auto", "from": "route", "to": "auto", "label": "search", "variant": "dashed", "fromSide": "right", "toSide": "top" },
+    { "id": "none-save", "from": "none", "to": "approved-none", "variant": "emphasis" },
+    { "id": "picked-save", "from": "picked", "to": "approved-picked", "label": "available", "variant": "emphasis" },
+    { "id": "auto-save", "from": "auto", "to": "pending", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Principal-operated submission", "items": [
+      "This is Submit Leave on Behalf, not a teacher self-service request endpoint.",
+      "Missing teacher/dates, an invalid date parse or exceeding the leave type's max_days stops submission.",
+      "When cover is required, choose a substitute or enable auto search; otherwise submission shows Coverage path required."
+    ] },
+    { "dot": "emerald", "title": "Fast path versus pending path", "items": [
+      "No-cover types and pre-picked substitutes produce approved leave immediately with decision actor and timestamp.",
+      "A pre-picked substitute can also receive a one-off DutyAssignment with status pending.",
+      "Auto search produces pending leave and calls the broadcaster; a teacher response does not approve the leave."
+    ] }
+  ]
+}

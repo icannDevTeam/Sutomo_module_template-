@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Enrollment 01 / Period setup and application intake",
+    "locale": "en",
+    "output": ".archify/workflow-enrollment-20261012-084142/intake/intake.html",
+    "quality_profile": "showcase",
+    "legend": { "entries": {
+      "frontend": { "label": "Staff UI" },
+      "backend": { "label": "Actions" },
+      "security": { "label": "Checks / decisions" },
+      "database": { "label": "Saved records" }
+    } },
+    "repository": {
+      "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git",
+      "provider": "github",
+      "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3"
+    }
+  },
+  "lanes": [
+    { "id": "setup", "label": "01 / Open Enrollment - principal configures the intake" },
+    { "id": "applications", "label": "02 / Applications - capture and verify incoming records" },
+    { "id": "support", "label": "Supporting surfaces - public config and printable invoice" }
+  ],
+  "mainPath": ["capture", "incoming", "verify", "confirmed"],
+  "nodes": [
+    { "id": "draft", "lane": "setup", "col": 0, "type": "backend", "label": "Create period", "sublabel": "draft; fee Rp 300,000", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Pages/OpenEnrollment.php", "line": 242, "end_line": 247 }] },
+    { "id": "open", "lane": "setup", "col": 1, "type": "backend", "label": "Open period", "sublabel": "status = open", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Pages/OpenEnrollment.php", "line": 472, "end_line": 483 }] },
+    { "id": "close", "lane": "setup", "col": 2, "type": "backend", "label": "Close period", "sublabel": "manual status change", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Pages/OpenEnrollment.php", "line": 486, "end_line": 496 }] },
+    { "id": "capture", "lane": "applications", "col": 1, "type": "frontend", "label": "New application", "sublabel": "identity / parent / docs", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Resources/ApplicationResource/Pages/ListApplications.php", "line": 18, "end_line": 21 }, { "path": "app/Filament/Principal/Resources/ApplicationResource.php", "line": 99, "end_line": 140 }] },
+    { "id": "incoming", "lane": "applications", "col": 2, "type": "database", "label": "Incoming queue", "sublabel": "submitted; not yet paid", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Resources/ApplicationResource/Pages/ListApplications.php", "line": 39, "end_line": 43 }] },
+    { "id": "verify", "lane": "applications", "col": 3, "type": "security", "label": "Confirm payment", "sublabel": "staff verifies receipt", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Resources/ApplicationResource.php", "line": 360, "end_line": 395 }] },
+    { "id": "confirmed", "lane": "applications", "col": 4, "type": "database", "label": "Confirmed queue", "sublabel": "payment_confirmed / paid", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Resources/ApplicationResource.php", "line": 381, "end_line": 385 }, { "path": "app/Filament/Principal/Resources/ApplicationResource/Pages/ListApplications.php", "line": 28, "end_line": 37 }] },
+    { "id": "placement", "lane": "support", "col": 4, "type": "backend", "label": "Placement module", "sublabel": "schedule eligible applicants", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Pages/PlacementExam.php", "line": 93, "end_line": 107 }] },
+    { "id": "config", "lane": "support", "col": 1, "type": "backend", "label": "Public config API", "sublabel": "GET by unit; cache 60s", "width": 150,
+      "sources": [{ "path": "app/Http/Controllers/Api/EnrollmentConfigController.php", "line": 20, "end_line": 57 }] },
+    { "id": "invoice", "lane": "support", "col": 3, "type": "frontend", "label": "Application invoice", "sublabel": "INV-year-id on first view", "width": 150,
+      "sources": [{ "path": "app/Filament/Principal/Pages/ApplicationInvoice.php", "line": 18, "end_line": 25 }] }
+  ],
+  "edges": [
+    { "id": "draft-open", "from": "draft", "to": "open", "label": "open", "variant": "emphasis" },
+    { "id": "open-close", "from": "open", "to": "close", "label": "close", "role": "branch" },
+    { "id": "open-capture", "from": "open", "to": "capture", "label": "intake context", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "capture-incoming", "from": "capture", "to": "incoming", "label": "save", "variant": "emphasis" },
+    { "id": "incoming-verify", "from": "incoming", "to": "verify", "label": "review", "variant": "emphasis" },
+    { "id": "verify-confirmed", "from": "verify", "to": "confirmed", "label": "confirmed", "variant": "emphasis" },
+    { "id": "confirmed-placement", "from": "confirmed", "to": "placement", "label": "exam date set", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "straight" },
+    { "id": "verify-invoice", "from": "verify", "to": "invoice", "label": "view / print", "variant": "dashed", "role": "branch", "fromSide": "bottom", "toSide": "top", "route": "straight" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Scope: current local implementation", "items": [
+      "Applications are created through a Filament resource; submitted and pending payment are form defaults.",
+      "Open / close updates the period status. This flow does not claim that it enforces a submission cutoff.",
+      "The public endpoint reads the newest open or draft period for a unit; an unknown unit returns 404."
+    ] },
+    { "dot": "amber", "title": "Payment is a staff action, not an automatic bank callback", "items": [
+      "A receipt can be uploaded to the public receipts disk and previewed by staff.",
+      "Single-record and bulk confirmation write payment_status=paid and status=payment_confirmed.",
+      "An invoice number is generated on first invoice view; it is not proof of payment."
+    ] }
+  ]
+}

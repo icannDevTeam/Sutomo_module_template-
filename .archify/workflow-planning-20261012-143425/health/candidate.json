@@ -1,0 +1,48 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {
+    "title": "Planning 03 / Health review, fixes and snapshot publishing",
+    "locale": "en", "quality_profile": "showcase",
+    "output": ".archify/workflow-planning-20261012-143425/health/health.html",
+    "legend": { "entries": { "frontend": { "label": "Review UI" }, "backend": { "label": "Actions" }, "security": { "label": "Diagnostics, not publish gates" }, "database": { "label": "Saved records" } } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3", "provider": "github" }
+  },
+  "lanes": [
+    { "id": "review", "label": "Health report and issue navigation" },
+    { "id": "fix", "label": "Manual correction and next review" },
+    { "id": "publish", "label": "Independent publish action - no clean-health gate" }
+  ],
+  "nodes": [
+    { "id": "report", "lane": "review", "col": 0, "type": "security", "label": "Build health report", "sublabel": "flags / hours / loads", "width": 160, "sources": [{ "path": "app/Services/Timetable/HealthService.php", "line": 26, "end_line": 116 }] },
+    { "id": "filter", "lane": "review", "col": 1, "type": "frontend", "label": "Filter issues", "sublabel": "severity and category", "width": 160, "sources": [{ "path": "app/Filament/Principal/Pages/TimetableHealth.php", "line": 41, "end_line": 69 }] },
+    { "id": "jump", "lane": "review", "col": 2, "type": "frontend", "label": "Jump to fix", "sublabel": "teacher / cell when known", "width": 160, "sources": [{ "path": "resources/views/filament/principal/pages/timetable-health.blade.php", "line": 58, "end_line": 85 }, { "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 129, "end_line": 143 }] },
+    { "id": "edit", "lane": "fix", "col": 2, "type": "backend", "label": "Edit and save", "sublabel": "update conflict flags", "width": 160, "sources": [{ "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 205, "end_line": 239 }] },
+    { "id": "recheck", "lane": "fix", "col": 1, "type": "frontend", "label": "Reopen Health", "sublabel": "recompute report", "width": 160, "sources": [{ "path": "app/Filament/Principal/Pages/TimetableHealth.php", "line": 41, "end_line": 69 }] },
+    { "id": "publish", "lane": "publish", "col": 0, "type": "backend", "label": "Publish snapshot", "sublabel": "confirmation only", "width": 160, "sources": [{ "path": "resources/views/filament/principal/pages/timetable-builder.blade.php", "line": 106, "end_line": 112 }, { "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 305, "end_line": 326 }] },
+    { "id": "snapshot", "lane": "publish", "col": 1, "type": "database", "label": "Freeze lesson payload", "sublabel": "count unresolved conflicts", "width": 160, "sources": [{ "path": "app/Services/Timetable/PublishService.php", "line": 15, "end_line": 37 }] },
+    { "id": "status", "lane": "publish", "col": 2, "type": "database", "label": "Mark published", "sublabel": "warning if conflicts remain", "width": 160, "sources": [{ "path": "app/Services/Timetable/PublishService.php", "line": 39, "end_line": 44 }, { "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 321, "end_line": 326 }] }
+  ],
+  "edges": [
+    { "id": "report-filter", "from": "report", "to": "filter", "variant": "emphasis" },
+    { "id": "filter-jump", "from": "filter", "to": "jump", "variant": "emphasis" },
+    { "id": "jump-edit", "from": "jump", "to": "edit", "variant": "emphasis" },
+    { "id": "edit-recheck", "from": "edit", "to": "recheck", "variant": "emphasis" },
+    { "id": "publish-snapshot", "from": "publish", "to": "snapshot", "variant": "emphasis" },
+    { "id": "snapshot-status", "from": "snapshot", "to": "status", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Health is an advisory diagnostic surface", "items": [
+      "Health reads cached cell conflicts and compares stored subject hours against requirements for classes already present in lessons.",
+      "Subject deficits are errors, excess hours and over-cap loads are warnings, and below-half-cap teacher loads are informational.",
+      "Missing whole classes with no lessons are not enumerated here. The UI names unfilled_required, but the current report does not emit that category.",
+      "Cell issues link to teacher/session/period/day. Deficit issues have no precise cell; the link opens the default builder context."
+    ] },
+    { "dot": "amber", "title": "Publishing does not wait for errors to disappear", "items": [
+      "Despite must-fix wording in the Health UI, neither the Publish button nor PublishService rejects unresolved errors.",
+      "Publishing transactionally saves a snapshot payload and sets definition status published; remaining conflict cells produce a warning.",
+      "Conflict count measures lessons with non-empty flags, not the number of individual issues. The frozen payload does not include those flags.",
+      "Published status does not disable edits or generation on the live definition; subsequent changes do not rewrite the captured snapshot.",
+      "Print/export all teachers renders stacked live teacher sheets and invokes browser printing; it is separate from snapshot publishing."
+    ] }
+  ]
+}

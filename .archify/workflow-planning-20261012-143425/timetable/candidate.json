@@ -1,0 +1,51 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": {
+    "title": "Planning 02 / Timetable generation and manual editing",
+    "locale": "en", "quality_profile": "showcase",
+    "output": ".archify/workflow-planning-20261012-143425/timetable/timetable.html",
+    "legend": { "entries": { "frontend": { "label": "Timetable UI" }, "backend": { "label": "Scheduling actions" }, "security": { "label": "Constraint checks" }, "database": { "label": "Saved timetable" } } },
+    "repository": { "url": "https://github.com/icannDevTeam/Sutomo_module_template-.git", "revision": "33d3bbd42e2ba76df5dfc3ac2fc1ef818c280aa3", "provider": "github" }
+  },
+  "lanes": [
+    { "id": "generate", "label": "Automatic draft generation" },
+    { "id": "persist", "label": "Save and diagnose" },
+    { "id": "manual", "label": "Alternative manual edit path" }
+  ],
+  "nodes": [
+    { "id": "inputs", "lane": "generate", "col": 0, "type": "database", "label": "Scheduling inputs", "sublabel": "requirements + teacher loads", "width": 160, "sources": [{ "path": "app/Services/Timetable/AutoGenerator.php", "line": 74, "end_line": 136 }] },
+    { "id": "clear", "lane": "generate", "col": 1, "type": "backend", "label": "Generate draft", "sublabel": "clear unlocked; keep locked", "width": 160, "sources": [{ "path": "app/Services/Timetable/AutoGenerator.php", "line": 41, "end_line": 51 }] },
+    { "id": "solve", "lane": "generate", "col": 2, "type": "security", "label": "Constraint solver", "sublabel": "caps / eligibility / clashes", "width": 160, "sources": [{ "path": "app/Services/Timetable/AutoGenerator.php", "line": 119, "end_line": 190 }] },
+    { "id": "fallback", "lane": "generate", "col": 3, "type": "backend", "label": "Greedy fallback", "sublabel": "if full search fails", "width": 160, "sources": [{ "path": "app/Services/Timetable/AutoGenerator.php", "line": 195, "end_line": 238 }] },
+    { "id": "save", "lane": "persist", "col": 2, "type": "database", "label": "Persist placed lessons", "sublabel": "complete or partial draft", "width": 160, "sources": [{ "path": "app/Services/Timetable/AutoGenerator.php", "line": 241, "end_line": 254 }] },
+    { "id": "flags", "lane": "persist", "col": 1, "type": "security", "label": "Store conflict flags", "sublabel": "whole sheet after generation", "width": 160, "sources": [{ "path": "app/Services/Timetable/AutoGenerator.php", "line": 257, "end_line": 261 }] },
+    { "id": "result", "lane": "persist", "col": 0, "type": "frontend", "label": "Review result", "sublabel": "placed / locked / gaps", "width": 160, "sources": [{ "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 267, "end_line": 288 }] },
+    { "id": "edit", "lane": "manual", "col": 1, "type": "frontend", "label": "Edit teacher cell", "sublabel": "subject / class / lock flag", "width": 160, "sources": [{ "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 196, "end_line": 238 }] },
+    { "id": "rescan", "lane": "manual", "col": 2, "type": "backend", "label": "Save and rescan", "sublabel": "lesson + slot neighbours", "width": 160, "sources": [{ "path": "app/Filament/Principal/Pages/TimetableBuilder.php", "line": 235, "end_line": 256 }, { "path": "app/Services/Timetable/ConflictService.php", "line": 156, "end_line": 187 }] }
+  ],
+  "edges": [
+    { "id": "inputs-clear", "from": "inputs", "to": "clear", "variant": "emphasis" },
+    { "id": "clear-solve", "from": "clear", "to": "solve", "variant": "emphasis" },
+    { "id": "solve-fallback", "from": "solve", "to": "fallback", "label": "not solved", "variant": "dashed" },
+    { "id": "solve-save", "from": "solve", "to": "save", "label": "solved", "variant": "emphasis" },
+    { "id": "fallback-save", "from": "fallback", "to": "save", "label": "partial", "fromSide": "bottom", "toSide": "right" },
+    { "id": "save-flags", "from": "save", "to": "flags", "variant": "emphasis" },
+    { "id": "flags-result", "from": "flags", "to": "result", "variant": "emphasis" },
+    { "id": "edit-rescan", "from": "edit", "to": "rescan", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "What the solver actually uses", "items": [
+      "SubjectRequirements generate demand per matching grade/class; locked occurrences reduce required demand.",
+      "Teacher class eligibility, optional subject whitelist, weekly cap and unavailable slots constrain placement.",
+      "Teacher and class double-booking are prevented for generated placements; break periods are skipped.",
+      "Search is bounded at approximately 200,000 steps. Failure triggers greedy fallback and an explicit unsolved-demand warning."
+    ] },
+    { "dot": "amber", "title": "Drafts, locks and editing", "items": [
+      "Generate and Reset Draft delete unlocked lessons; locked lessons survive. Locks are not an authorization barrier to manual edit/clear.",
+      "Manual save stores a lesson even when conflict checks find errors. Empty subject AND class removes the existing cell.",
+      "Manual save checks the lesson and rescans same-slot neighbours; this is not a full timetable-wide rescan.",
+      "The UI uses three hard-coded demo teacher profiles and a fixed TP 2025/2026, ALL definition; collaborator presence is static.",
+      "Teacher view edits cells; class, room and master views project stored lessons. Room checks exist, but this cell picker does not assign rooms."
+    ] }
+  ]
+}

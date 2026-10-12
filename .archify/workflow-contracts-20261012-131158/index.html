@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sutomo / Contract management flows</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #09121f; color: #e6edf5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(ellipse at top right, #16413e 0, transparent 58%); min-height: 100vh; }
+    main { max-width: 1120px; margin: auto; padding: 68px 28px; }
+    .eyebrow { color: #8ce2c7; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { font-size: clamp(32px, 5vw, 58px); line-height: 1.08; margin: 18px 0; letter-spacing: -.035em; }
+    .intro { max-width: 760px; color: #b2c1d3; line-height: 1.7; font-size: 17px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 36px; }
+    .tags span { border: 1px solid #284440; border-radius: 30px; padding: 7px 13px; color: #9de5ce; font-size: 12px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    .card { color: inherit; text-decoration: none; display: flex; flex-direction: column; padding: 26px; border: 1px solid #2a3b50; border-radius: 18px; background: #111e2de8; transition: border-color .2s, transform .2s; }
+    .card:hover, .card:focus-visible { border-color: #8ce2c7; transform: translateY(-3px); outline: 2px solid transparent; }
+    .number { color: #8ce2c7; font-size: 13px; letter-spacing: .15em; }
+    h2 { font-size: 23px; line-height: 1.3; margin: 18px 0 12px; }
+    .card p { color: #afbed0; line-height: 1.65; font-size: 14px; margin: 0 0 20px; }
+    .open { color: #a0ecd5; margin-top: auto; font-size: 14px; }
+    .note { margin-top: 26px; padding: 23px 26px; border-left: 3px solid #e6b975; background: #142030; border-radius: 0 12px 12px 0; }
+    .note h3 { margin: 0 0 10px; font-size: 16px; color: #edca96; }
+    .note p { color: #bdc9d9; font-size: 14px; line-height: 1.7; margin: 0; }
+    footer { color: #8597af; font-size: 12px; margin-top: 30px; line-height: 1.7; }
+    footer a { color: #9de5ce; margin-right: 18px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Sutomo / Individual module explorer</div>
+    <h1>Contract management.<br>Decisions before documents.</h1>
+    <p class="intro">Follow each contract path separately: PKWT progression with Yayasan approval, annual permanent-teacher continuation, and declined LOI follow-up. Each diagram links its steps to the application source.</p>
+    <div class="tags"><span>Local preview only</span><span>Yayasan included</span><span>Source-backed workflows</span><span>No application changes</span></div>
+    <section class="grid" aria-label="Contract workflow diagrams">
+      <a class="card" href="renewal/renewal.html">
+        <span class="number">01 / RENEWAL</span>
+        <h2>PKWT tiers &amp; Yayasan approval</h2>
+        <p>Renewal window, principal recommendation, submission, recorded Yayasan approval or rejection, next-tier creation, and separate probation decisions.</p>
+        <span class="open">Open renewal flow &rarr;</span>
+      </a>
+      <a class="card" href="continuation/continuation.html">
+        <span class="number">02 / CONTINUATION</span>
+        <h2>LOI &amp; agreement signing</h2>
+        <p>Signed LOI submission, Yayasan document dependency, principal acceptance or revision, teacher agreement, Buku Induk markers and completion gates.</p>
+        <span class="open">Open continuation flow &rarr;</span>
+      </a>
+      <a class="card" href="follow-up/follow-up.html">
+        <span class="number">03 / FOLLOW-UP</span>
+        <h2>Decline &amp; resignation handoff</h2>
+        <p>Principal meeting notes, continuing or resigning outcomes, required resignation evidence, optional pending flag, HR handoff and case closure.</p>
+        <span class="open">Open follow-up flow &rarr;</span>
+      </a>
+    </section>
+    <aside class="note">
+      <h3>Two different Yayasan checkpoints</h3>
+      <p><strong>PKWT renewal:</strong> the principal records Yayasan's approved/rejected decision after submission. <strong>Annual continuation:</strong> the principal accepts or requests revision of an uploaded Yayasan contract. The current repository has upload fields and downstream checks but no application upload writer for that document; the diagram marks this as an external dependency, not an automated integration. LOI completion and probation Continue do not create a new contract.</p>
+    </aside>
+    <footer>
+      <a href="../index.html">All flows</a>
+      <a href="../workflow-enrollment-20261012-084142/index.html">Enrollment explorer</a>
+      <a href="../workflow-leave-substitution-20261012-090931/index.html">Leave &amp; substitution explorer</a><br>
+      Generated with Archify. Interactive HTML with dark/light themes and export controls.
+    </footer>
+  </main>
+</body>
+</html>

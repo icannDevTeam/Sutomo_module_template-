@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sutomo / Planning flows</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #09121f; color: #e6edf5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(ellipse at top right, #16413e 0, transparent 58%); min-height: 100vh; }
+    main { max-width: 1120px; margin: auto; padding: 64px 28px; }
+    .eyebrow { color: #8ce2c7; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { font-size: clamp(32px, 5vw, 58px); line-height: 1.08; margin: 18px 0; letter-spacing: -.035em; }
+    .intro { max-width: 770px; color: #b2c1d3; line-height: 1.7; font-size: 17px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 36px; }
+    .tags span { border: 1px solid #284440; border-radius: 30px; padding: 7px 13px; color: #9de5ce; font-size: 12px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    .card { color: inherit; text-decoration: none; display: flex; flex-direction: column; padding: 26px; border: 1px solid #2a3b50; border-radius: 18px; background: #111e2de8; transition: border-color .2s, transform .2s; }
+    .card:hover, .card:focus-visible { border-color: #8ce2c7; transform: translateY(-3px); outline: 2px solid transparent; }
+    .number { color: #8ce2c7; font-size: 13px; letter-spacing: .15em; }
+    h2 { font-size: 23px; line-height: 1.3; margin: 18px 0 12px; }
+    .card p { color: #afbed0; line-height: 1.65; font-size: 14px; margin: 0 0 20px; }
+    .open { color: #a0ecd5; margin-top: auto; font-size: 14px; }
+    .note { margin-top: 26px; padding: 23px 26px; border-left: 3px solid #e6b975; background: #142030; border-radius: 0 12px 12px 0; }
+    .note h3 { margin: 0 0 10px; font-size: 16px; color: #edca96; }
+    .note p { color: #bdc9d9; font-size: 14px; line-height: 1.7; margin: 0; }
+    footer { color: #8597af; font-size: 12px; margin-top: 30px; line-height: 1.7; }
+    footer a { color: #9de5ce; margin-right: 18px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Sutomo / Individual module explorer</div>
+    <h1>Planning.<br>Content, schedules, health.</h1>
+    <p class="intro">Explore the three parts of the principal's Planning module. Follow existing unit content and team discussion, timetable generation and manual edits, then health review and snapshot publishing.</p>
+    <div class="tags"><span>Local preview only</span><span>Source-backed workflows</span><span>Three individual flows</span><span>Actual behavior, not assumed features</span></div>
+    <section class="grid" aria-label="Planning workflow diagrams">
+      <a class="card" href="units/units.html">
+        <span class="number">01 / UNITS &amp; TOPICS</span>
+        <h2>Content &amp; collaboration</h2>
+        <p>Search and filter stored units, open Plan, Lessons or Resources, and post persisted comments. Clearly separates working controls from creation/editing placeholders.</p>
+        <span class="open">Open unit planning flow &rarr;</span>
+      </a>
+      <a class="card" href="timetable/timetable.html">
+        <span class="number">02 / TIMETABLE</span>
+        <h2>Generate &amp; edit the draft</h2>
+        <p>Requirements and teacher loads, locked-cell preservation, constraint solving, partial fallback, conflict flags and manual teacher-cell editing.</p>
+        <span class="open">Open timetable flow &rarr;</span>
+      </a>
+      <a class="card" href="health/health.html">
+        <span class="number">03 / HEALTH &amp; PUBLISH</span>
+        <h2>Diagnose &amp; capture</h2>
+        <p>Severity/category filtering, jump-to-fix links, manual correction and health recheck. Shows publishing as an independent snapshot action, not a clean-health approval gate.</p>
+        <span class="open">Open health and publishing flow &rarr;</span>
+      </a>
+    </section>
+    <aside class="note">
+      <h3>Important implementation distinctions</h3>
+      <p><strong>Unit planning</strong> currently browses stored content and saves comments; New/Add/Attach controls are not wired. Unit lesson content does not automatically generate timetable demand. <strong>Timetable publishing</strong> captures the current lesson payload even with unresolved conflicts, warns rather than blocks, and does not lock future live edits. Demo teacher profiles and the timetable's academic year are currently hard-coded.</p>
+    </aside>
+    <footer>
+      <a href="../index.html">All flows</a>
+      <a href="../workflow-enrollment-20261012-084142/index.html">Enrollment</a>
+      <a href="../workflow-leave-substitution-20261012-090931/index.html">Leave &amp; substitution</a>
+      <a href="../workflow-contracts-20261012-131158/index.html">Contract management</a><br>
+      Generated with Archify. Interactive HTML, source references, dark/light themes and export controls. No application-code changes.
+    </footer>
+  </main>
+</body>
+</html>
