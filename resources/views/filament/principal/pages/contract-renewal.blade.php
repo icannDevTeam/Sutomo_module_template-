@@ -1,8 +1,8 @@
 <x-filament-panels::page>
     {{-- Intro line --}}
     <div class="sp-cm-intro">
-        Contracts inside their renewal window — recommend, submit to Yayasan, and record their decision.
-        On approval, the next-tier contract is spawned automatically.
+        Contracts inside their renewal window — record a recommendation, submit it to Yayasan, then track review,
+        HR preparation, document upload, and your final review from the linked submission.
         Renewal window = <b>{{ \App\Models\ObservationSetting::current()->renewal_window_months }} months</b>
         before contract end.
     </div>
@@ -53,12 +53,18 @@
     @forelse ($rows as $r)
         @php
             $c = $r->contract;
+            $approval = $c->latestApprovalRequest;
+            $document = $approval?->latestDocument;
             $hasRec = ! is_null($c->recommendation_decision);
             $hasFile = ! is_null($c->recommendation_letter_path);
-            $submitted = ! is_null($c->submitted_to_yayasan_at);
-            $yayDecision = $c->yayasan_decision;
-            $allowedNext = \App\Filament\Principal\Pages\ContractRenewal::allowedNextTiers($c->type);
-
+            $submitted = $approval || ! is_null($c->submitted_to_yayasan_at);
+            $yayDecision = $approval?->decision ?? $c->yayasan_decision;
+            $approvalStage = $approval?->stage;
+            $approvalInReview = in_array($approvalStage, ['submitted', 'under_review', 'correction_requested'], true);
+            $approvalInPreparation = in_array($approvalStage, [
+                'approved', 'hr_assigned', 'hr_in_progress', 'document_correction',
+                'document_uploaded', 'document_accepted', 'signed_scheduled', 'hr_registration',
+            ], true);
             $rowClass = match (true) {
                 $yayDecision === 'approved' => 'is-success',
                 $yayDecision === 'rejected' => 'is-danger',
@@ -74,10 +80,14 @@
 
             // Stage progression for stepper
             $stages = [
-                ['label' => 'Recommend',      'state' => $hasRec ? 'done' : (! $submitted ? 'current' : 'locked')],
-                ['label' => 'Submitted',      'state' => $submitted ? 'done' : ($hasRec ? 'current' : 'locked')],
-                ['label' => 'Yayasan',        'state' => $yayDecision ? 'done' : ($submitted ? 'current' : 'locked')],
-                ['label' => 'Spawned',        'state' => $c->status !== 'active' ? 'done' : ($yayDecision ? 'current' : 'locked')],
+                ['label' => 'Recommend', 'state' => $hasRec ? 'done' : (! $submitted ? 'current' : 'locked')],
+                ['label' => 'Submitted', 'state' => $submitted ? 'done' : ($hasRec ? 'current' : 'locked')],
+                ['label' => 'Yayasan', 'state' => $approval
+                    ? ($approvalInReview ? 'current' : 'done')
+                    : ($yayDecision ? 'done' : ($submitted ? 'current' : 'locked'))],
+                ['label' => 'HR & contract', 'state' => $approval
+                    ? ($approvalStage === 'completed' ? 'done' : ($approvalInPreparation ? 'current' : 'locked'))
+                    : ($c->status !== 'active' ? 'done' : ($yayDecision ? 'current' : 'locked'))],
             ];
         @endphp
 
@@ -111,6 +121,16 @@
                     </div>
                 @endif
             </div>
+
+            @if ($approval)
+                <div class="sp-step-hint" style="margin-top:.6rem;">
+                    <x-filament::icon icon="heroicon-m-information-circle" style="width:14px;height:14px;" />
+                    <span>
+                        Submission status: <b>{{ \App\Models\ContractApprovalRequest::STAGES[$approvalStage] ?? $approvalStage }}</b>
+                        @if ($approval->assignedHr) · Assigned to {{ $approval->assignedHr->name }} @endif
+                    </span>
+                </div>
+            @endif
 
             {{-- Stepper --}}
             <div class="sp-stepper" style="margin-top:.9rem;">
@@ -195,6 +215,19 @@
 
                     {{-- Step 3: Submit to Yayasan --}}
                     @if ($hasRec && ! $submitted)
+                        @php $allowedNext = \App\Filament\Principal\Pages\ContractRenewal::allowedNextTiers($c->type); @endphp
+                        @if ($c->recommendation_decision === 'renew' && count($allowedNext) > 1)
+                            <select wire:model="nextTierChoices.{{ $c->id }}"
+                                aria-label="Choose the proposed next contract tier"
+                                style="padding:.45rem .65rem;border-radius:8px;border:1px solid #e2e8f0;font-size:.8rem;">
+                                <option value="">Choose next tier…</option>
+                                @foreach ($allowedNext as $val => $lbl)
+                                    <option value="{{ $val }}">{{ $lbl }}</option>
+                                @endforeach
+                            </select>
+                        @elseif ($c->recommendation_decision === 'renew' && count($allowedNext) === 1)
+                            <span class="sp-pill sp-pill-gray">Proposed: {{ reset($allowedNext) }}</span>
+                        @endif
                         <button type="button" wire:click="submitToYayasan({{ $c->id }})"
                             wire:confirm="Submit to Yayasan with recommendation: {{ str_replace('_', ' ', $c->recommendation_decision) }}?"
                             class="sp-act sp-act--sky">
@@ -202,27 +235,21 @@
                         </button>
                     @endif
 
-                    {{-- Step 4: Record Yayasan decision --}}
-                    @if ($submitted && is_null($yayDecision))
-                        @if ($c->recommendation_decision === 'renew' && count($allowedNext) > 1)
-                            <select wire:model="nextTierChoices.{{ $c->id }}"
-                                style="padding:.45rem .65rem;border-radius:8px;border:1px solid #e2e8f0;font-size:.8rem;">
-                                <option value="">Choose next tier…</option>
-                                @foreach ($allowedNext as $val => $lbl)
-                                    <option value="{{ $val }}">{{ $lbl }}</option>
-                                @endforeach
-                            </select>
+                    @if ($approval)
+                        <a class="sp-act sp-act--sky"
+                            href="{{ \App\Filament\Principal\Pages\MySubmissionDetail::getUrl(['record' => $approval], panel: 'principal') }}">
+                            <x-filament::icon icon="heroicon-o-eye" style="width:14px;height:14px;" />
+                            View submission progress
+                        </a>
+                        @if ($document)
+                            <a class="sp-act sp-act--slate"
+                                href="{{ route('approvals.document.download', ['document' => $document, 'inline' => 0]) }}">
+                                <x-filament::icon icon="heroicon-o-arrow-down-tray" style="width:14px;height:14px;" />
+                                Download latest contract
+                            </a>
                         @endif
-                        <button type="button" wire:click="recordYayasanDecision({{ $c->id }}, 'approved')"
-                            wire:confirm="Yayasan APPROVED — this will spawn the next-tier contract automatically. Continue?"
-                            class="sp-act sp-act--success">
-                            <x-filament::icon icon="heroicon-o-check-badge" style="width:14px;height:14px;" /> Yayasan Approved
-                        </button>
-                        <button type="button" wire:click="recordYayasanDecision({{ $c->id }}, 'rejected')"
-                            wire:confirm="Yayasan REJECTED — teacher will be marked not_renewed. Continue?"
-                            class="sp-act sp-act--danger">
-                            <x-filament::icon icon="heroicon-o-x-mark" style="width:14px;height:14px;" /> Yayasan Rejected
-                        </button>
+                    @elseif ($submitted)
+                        <span class="sp-pill sp-pill-gray">Legacy submission — progress is not linked</span>
                     @endif
                 </div>
             @else

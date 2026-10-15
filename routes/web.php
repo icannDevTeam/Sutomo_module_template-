@@ -20,6 +20,12 @@ Route::middleware('signed')->group(function () {
 
 // Printable views (require authenticated Filament panel session)
 Route::middleware(['web', 'auth'])->group(function () {
+    // Private contract documents from the approval workflow — policy-checked, never served from a public disk.
+    Route::get('/approvals/documents/{document}', [\App\Http\Controllers\ContractDocumentController::class, 'download'])
+        ->name('approvals.document.download');
+    Route::get('/contracts/loi/{letter}/download', [\App\Http\Controllers\ContractDocumentController::class, 'downloadLoiContract'])
+        ->name('contracts.loi.download');
+
     Route::get('/print/teacher-leave/{record}', function (\App\Models\TeacherLeave $record) {
         return view('print.teacher-leave-letter', ['record' => $record->load('teacher', 'substitute')]);
     })->name('teacher-leave.print');

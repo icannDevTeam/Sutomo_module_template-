@@ -7,6 +7,7 @@ use App\Models\DutyAssignment;
 use App\Models\ObservationSetting;
 use App\Models\TeacherContract;
 use App\Models\TeacherObservation;
+use App\Services\ContractApprovalWorkflow;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -21,9 +22,9 @@ use Livewire\WithFileUploads;
  * Workspace for the Principal to manage PKWT-I → PKWT-II → PKWT-III → Guru SK
  * progression for teachers whose contract is inside the renewal window.
  *
- * Reads observation counts; writes only to `teacher_contracts` and cascades
- * teacher.status. Yayasan executes its decision elsewhere — Principal
- * records that decision back here, which triggers the spawn.
+ * Reads observation counts and submits renewal requests into the shared
+ * approval workflow. Yayasan decisions and document preparation are tracked
+ * from the linked submission rather than recorded by the Principal here.
  */
 class ContractRenewal extends Page
 {
@@ -65,7 +66,7 @@ class ContractRenewal extends Page
     {
         $q = TeacherContract::query()
             ->inRenewalWindow()
-            ->with('teacher');
+            ->with(['teacher', 'latestApprovalRequest.latestDocument', 'latestApprovalRequest.assignedHr']);
 
         if ($this->tier !== 'all') {
             $q->where('type', $this->tier);
@@ -196,53 +197,31 @@ class ContractRenewal extends Page
             Notification::make()->title('Already submitted')->warning()->send();
             return;
         }
-        $c->update(['submitted_to_yayasan_at' => now()]);
+
+        $proposedType = null;
+        if ($c->recommendation_decision === 'renew') {
+            $allowedNext = self::allowedNextTiers($c->type);
+            $proposedType = $this->nextTierChoices[$contractId] ?? (count($allowedNext) === 1 ? array_key_first($allowedNext) : null);
+            if (! $proposedType || ! array_key_exists($proposedType, $allowedNext)) {
+                Notification::make()->title('Choose a valid next contract tier before submitting')->danger()->send();
+                return;
+            }
+        }
+        $evidencePaths = $c->recommendation_letter_path ? [$c->recommendation_letter_path] : [];
+
+        try {
+            app(ContractApprovalWorkflow::class)->submitFromContract($c, auth()->user(), [
+                'recommendation' => $c->recommendation_decision,
+                'proposed_type'  => $proposedType,
+                'evidence_paths' => $evidencePaths,
+            ]);
+        } catch (\Exception $e) {
+            Notification::make()->title('Submission failed: ' . $e->getMessage())->danger()->send();
+            return;
+        }
+
         $this->writeAudit($c, 'submitted_to_yayasan', null);
-        Notification::make()->title('Submitted to Yayasan')->success()->send();
-    }
-
-    public function recordYayasanDecision(int $contractId, string $decision): void
-    {
-        $c = $this->loadActive($contractId);
-        if (! $c) {
-            return;
-        }
-        if (is_null($c->submitted_to_yayasan_at)) {
-            Notification::make()->title('Submit to Yayasan before recording their decision')->danger()->send();
-            return;
-        }
-        if (! in_array($decision, ['approved', 'rejected'], true)) {
-            Notification::make()->title('Invalid decision')->danger()->send();
-            return;
-        }
-
-        $c->update([
-            'yayasan_decision'    => $decision,
-            'yayasan_response_at' => now(),
-        ]);
-        $this->writeAudit($c, 'yayasan.' . $decision, null);
-
-        // Cascade: rejection OR not-renew recommendation → terminate.
-        if ($decision === 'rejected' || $c->recommendation_decision === 'not_renew') {
-            $c->update(['status' => 'not_renewed']);
-            $c->teacher?->update(['status' => 'not_renewed']);
-            Notification::make()->title('Contract closed as not renewed')->success()->send();
-            return;
-        }
-
-        // Approved + renew → spawn next tier.
-        $allowed = array_keys(self::allowedNextTiers($c->type));
-        $next = $this->nextTierChoices[$contractId] ?? ($allowed[0] ?? null);
-        if (! $next || ! in_array($next, $allowed, true)) {
-            Notification::make()->title('Pick a valid next tier first')->danger()->send();
-            return;
-        }
-
-        $newContract = $c->renewAs($next, (int) ObservationSetting::current()->renewal_window_months);
-        $this->writeAudit($newContract, 'spawned_from.' . $c->id, "Renewed from contract #{$c->id} ({$c->type} → {$next})");
-        unset($this->nextTierChoices[$contractId]);
-
-        Notification::make()->title("Yayasan approved · spawned new {$next} contract")->success()->send();
+        Notification::make()->title('Submitted to Yayasan — track progress in My Submissions')->success()->send();
     }
 
     protected function loadActive(int $contractId): ?TeacherContract
@@ -289,7 +268,10 @@ class ContractRenewal extends Page
             'total'    => $rows->count(),
             'due'      => $rows->filter(fn ($r) => ! is_null($r->days_left) && $r->days_left <= $dueDays)->count(),
             'pending'  => $rows->filter(fn ($r) => is_null($r->contract->recommendation_decision))->count(),
-            'awaiting' => $rows->filter(fn ($r) => ! is_null($r->contract->submitted_to_yayasan_at) && is_null($r->contract->yayasan_decision))->count(),
+            'awaiting' => $rows->filter(fn ($r) => $r->contract->latestApprovalRequest?->isPendingYayasan()
+                || (! $r->contract->latestApprovalRequest
+                    && ! is_null($r->contract->submitted_to_yayasan_at)
+                    && is_null($r->contract->yayasan_decision)))->count(),
         ];
 
         return [

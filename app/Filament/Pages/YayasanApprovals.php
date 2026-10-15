@@ -18,6 +18,7 @@ class YayasanApprovals extends Page
     protected static string $view = 'filament.pages.yayasan-approvals';
     protected static ?string $title = 'Yayasan Approvals';
     protected static ?string $navigationLabel = 'Yayasan Approvals';
+    protected static bool $shouldRegisterNavigation = false;
 
     protected function getHeaderActions(): array
     {
@@ -34,44 +35,22 @@ class YayasanApprovals extends Page
         ];
     }
 
+    /* RETIRED — decisions now live in the Yayasan portal at /yayasan/hiring-approvals */
     public function approve(int $id): void
     {
-        $c = Candidate::find($id);
-        if (!$c) return;
-        $meta = $c->meta ?? [];
-        $meta['yayasan'] = array_merge($meta['yayasan'] ?? [], [
-            'status'    => 'approved',
-            'date'      => now()->toDateString(),
-            'committee' => auth()->user()?->name ?? 'Yayasan board',
-        ]);
-        $from = $c->stage;
-        $c->update(['meta' => $meta, 'stage' => 'opl']);
-        AuditLog::create([
-            'occurred_at' => now(), 'user_name' => auth()->user()?->name ?? 'System',
-            'role' => 'Yayasan', 'action' => 'approval.yayasan', 'target' => $c->code,
-            'from_value' => $from, 'to_value' => 'opl', 'note' => 'Yayasan approval granted.',
-        ]);
-        Notification::make()->title($c->name . ' approved')->success()->send();
+        Notification::make()
+            ->title('Decisions are now recorded in the Yayasan portal')
+            ->body('Visit /yayasan/hiring-approvals to approve or reject candidates.')
+            ->warning()->send();
     }
 
+    /* RETIRED — decisions now live in the Yayasan portal at /yayasan/hiring-approvals */
     public function reject(int $id): void
     {
-        $c = Candidate::find($id);
-        if (!$c) return;
-        $meta = $c->meta ?? [];
-        $meta['yayasan'] = array_merge($meta['yayasan'] ?? [], [
-            'status'    => 'rejected',
-            'date'      => now()->toDateString(),
-            'committee' => auth()->user()?->name ?? 'Yayasan board',
-        ]);
-        $from = $c->stage;
-        $c->update(['meta' => $meta, 'stage' => 'rejected']);
-        AuditLog::create([
-            'occurred_at' => now(), 'user_name' => auth()->user()?->name ?? 'System',
-            'role' => 'Yayasan', 'action' => 'approval.yayasan', 'target' => $c->code,
-            'from_value' => $from, 'to_value' => 'rejected', 'note' => 'Yayasan rejected.',
-        ]);
-        Notification::make()->title($c->name . ' rejected')->danger()->send();
+        Notification::make()
+            ->title('Decisions are now recorded in the Yayasan portal')
+            ->body('Visit /yayasan/hiring-approvals to approve or reject candidates.')
+            ->warning()->send();
     }
 
     public function getViewData(): array

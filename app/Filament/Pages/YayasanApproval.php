@@ -98,71 +98,20 @@ class YayasanApproval extends Page
             });
     }
 
-    /* ---------- Demo: simulate a Yayasan board status update. ----------
-       In production this status is pushed by the Yayasan panel. For the
-       prototype the principal page exposes a single dropdown so the demo
-       can move a candidate through Received, Under Review, On Hold,
-       Approved or Rejected. ------------------------------------------- */
+    /* ---------- RETIRED — decisions now live in the Yayasan portal ----------
+       Principal can no longer simulate Yayasan decisions. Real Yayasan users
+       approve/reject/hold candidates at /yayasan/hiring-approvals. ---------- */
     public function simulateYayasanAction(): Action
     {
         return Action::make('simulateYayasan')
-            ->label('Simulate Yayasan update')
-            ->icon('heroicon-m-arrow-path')
+            ->label('Yayasan decisions moved to Yayasan portal')
+            ->icon('heroicon-m-arrow-top-right-on-square')
             ->color('gray')
             ->size('sm')
-            ->modalHeading('Simulate Yayasan board status update')
-            ->modalDescription('Demo only. Mirrors a status push from the Yayasan board.')
-            ->form([
-                Select::make('status')
-                    ->label('New status')
-                    ->options(self::YAYASAN_STATUSES)
-                    ->required(),
-                Textarea::make('reason')
-                    ->label('Note (optional)')
-                    ->rows(3),
-            ])
-            ->action(function (array $arguments, array $data): void {
-                $c = Candidate::find($arguments['id']);
-                if (! $c) return;
-
-                $status = $data['status'];
-                $reason = trim((string) ($data['reason'] ?? ''));
-
-                $meta = $c->meta ?? [];
-                $meta['yayasan_status']       = $status;
-                $meta['yayasan_status_at']    = now()->toIso8601String();
-                $meta['yayasan_status_label'] = self::YAYASAN_STATUSES[$status];
-                if ($reason !== '') {
-                    $meta['yayasan_status_note'] = $reason;
-                }
-
-                $action = 'candidate.yayasan_status_changed';
-                if ($status === 'approved') {
-                    $c->stage = 'opl';
-                    $action = 'candidate.yayasan_approved';
-                } elseif ($status === 'rejected') {
-                    $c->stage = 'rejected';
-                    $action = 'candidate.yayasan_rejected';
-                }
-                $c->meta = $meta;
-                $c->save();
-
-                AuditLog::create([
-                    'occurred_at' => now(),
-                    'user_name'   => 'Yayasan Board',
-                    'role'        => 'yayasan',
-                    'action'      => $action,
-                    'subject_type'=> 'candidate',
-                    'subject_id'  => $c->id,
-                    'detail'      => "{$c->name}: " . self::YAYASAN_STATUSES[$status] . ($reason !== '' ? " — {$reason}" : ''),
-                ]);
-
-                Notification::make()
-                    ->title('Yayasan status updated')
-                    ->body("{$c->name}: " . self::YAYASAN_STATUSES[$status])
-                    ->success()
-                    ->send();
-            });
+            ->disabled()
+            ->action(fn () => Notification::make()
+                ->title('Decisions are now recorded in the Yayasan portal at /yayasan/hiring-approvals')
+                ->warning()->send());
     }
 
     public static function getNavigationBadge(): ?string

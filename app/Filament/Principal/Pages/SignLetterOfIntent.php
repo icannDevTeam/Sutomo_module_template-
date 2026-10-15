@@ -3,7 +3,10 @@
 namespace App\Filament\Principal\Pages;
 
 use App\Filament\Principal\Resources\LetterOfIntentResource;
+use App\Models\ContractApprovalRequest;
 use App\Models\LetterOfIntent;
+use App\Models\User;
+use App\Services\ContractApprovalWorkflow;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -20,12 +23,16 @@ class SignLetterOfIntent extends Page
 
     /** 'loi' (default) | 'agreement' — agreement mode signs the post-Yayasan agreement letter (= contract handover). */
     public string $mode = 'loi';
+    public bool $simulation = false;
 
     public function mount(int|string $record): void
     {
         $this->letter = LetterOfIntent::findOrFail($record);
         $requested = (string) request()->query('mode', 'loi');
         $this->mode = in_array($requested, ['loi', 'agreement'], true) ? $requested : 'loi';
+        $this->simulation = $this->mode === 'agreement'
+            && request()->boolean('simulation')
+            && in_array(auth()->user()?->role, [...User::HR_SIMULATION_ROLES, 'admin', 'superadmin'], true);
     }
 
     public function isAgreementMode(): bool
@@ -33,8 +40,55 @@ class SignLetterOfIntent extends Page
         return $this->mode === 'agreement';
     }
 
+    public function canSimulateAgreement(): bool
+    {
+        return $this->simulation
+            && $this->isAgreementMode()
+            && in_array(auth()->user()?->role, [...User::HR_SIMULATION_ROLES, 'admin', 'superadmin'], true);
+    }
+
     public function signAgreement(): void
     {
+        if ($this->canSimulateAgreement()) {
+            if (! $this->letter) {
+                Notification::make()->title('Letter not found.')->danger()->send();
+                return;
+            }
+
+            $approval = ContractApprovalRequest::where('source_loi_id', $this->letter->id)
+                ->where('type', 'annual_continuation')
+                ->latest('id')
+                ->first();
+
+            if (! $approval || $approval->stage !== 'document_accepted') {
+                Notification::make()
+                    ->title('The accepted contract is not ready for demo signing.')
+                    ->body('The approval request must be accepted before the Agreement signing simulation.')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            try {
+                app(ContractApprovalWorkflow::class)->simulateTeacherSigning($approval, auth()->user(), (string) request()->ip());
+            } catch (\RuntimeException $e) {
+                Notification::make()->title($e->getMessage())->danger()->send();
+                return;
+            }
+
+            Notification::make()
+                ->title('Demo Agreement signing recorded')
+                ->body('The request is now awaiting HR registration. No teacher account or legal signature was used.')
+                ->success()
+                ->send();
+
+            $this->redirect(\App\Filament\Principal\Pages\MySubmissions::getUrl(
+                ['tab' => 'progress', 'type' => 'annual_continuation'],
+                panel: 'principal'
+            ));
+            return;
+        }
+
         $text = trim($this->signatureText);
         if ($text === '' || mb_strlen($text) > 200) {
             Notification::make()->title('Please type your full name (max 200 chars) to sign.')->danger()->send();
@@ -63,6 +117,26 @@ class SignLetterOfIntent extends Page
             return;
         }
 
+        $approval = ContractApprovalRequest::where('source_loi_id', $this->letter->id)
+            ->where('type', 'annual_continuation')
+            ->latest('id')
+            ->first();
+        if ($approval) {
+            try {
+                app(ContractApprovalWorkflow::class)->signDocument($approval, auth()->user(), $text, (string) request()->ip());
+            } catch (\RuntimeException $e) {
+                Notification::make()->title($e->getMessage())->danger()->send();
+                return;
+            }
+
+            Notification::make()->title('Agreement signed. HR registration is next.')->success()->send();
+            $this->redirect(\App\Filament\Principal\Pages\MySubmissions::getUrl(
+                ['tab' => 'progress', 'type' => 'annual_continuation'],
+                panel: 'principal'
+            ));
+            return;
+        }
+
         $this->letter->forceFill([
             'yayasan_review_status'      => $this->letter->yayasan_review_status ?: 'accepted',
             'yayasan_review_notes'       => $this->letter->yayasan_review_notes ?: 'Auto-accepted during Agreement Letter signing (legacy compatibility).',
@@ -71,9 +145,6 @@ class SignLetterOfIntent extends Page
             'agreement_signed_at'       => now(),
             'agreement_signature_text'  => $text,
             'agreement_signature_ip'    => request()->ip(),
-            'buku_induk_recorded_at'    => $this->letter->buku_induk_recorded_at ?? now(),
-            'hr_handoff_status'         => 'uploaded',
-            'hr_uploaded_at'            => $this->letter->hr_uploaded_at ?? now(),
         ])->save();
 
         Notification::make()->title('Agreement letter signed. Buku Induk was logged automatically.')->success()->send();

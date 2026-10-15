@@ -56,8 +56,10 @@ class User extends Authenticatable implements FilamentUser
      * during the role-system rollout. Tighten further once spatie/permissions
      * lands (see /memories/session/teacher-enrichment-plan.md Phase 5).
      */
-    public const PRINCIPAL_ROLES = ['principal', 'vice_principal', 'unit_head', 'hr', 'admin', 'superadmin'];
+    public const PRINCIPAL_ROLES = ['principal', 'vice_principal', 'unit_head', 'admin', 'superadmin'];
+    public const HR_SIMULATION_ROLES = ['principal', 'vice_principal', 'unit_head'];
     public const ADMIN_ROLES     = ['admin', 'superadmin'];
+    public const YAYASAN_ROLES   = ['yayasan', 'admin', 'superadmin'];
 
     public function canAccessPanel(Panel $panel): bool
     {
@@ -66,6 +68,7 @@ class User extends Authenticatable implements FilamentUser
         return match ($panel->getId()) {
             'principal' => in_array($role, self::PRINCIPAL_ROLES, true),
             'admin'     => in_array($role, self::ADMIN_ROLES, true),
+            'yayasan'   => in_array($role, self::YAYASAN_ROLES, true),
             default     => false,
         };
     }

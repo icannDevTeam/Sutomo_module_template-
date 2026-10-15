@@ -5,6 +5,7 @@ namespace App\Filament\Principal\Resources;
 use App\Filament\Principal\Resources\LetterOfIntentResource\Pages;
 use App\Models\LetterOfIntent;
 use App\Models\Teacher;
+use App\Services\ContractApprovalWorkflow;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -222,19 +223,27 @@ class LetterOfIntentResource extends Resource
                     ->modalDescription('Submits all selected SIGNED LOIs to Yayasan. Already-submitted or non-signed rows are skipped.')
                     ->visible(fn ($livewire) => ($livewire->activeTab ?? null) === 'signed')
                     ->action(function ($records) {
+                        $workflow = app(ContractApprovalWorkflow::class);
+                        $submitter = auth()->user();
                         $count = 0;
+                        $errors = 0;
                         foreach ($records as $record) {
                             if ($record->status === 'signed'
                                 && is_null($record->submitted_to_yayasan_at)
                                 && is_null($record->continuation_completed_at)) {
-                                $record->update([
-                                    'submitted_to_yayasan_at' => now(),
-                                    'yayasan_review_status'   => 'awaiting_upload',
-                                ]);
-                                $count++;
+                                try {
+                                    $workflow->submitFromLoi($record, $submitter);
+                                    $count++;
+                                } catch (\Exception) {
+                                    $errors++;
+                                }
                             }
                         }
-                        Notification::make()->title("Submitted {$count} LOIs to Yayasan")->success()->send();
+                        $msg = "Submitted {$count} LOIs to Yayasan";
+                        if ($errors) {
+                            $msg .= " ({$errors} skipped — duplicate or invalid)";
+                        }
+                        Notification::make()->title($msg)->success()->send();
                     }),
                 Tables\Actions\BulkAction::make('archive_selected')
                     ->label('Archive selected')

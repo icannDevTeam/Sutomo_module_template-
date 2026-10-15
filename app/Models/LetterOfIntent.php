@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LetterOfIntent extends Model
 {
@@ -85,6 +86,11 @@ class LetterOfIntent extends Model
     public function teacherContract(): BelongsTo
     {
         return $this->belongsTo(TeacherContract::class);
+    }
+
+    public function latestApprovalRequest(): HasOne
+    {
+        return $this->hasOne(ContractApprovalRequest::class, 'source_loi_id')->latestOfMany();
     }
 
     public const FOLLOW_UP_STATUSES = [

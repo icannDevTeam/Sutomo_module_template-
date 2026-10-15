@@ -52,6 +52,8 @@ class PrincipalPanelProvider extends PanelProvider
                 'Students',
                 'Teachers',
                 'Contract Management',
+                'Approvals',
+                'HR Tasks',
                 'Supervision',
                 'Leave & Substitution',
                 'Hiring',          // Teacher Recruitment (Vacancy / Candidate / Interview / Deposit / Pipeline / Assessments)
@@ -93,12 +95,19 @@ class PrincipalPanelProvider extends PanelProvider
                 \App\Filament\Principal\Pages\SchedulePage::class,
                 \App\Filament\Pages\Pipeline::class,
                 \App\Filament\Pages\Assessments::class,
-                \App\Filament\Pages\YayasanApproval::class,
                 \App\Filament\Pages\Onboarding::class,
                 \App\Filament\Principal\Pages\OplSessionDetail::class,
                 \App\Filament\Principal\Pages\TeacherSubstitutionConfig::class,
                 \App\Filament\Principal\Pages\SubstitutionTimetable::class,
                 \App\Filament\Principal\Pages\LetterOfIntentFollowUp::class,
+                \App\Filament\Principal\Pages\HrMyTasks::class,
+                \App\Filament\Yayasan\Pages\YayasanDashboard::class,
+                \App\Filament\Yayasan\Pages\ApprovalInbox::class,
+                \App\Filament\Yayasan\Pages\HiringApprovals::class,
+                \App\Filament\Yayasan\Pages\HrTasksOverview::class,
+                \App\Filament\Yayasan\Pages\HistoryPage::class,
+                \App\Filament\Principal\Pages\MySubmissions::class,
+                \App\Filament\Principal\Pages\MySubmissionDetail::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Principal/Widgets'), for: 'App\\Filament\\Principal\\Widgets')
             ->middleware([
@@ -117,7 +126,8 @@ class PrincipalPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn () => Blade::render('<link rel="stylesheet" href="{{ asset(\'css/principal.css\') }}?v=' . filemtime(public_path('css/principal.css')) . '">')
+                fn () => Blade::render('<link rel="stylesheet" href="{{ asset(\'css/principal.css\') }}?v=' . filemtime(public_path('css/principal.css')) . '">'
+                    . '<link rel="stylesheet" href="{{ asset(\'css/approvals.css\') }}?v=' . filemtime(public_path('css/approvals.css')) . '">')
             )
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_BEFORE,

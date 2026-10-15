@@ -12,6 +12,7 @@
         $canSignAgreement = $letter && $contractReady && $reviewAccepted && ! $agreementSigned;
         $teacherUserId = $teacher?->user_id;
         $isTeacherSigner = ! is_null($teacherUserId) && auth()->id() === $teacherUserId;
+        $isSimulation = $this->canSimulateAgreement();
     @endphp
 
     @if ($isAgreement)
@@ -61,7 +62,10 @@
                                 Agreement e-signed by {{ $letter->agreement_signature_text }}
                             </div>
                             <div class="mt-1 text-xs">on {{ $letter->agreement_signed_at?->format('d M Y H:i') }}</div>
-                            <div class="mt-1 text-xs">Buku Induk logged at {{ $letter->buku_induk_recorded_at?->format('d M Y H:i') ?? '—' }}</div>
+                            @if (str_starts_with((string) $letter->agreement_signature_text, 'DEMO SIMULATION'))
+                                <div class="mt-1 text-xs font-semibold">Demo simulation only — not a teacher's legal signature.</div>
+                            @endif
+                            <div class="mt-1 text-xs">Next stage: HR registration</div>
                         </div>
                     @else
                         <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800">
@@ -75,6 +79,11 @@ Academic Year: {{ $letter->academic_year }}
 By signing, the teacher acknowledges contract receipt and agrees that this handover is recorded in the school Buku Induk administration flow.</div>
                         </div>
 
+                        @if ($isSimulation)
+                            <div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+                                <strong>Demo simulation.</strong> This action records a simulated teacher-signing event under your Principal account. It does not create a legal teacher signature. The request will move to HR registration.
+                            </div>
+                        @else
                         <div x-data="{ sig: @entangle('signatureText') }" class="mt-4">
                             <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                                 By signing below, you acknowledge receipt of your contract for {{ $letter->academic_year }} and confirm the official handover from Yayasan.
@@ -96,28 +105,29 @@ By signing, the teacher acknowledges contract receipt and agrees that this hando
                                 placeholder="{{ $teacher?->name }}"
                                 class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
                             />
+                        </div>
+                        @endif
 
                             <div class="mt-5 flex flex-wrap items-center justify-end gap-2">
                                 <a
-                                    href="{{ \App\Filament\Principal\Pages\ContractContinuation::getUrl(panel: 'principal') }}"
+                                    href="{{ \App\Filament\Principal\Pages\MySubmissions::getUrl(['type' => 'annual_continuation'], panel: 'principal') }}"
                                     class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                 >
                                     <x-heroicon-o-arrow-uturn-left class="h-4 w-4" />
-                                    Back to Continuation
+                                    Back to Contract Workflow
                                 </a>
 
                                 <button
                                     type="button"
-                                    x-bind:disabled="sig.trim().length === 0"
-                                    @disabled(! $isTeacherSigner)
-                                    x-on:click="if (confirm('Confirm Agreement Letter signing for this teacher?')) { $wire.signAgreement() }"
+                                    @disabled(! $isSimulation && (! $isTeacherSigner || trim($this->signatureText) === ''))
+                                    wire:confirm="{{ $isSimulation ? 'Record this demo-only signing event? It is not a legal teacher signature.' : 'Confirm Agreement Letter signing for this teacher?' }}"
+                                    wire:click="signAgreement"
                                     class="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     <x-heroicon-o-finger-print class="h-4 w-4" />
-                                    Confirm and E-Sign Agreement
+                                    {{ $isSimulation ? 'Record demo signature' : 'Confirm and E-Sign Agreement' }}
                                 </button>
                             </div>
-                        </div>
                     @endif
                 </div>
             </div>

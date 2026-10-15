@@ -37,6 +37,7 @@ Default admin login:
 - `app/Filament/Widgets/*` — KPI stats, charts, hero banner, approvals, activity
 - `app/Filament/Resources/*` — Candidates, Teachers, Vacancies, Deposits, Interviews, AuditLog
 - `app/Filament/Pages/*` — Buku Induk, Master Database, Verifications, Onboarding, Assessments, Yayasan Approvals, Pipeline, Inbox, Settings
+- The Principal panel is the single-login simulation hub: **Approvals** contains the Yayasan Approval Inbox and Hiring Approvals; **HR Tasks** contains both HR Coordination and the HR Tasks Overview; **Overview** contains Yayasan Dashboard and decision history. Simulation actions are attributed to the signed-in Principal; contract preparation remains gated by approval and assignment.
 - `app/Support/CsvExporter.php` — UTF-8 BOM streamed CSV helper used by every resource & page
 - Topbar: profile, database notifications (30s polling), global search (⌘K), user menu shortcuts
 
@@ -52,3 +53,7 @@ The [Archify flow library](.archify/README.md) includes the system architecture
 and individual enrollment, leave/substitution, contract and planning workflows.
 After pulling, run `php -S 127.0.0.1:8085 -t .archify` from the repository root
 and open http://127.0.0.1:8085/. No application dependencies are needed to view it.
+
+The [product and UX design brief](docs/design-brief.md) covers enrollment,
+supervision, leave/substitution, planning/timetable and contracts, separating
+current behavior from proposed screens, acceptance criteria and policy decisions.

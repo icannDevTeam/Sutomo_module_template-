@@ -99,7 +99,7 @@
                         $cta = match ($r->destination) {
                             'probation-watch'        => ['Open · Probation', \App\Filament\Principal\Pages\ProbationWatch::getUrl()],
                             'contract-renewal'       => ['Open · Renewal',   \App\Filament\Principal\Pages\ContractRenewal::getUrl()],
-                            'contract-continuation'  => ['Open · LOI',       \App\Filament\Principal\Pages\ContractContinuation::getUrl()],
+                            'contract-continuation'  => ['Open · LOI',       \App\Filament\Principal\Pages\MySubmissions::getUrl(['type' => 'annual_continuation'], panel: 'principal')],
                             default                  => ['Open · Profile',   \App\Filament\Principal\Resources\TeacherResource::getUrl('view', ['record' => $t->id])],
                         };
                     @endphp

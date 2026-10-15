@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TeacherContract extends Model
@@ -57,6 +58,11 @@ class TeacherContract extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    public function latestApprovalRequest(): HasOne
+    {
+        return $this->hasOne(ContractApprovalRequest::class, 'source_contract_id')->latestOfMany();
     }
 
     public function lettersOfIntent(): HasMany
