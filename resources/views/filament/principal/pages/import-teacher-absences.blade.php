@@ -211,7 +211,9 @@
     <div class="sp-card" x-data="{ open: false }">
         <button type="button" @click="open = !open" class="flex w-full items-center justify-between">
             <div class="sp-card-h">Tips & troubleshooting</div>
-            <x-heroicon-m-chevron-down class="h-4 w-4 text-gray-400 transition-transform" :class="open ? 'rotate-180' : ''" />
+            <span class="transition-transform" :class="open ? 'rotate-180' : ''">
+                <x-heroicon-m-chevron-down class="h-4 w-4 text-gray-400" />
+            </span>
         </button>
         <div x-show="open" x-transition class="mt-4 space-y-3 text-xs text-gray-600 dark:text-gray-400">
             <div><strong class="text-gray-800 dark:text-gray-200">Teacher not found:</strong> The name must closely match what's in the system (e.g. "Budi Santoso" matches "Budi Santoso, S.Pd"). Copy names from the Teachers roster page.</div>
