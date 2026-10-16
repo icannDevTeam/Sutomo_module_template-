@@ -38,6 +38,8 @@ Default admin login:
 - `app/Filament/Resources/*` — Candidates, Teachers, Vacancies, Deposits, Interviews, AuditLog
 - `app/Filament/Pages/*` — Buku Induk, Master Database, Verifications, Onboarding, Assessments, Yayasan Approvals, Pipeline, Inbox, Settings
 - The Principal panel is the single-login simulation hub: **Approvals** contains the Yayasan Approval Inbox and Hiring Approvals; **HR Tasks** contains both HR Coordination and the HR Tasks Overview; **Overview** contains Yayasan Dashboard and decision history. Simulation actions are attributed to the signed-in Principal; contract preparation remains gated by approval and assignment.
+- **Contract Workflow** (My Submissions) shows only submitter actions: withdraw, edit/resubmit, and review the prepared document, plus continuation Agreement handover and Buku Induk. Yayasan decisions remain in the Approval Inbox; HR preparation remains in HR Tasks, even when simulating all roles through the same login.
+- LOI previews opened from Contract Workflow return to the linked request (or Ready to submit before submission). Embedded previews return through the main browser frame so the dashboard never opens inside the document preview.
 - `app/Support/CsvExporter.php` — UTF-8 BOM streamed CSV helper used by every resource & page
 - Topbar: profile, database notifications (30s polling), global search (⌘K), user menu shortcuts
 

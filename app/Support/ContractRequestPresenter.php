@@ -367,7 +367,7 @@ class ContractRequestPresenter
      *
      * @return Collection<int, array{key:string,label:string,tier:int,variant:string,icon:string}>
      */
-    public function availableActionsFor(User $user): Collection
+    public function availableActionsFor(User $user, bool $submitterOnly = false): Collection
     {
         $r = $this->request;
         $role = $user->role ?? 'teacher';
@@ -380,7 +380,7 @@ class ContractRequestPresenter
         $isHrRole    = in_array($role, ['hr', 'admin', 'superadmin'], true);
         $isHrSimulation = in_array($role, User::HR_SIMULATION_ROLES, true) && $r->assigned_hr_id !== null;
 
-        if ($isYayasan) {
+        if ($isYayasan && ! $submitterOnly) {
             switch ($r->stage) {
                 case 'submitted':
                     $keys = ['start_review', 'approve', 'request_correction', 'reject'];
@@ -416,7 +416,7 @@ class ContractRequestPresenter
             }
         }
 
-        if (($isAssignee && $isHrRole) || $isHrSimulation) {
+        if (! $submitterOnly && (($isAssignee && $isHrRole) || $isHrSimulation)) {
             switch ($r->stage) {
                 case 'hr_assigned':
                     $keys = array_merge($keys, ['mark_in_progress', 'upload_document']);
@@ -432,7 +432,7 @@ class ContractRequestPresenter
             }
         }
 
-        if ($isTeacher && $r->stage === 'document_accepted') {
+        if (! $submitterOnly && $isTeacher && $r->stage === 'document_accepted') {
             $keys[] = 'sign';
         }
 
@@ -441,9 +441,9 @@ class ContractRequestPresenter
     }
 
     /** The single most relevant action for a compact row, or null. */
-    public function primaryActionFor(User $user): ?array
+    public function primaryActionFor(User $user, bool $submitterOnly = false): ?array
     {
-        $actions = $this->availableActionsFor($user);
+        $actions = $this->availableActionsFor($user, $submitterOnly);
 
         return $actions->firstWhere('variant', 'primary')
             ?? $actions->first(fn ($a) => $a['variant'] === 'secondary')

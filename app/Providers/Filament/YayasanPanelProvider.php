@@ -41,7 +41,6 @@ class YayasanPanelProvider extends PanelProvider
             ])
             ->font('Inter')
             ->navigationGroups([
-                'Overview',
                 'Approvals',
                 'HR Tasks',
             ])

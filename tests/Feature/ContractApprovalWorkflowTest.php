@@ -143,6 +143,52 @@ class ContractApprovalWorkflowTest extends TestCase
         $this->assertContains('reject', $actionKeys);
     }
 
+    public function test_my_submissions_hides_yayasan_actions_and_approval_deep_links(): void
+    {
+        $request = $this->submitted();
+        $presenter = ContractRequestPresenter::for($request);
+        $this->assertSame(['withdraw'], $presenter->availableActionsFor($this->principal, submitterOnly: true)->pluck('key')->all());
+        $this->assertNull($presenter->primaryActionFor($this->principal, submitterOnly: true));
+
+        $this->actingAs($this->principal)
+            ->get('/principal/my-submissions?tab=progress')
+            ->assertOk()
+            ->assertDontSee('?sheet=approve', false);
+
+        $this->actingAs($this->principal)
+            ->get('/principal/my-submissions/' . $request->id . '?sheet=approve')
+            ->assertOk()
+            ->assertSee('Withdraw request')
+            ->assertDontSee('Start review')
+            ->assertDontSee('wire:click="openSheet(' . $request->id . ', \'approve\')"', false)
+            ->assertDontSee('wire:click="openSheet(' . $request->id . ', \'reject\')"', false)
+            ->assertDontSee('wire:click="openSheet(' . $request->id . ', \'request_correction\')"', false);
+    }
+
+    public function test_submission_detail_refuses_opening_a_yayasan_approval_sheet(): void
+    {
+        $request = $this->submitted();
+        $this->actingAs($this->principal);
+        $page = app(\App\Filament\Principal\Pages\MySubmissionDetail::class);
+        $page->record = $request;
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $page->openSheet($request->id, 'approve');
+    }
+
+    public function test_submitter_actions_remain_separate_through_hr_and_document_review(): void
+    {
+        $request = $this->approvedAndAssigned();
+        $this->assertTrue(ContractRequestPresenter::for($request)->availableActionsFor($this->principal, submitterOnly: true)->isEmpty());
+
+        $this->uploaded($request, $this->hr);
+        $this->assertSame(
+            ['accept_document', 'request_doc_fix'],
+            ContractRequestPresenter::for($request->fresh())->availableActionsFor($this->principal, submitterOnly: true)->pluck('key')->all()
+        );
+        $this->assertTrue(ContractRequestPresenter::for($request->fresh())->availableActionsFor($this->otherPrincipal, submitterOnly: true)->isEmpty());
+    }
+
     public function test_principal_can_complete_assigned_hr_work_with_principal_audit_identity(): void
     {
         $r = $this->approvedAndAssigned();
@@ -421,7 +467,17 @@ class ContractApprovalWorkflowTest extends TestCase
             ->assertSee('Ready to submit')
             ->assertSee('Test Teacher')
             ->assertSee('Preview signed Letter of Intent')
-            ->assertSee('Submit to Yayasan');
+            ->assertSee('Submit to Yayasan')
+            ->assertSee(route('letter-of-intent.print', ['record' => $loi, 'workflow' => 1, 'embedded' => 1]));
+
+        $this->actingAs($this->principal)
+            ->get(route('letter-of-intent.print', ['record' => $loi, 'workflow' => 1, 'embedded' => 1]))
+            ->assertOk()
+            ->assertSee('Annual continuation letter')
+            ->assertSee('Back to Contract Workflow')
+            ->assertSee('target="_top"', false)
+            ->assertSee(\App\Filament\Principal\Pages\MySubmissions::getUrl(['tab' => 'ready', 'type' => 'annual_continuation'], panel: 'principal'))
+            ->assertDontSee('fi-sidebar');
 
         $page = app(\App\Filament\Principal\Pages\MySubmissions::class);
         $page->submitContinuation($loi->id);
@@ -430,6 +486,20 @@ class ContractApprovalWorkflowTest extends TestCase
             'submitted_by' => $this->principal->id,
             'stage' => 'submitted',
         ]);
+
+        $request = $loi->latestApprovalRequest()->firstOrFail();
+        $this->actingAs($this->principal)
+            ->get(route('letter-of-intent.print', ['record' => $loi, 'workflow' => 1]))
+            ->assertOk()
+            ->assertSee('Back to Contract Workflow')
+            ->assertSee('target="_self"', false)
+            ->assertSee(\App\Filament\Principal\Pages\MySubmissionDetail::getUrl(['record' => $request->id], panel: 'principal'));
+
+        $this->actingAs($this->principal)
+            ->get(route('letter-of-intent.print', ['record' => $loi]))
+            ->assertOk()
+            ->assertSee('Back to LOI')
+            ->assertDontSee('Back to Contract Workflow');
     }
 
     public function test_loi_contract_download_is_scoped_to_its_principal(): void

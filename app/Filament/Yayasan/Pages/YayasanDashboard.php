@@ -12,6 +12,7 @@ class YayasanDashboard extends Page
     protected static ?string $navigationGroup = 'Overview';
     protected static ?int $navigationSort = -10;
     protected static ?string $navigationLabel = 'Yayasan Dashboard';
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $title = 'Dashboard';
     protected static string $view = 'filament.yayasan.pages.yayasan-dashboard';
 

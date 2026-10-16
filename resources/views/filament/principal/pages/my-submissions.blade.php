@@ -48,7 +48,10 @@
         @elseif($tab === 'ready')
             <div class="ap-list">
                 @foreach($rows->take($this->limit) as $loi)
-                    @php $preview = route('letter-of-intent.print', ['record' => $loi]); @endphp
+                    @php
+                        $preview = route('letter-of-intent.print', ['record' => $loi, 'workflow' => 1]);
+                        $embeddedPreview = route('letter-of-intent.print', ['record' => $loi, 'workflow' => 1, 'embedded' => 1]);
+                    @endphp
                     <article class="ap-row" wire:key="ready-loi-{{ $loi->id }}">
                         <div class="ap-row__main">
                             <div class="ap-row__title">
@@ -77,7 +80,7 @@
                         </div>
                         <details class="ap-row__preview" style="grid-column:1/-1">
                             <summary>Preview signed Letter of Intent</summary>
-                            <iframe src="{{ $preview }}" loading="lazy" title="Signed Letter of Intent preview"
+                            <iframe src="{{ $embeddedPreview }}" loading="lazy" title="Signed Letter of Intent preview"
                                 style="width:100%;height:32rem;margin-top:.75rem;border:1px solid #dbe2ea;border-radius:.75rem;background:white"></iframe>
                         </details>
                     </article>
@@ -93,7 +96,7 @@
             <div class="ap-list">
                 @foreach($rows as $req)
                     @php $href = \App\Filament\Principal\Pages\MySubmissionDetail::getUrl(['record' => $req->id], panel: 'principal'); @endphp
-                    <x-approval.request-row :request="$req" :user="$user" :href="$href" :primary-href="$href" wire:key="row-{{ $req->id }}" />
+                    <x-approval.request-row :request="$req" :user="$user" :href="$href" :primary-href="$href" :submitter-only="true" wire:key="row-{{ $req->id }}" />
                 @endforeach
             </div>
 

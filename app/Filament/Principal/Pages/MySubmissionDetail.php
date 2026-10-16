@@ -16,7 +16,9 @@ use Illuminate\Contracts\Support\Htmlable;
  */
 class MySubmissionDetail extends Page
 {
-    use HasApprovalSheets;
+    use HasApprovalSheets {
+        openSheet as protected openApprovalSheet;
+    }
 
     protected static bool $shouldRegisterNavigation = false;
     protected static ?string $slug = 'my-submissions/{record}';
@@ -40,11 +42,24 @@ class MySubmissionDetail extends Page
 
         $sheet = (string) request()->query('sheet', '');
         if ($sheet !== '' && array_key_exists($sheet, ContractRequestPresenter::ACTIONS)) {
-            $allowed = ContractRequestPresenter::for($this->loadRecord())->availableActionsFor(auth()->user())->pluck('key');
+            $allowed = ContractRequestPresenter::for($this->loadRecord())->availableActionsFor(auth()->user(), submitterOnly: true)->pluck('key');
             if ($allowed->contains($sheet)) {
                 $this->openSheet($this->record->id, $sheet);
             }
         }
+    }
+
+    public function openSheet(int $requestId, string $action): void
+    {
+        $this->authorizeView();
+        abort_unless($requestId === $this->record->id, 403);
+
+        $allowed = ContractRequestPresenter::for($this->loadRecord())
+            ->availableActionsFor(auth()->user(), submitterOnly: true)
+            ->pluck('key');
+        abort_unless($allowed->contains($action), 403);
+
+        $this->openApprovalSheet($requestId, $action);
     }
 
     protected function authorizeView(): void
@@ -63,7 +78,7 @@ class MySubmissionDetail extends Page
     public function getBreadcrumbs(): array
     {
         return [
-            MySubmissions::getUrl(panel: 'principal') => 'My Submissions',
+            MySubmissions::getUrl(panel: 'principal') => 'Contract Workflow',
             '#' => 'Request #' . $this->record->id,
         ];
     }
@@ -275,7 +290,7 @@ class MySubmissionDetail extends Page
         return [
             'record'    => $record,
             'presenter' => ContractRequestPresenter::for($record),
-            'actions'   => ContractRequestPresenter::for($record)->availableActionsFor(auth()->user()),
+            'actions'   => ContractRequestPresenter::for($record)->availableActionsFor(auth()->user(), submitterOnly: true),
             'tiers'     => $record->type === 'pkwt_renewal'
                 ? ContractRenewal::allowedNextTiers((string) $record->latestRevision?->current_type)
                 : [],

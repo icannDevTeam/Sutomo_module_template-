@@ -375,6 +375,15 @@
     background: #fff; border: 1px solid var(--ap-border-2); border-radius: var(--ap-radius-sm);
     padding: .6rem .75rem; transition: border-color var(--ap-dur) var(--ap-ease), box-shadow var(--ap-dur) var(--ap-ease);
 }
+.ap-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M7 7l3 3 3-3' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .6rem center;
+    background-size: 1.25rem 1.25rem;
+    padding-right: 2.25rem;
+    cursor: pointer;
+}
 .ap-textarea { min-height: 6rem; resize: vertical; line-height: 1.5; }
 .ap-input:focus, .ap-textarea:focus, .ap-select:focus { outline: none; border-color: var(--ap-primary); box-shadow: var(--ap-focus); }
 .ap-input[aria-invalid="true"], .ap-textarea[aria-invalid="true"], .ap-select[aria-invalid="true"] { border-color: var(--ap-danger); }

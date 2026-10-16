@@ -18,7 +18,7 @@ class TeacherDocumentResource extends Resource
     protected static ?string $model = TeacherDocument::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-check';
     protected static ?string $navigationLabel = 'Document Verifications';
-    protected static ?string $navigationGroup = 'Contract Management';
+    protected static ?string $navigationGroup = 'Teachers';
     protected static ?int $navigationSort = 4;
 
     public static function getNavigationBadge(): ?string

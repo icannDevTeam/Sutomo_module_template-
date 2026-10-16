@@ -157,9 +157,21 @@
     </style>
 </head>
 <body>
+    @php
+        $fromWorkflow = request()->boolean('workflow');
+        $embedded = request()->boolean('embedded');
+        $approvalRequest = $fromWorkflow ? $record->latestApprovalRequest : null;
+        $returnUrl = $approvalRequest
+            ? \App\Filament\Principal\Pages\MySubmissionDetail::getUrl(['record' => $approvalRequest->id], panel: 'principal')
+            : \App\Filament\Principal\Pages\MySubmissions::getUrl(['tab' => 'ready', 'type' => 'annual_continuation'], panel: 'principal');
+    @endphp
     <div class="pl-actions no-print">
         <button onclick="window.print()">Print LOI</button>
-        <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl('view', ['record' => $record->id], panel: 'principal') }}">Back to LOI</a>
+        @if($fromWorkflow)
+            <a href="{{ $returnUrl }}" target="{{ $embedded ? '_top' : '_self' }}">Back to Contract Workflow</a>
+        @else
+            <a href="{{ \App\Filament\Principal\Resources\LetterOfIntentResource::getUrl('view', ['record' => $record->id], panel: 'principal') }}" target="{{ $embedded ? '_top' : '_self' }}">Back to LOI</a>
+        @endif
     </div>
 
     <div class="pl-head">

@@ -6,7 +6,8 @@
     $min  = (int) config('approvals.reason_min_length', 20);
     $tierLabel = fn (?string $t) => $presenter->tierLabel($t) ?? '—';
     $loi = $record->type === 'annual_continuation' ? $record->sourceLoi : null;
-    $loiPreviewUrl = $loi ? route('letter-of-intent.print', ['record' => $loi]) : null;
+    $loiPreviewUrl = $loi ? route('letter-of-intent.print', ['record' => $loi, 'workflow' => 1]) : null;
+    $embeddedLoiPreviewUrl = $loi ? route('letter-of-intent.print', ['record' => $loi, 'workflow' => 1, 'embedded' => 1]) : null;
     $contractPreviewUrl = $doc
         ? route('approvals.document.download', ['document' => $doc, 'inline' => 1])
         : ($loi?->yayasan_contract_path ? route('contracts.loi.download', ['letter' => $loi, 'inline' => 1]) : null);
@@ -97,7 +98,7 @@
             </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,24rem),1fr));gap:1rem;margin-top:1rem">
-            <iframe src="{{ $loiPreviewUrl }}" loading="lazy" title="Letter of Intent preview" style="width:100%;height:32rem;border:1px solid #dbe2ea;border-radius:.75rem;background:white"></iframe>
+            <iframe src="{{ $embeddedLoiPreviewUrl }}" loading="lazy" title="Letter of Intent preview" style="width:100%;height:32rem;border:1px solid #dbe2ea;border-radius:.75rem;background:white"></iframe>
             @if($contractPreviewUrl)
                 <iframe src="{{ $contractPreviewUrl }}" loading="lazy" title="Prepared contract preview" style="width:100%;height:32rem;border:1px solid #dbe2ea;border-radius:.75rem;background:white"></iframe>
             @endif

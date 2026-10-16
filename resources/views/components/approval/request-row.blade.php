@@ -9,6 +9,7 @@
     'open' => null,            {{-- wire:click expression alternative --}}
     'selected' => false,
     'showSubmitter' => false,
+    'submitterOnly' => false,
     'primaryTarget' => null,   {{-- wire:target prefix for the primary action, e.g. "openSheet" --}}
     'primaryHref' => null,     {{-- link base for the primary action; "?sheet=key" is appended --}}
 ])
@@ -17,7 +18,7 @@
     $rev = $request->latestRevision;
     $mine = $p->isWaitingOn($user);
     $urgency = $p->urgency();
-    $primary = $p->primaryActionFor($user);
+    $primary = $p->primaryActionFor($user, $submitterOnly);
     $classes = 'ap-row'
         . ($selected ? ' is-selected' : '')
         . ($mine ? ' is-mine' : '')
