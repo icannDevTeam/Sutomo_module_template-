@@ -37,58 +37,83 @@ class ContractManagementDemoSeeder extends Seeder
         // PROBATION WATCH demo — PKWT-I inside probation window
         // --------------------------------------------------------------
 
-        // 1. Decision OVERDUE today (probation ends today, only 2 supervisions)
+        // 1. 45 days left, partially observed (2 sup / 1 peer — needs more)
         $this->probationScenario(
             teacherId: 3,
-            startedDaysAgo: 90,
+            startedDaysAgo: 45,
             supervisions: 2,
             peerObs: 1,
-            label: 'Decision overdue — only 2 supervisions of 4',
+            label: '45 days left — partially observed',
         );
 
-        // 2. Decision DUE in 14 days, ON TRACK (4 sup + 2 peer)
+        // 2. 65 days left, ON TRACK — all minimums met (4 sup / 2 peer)
         $this->probationScenario(
             teacherId: 4,
-            startedDaysAgo: 76,
+            startedDaysAgo: 25,
             supervisions: 4,
             peerObs: 2,
-            label: 'Ready to decide — minimums met',
+            label: '65 days left — all minimums met',
         );
 
-        // 3. Decision DUE in 35 days, BEHIND TRACK (1 supervision only)
+        // 3. URGENT — only 9 days left, far behind (1 sup / 0 peer)
         $this->probationScenario(
             teacherId: 10,
-            startedDaysAgo: 55,
+            startedDaysAgo: 81,
             supervisions: 1,
             peerObs: 0,
-            label: 'Behind track — needs more observations',
+            label: 'URGENT 9 days — far behind on observations',
+        );
+
+        // 4. 30 days left, 1 supervision short (3 sup / 2 peer) — TR-DEMO-03 Citra Halim
+        $this->probationScenarioByCode(
+            code: 'TR-DEMO-03',
+            startedDaysAgo: 60,
+            supervisions: 3,
+            peerObs: 2,
+            label: '30 days left — 1 supervision short',
         );
 
         // --------------------------------------------------------------
         // CONTRACT RENEWAL demo — PKWT-I/II/III in renewal window
         // --------------------------------------------------------------
 
-        // 4. PKWT-I, ends in 60d, NO recommendation yet (fresh in window)
+        // 5. PKWT-I, ends in 77d, NO recommendation yet (fresh in window)
         $this->renewalScenario(
             teacherId: 13,
             type: 'pkwt_1',
-            endsInDays: 60,
+            endsInDays: 77,
             stage: 'fresh',
         );
 
-        // 5. PKWT-II, ends in 45d, recommendation=renew uploaded, NOT submitted
+        // 6. PKWT-II, ends in 14d, recommendation=renew set, NOT submitted
         $this->renewalScenario(
             teacherId: 14,
             type: 'pkwt_2',
-            endsInDays: 45,
+            endsInDays: 14,
             stage: 'recommended',
         );
 
-        // 6. PKWT-II, ends in 25d, submitted to Yayasan, AWAITING decision
+        // 7. PKWT-II, ends in 45d, NOT recommending renewal (not_renew)
         $this->renewalScenario(
             teacherId: 11,
             type: 'pkwt_2',
-            endsInDays: 25,
+            endsInDays: 45,
+            stage: 'not_renew',
+        );
+
+        // 8. PKWT-III, ends in 257d, submitted to Yayasan — TR-DEMO-04 Dewi Sartika
+        $this->renewalScenarioByCode(
+            code: 'TR-DEMO-04',
+            type: 'pkwt_3',
+            endsInDays: 257,
+            stage: 'submitted',
+        );
+
+        // 9. PKWT-I, ends in 257d, submitted to Yayasan — TR-DEMO-05 Eko Nugroho
+        $this->renewalScenarioByCode(
+            code: 'TR-DEMO-05',
+            type: 'pkwt_1',
+            endsInDays: 257,
             stage: 'submitted',
         );
 
@@ -122,6 +147,26 @@ class ContractManagementDemoSeeder extends Seeder
     // =================================================================
     // Probation Watch helpers
     // =================================================================
+
+    private function probationScenarioByCode(string $code, int $startedDaysAgo, int $supervisions, int $peerObs, string $label): void
+    {
+        $teacher = Teacher::where('code', $code)->first();
+        if (! $teacher) {
+            $this->command?->warn("Skipping probation scenario: teacher code {$code} not found.");
+            return;
+        }
+        $this->probationScenario($teacher->id, $startedDaysAgo, $supervisions, $peerObs, $label);
+    }
+
+    private function renewalScenarioByCode(string $code, string $type, int $endsInDays, string $stage): void
+    {
+        $teacher = Teacher::where('code', $code)->first();
+        if (! $teacher) {
+            $this->command?->warn("Skipping renewal scenario: teacher code {$code} not found.");
+            return;
+        }
+        $this->renewalScenario($teacher->id, $type, $endsInDays, $stage);
+    }
 
     private function probationScenario(
         int $teacherId,
@@ -249,6 +294,11 @@ class ContractManagementDemoSeeder extends Seeder
             $payload['recommendation_decision'] = 'renew';
             $payload['recommendation_letter_path'] = 'demo/recommendation-' . $teacher->id . '.pdf';
             $payload['renewal_form_submitted_at'] = now()->subDays(2);
+        }
+
+        if ($stage === 'not_renew') {
+            $payload['recommendation_decision'] = 'not_renew';
+            $payload['renewal_form_submitted_at'] = now()->subDays(3);
         }
 
         if ($stage === 'submitted') {
