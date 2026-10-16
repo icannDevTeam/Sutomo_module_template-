@@ -44,6 +44,15 @@ Default admin login:
 - Topbar: profile, database notifications (30s polling), global search (⌘K), user menu shortcuts
 
 ## Notes
+- For an existing demo site, `php artisan db:seed --class=ProbationRenewalDemoSeeder --force`
+  adds four probation and five renewal scenarios using separate `PR-DEMO-*`
+  teachers in SMA. Back up the database first. Re-running skips existing scenario
+  contracts; it does not reset their progress or touch LOIs or existing teachers.
+  The two submitted renewal scenarios contain legacy submission timestamps, not
+  approval-request history. No recommendation PDFs are fabricated. Renewals
+  ending in 257 days are outside the three-month renewal window initially.
+  Do not substitute `DatabaseSeeder`, `AllScenariosDemoSeeder`, or
+  `ContractManagementDemoSeeder` on a site whose data must be preserved.
 - The committed `database/database.sqlite` is for development/demo only.
   For real use, switch `.env` to `DB_CONNECTION=mysql` (or pgsql) and migrate.
 - `vendor/` and `node_modules/` are git-ignored — run `composer install` after pulling.

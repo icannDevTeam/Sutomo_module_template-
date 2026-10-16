@@ -168,7 +168,7 @@ class ContractManagementDemoSeeder extends Seeder
         $this->renewalScenario($teacher->id, $type, $endsInDays, $stage);
     }
 
-    private function probationScenario(
+    protected function probationScenario(
         int $teacherId,
         int $startedDaysAgo,
         int $supervisions,
@@ -254,7 +254,7 @@ class ContractManagementDemoSeeder extends Seeder
     // Renewal helpers
     // =================================================================
 
-    private function renewalScenario(
+    protected function renewalScenario(
         int $teacherId,
         string $type,
         int $endsInDays,
