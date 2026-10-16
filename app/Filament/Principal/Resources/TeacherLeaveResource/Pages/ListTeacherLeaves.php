@@ -16,6 +16,11 @@ class ListTeacherLeaves extends ListRecords
                 ->icon('heroicon-o-plus')
                 ->color('primary')
                 ->url(fn () => route('filament.principal.pages.submit-leave')),
+            Actions\Action::make('importAbsences')
+                ->label('Import Absences')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('gray')
+                ->url(fn () => route('filament.principal.pages.import-teacher-absences')),
             Actions\Action::make('substitutionTimetable')
                 ->label('Substitution Timetable')
                 ->icon('heroicon-o-arrows-right-left')
