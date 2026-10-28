@@ -44,6 +44,16 @@ Default admin login:
 - Topbar: profile, database notifications (30s polling), global search (⌘K), user menu shortcuts
 
 ## Notes
+- For isolated substitution examples, back up the database, then run
+  `php artisan db:seed --class=IsolatedSubstitutionDemoSeeder --force`.
+  This requires the active timetable to be published. It appends lessons for
+  separate `SUB-DEMO-*` teachers in SMA, without changing existing lessons,
+  teachers, leaves, or duties. Search **Substitution Demo** in Substitution
+  Timetable and select the current week to see all coverage states and a pending
+  leave. Same-week reruns preserve scenario progress; running in a later week
+  adds that week's examples without deleting earlier ones. This creates no user
+  accounts and sends no substitute offers. Do not use the older
+  `SubstitutionTimetableDemoSeeder` on a site with data to preserve.
 - For an existing demo site, `php artisan db:seed --class=ProbationRenewalDemoSeeder --force`
   adds four probation and five renewal scenarios using separate `PR-DEMO-*`
   teachers in SMA. Back up the database first. Re-running skips existing scenario
