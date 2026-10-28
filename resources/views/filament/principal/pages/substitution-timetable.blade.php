@@ -1,320 +1,354 @@
 <x-filament-panels::page>
     @php
-        $tabs = [
-            'today'    => ['label' => 'Today',    'icon' => 'heroicon-o-sun'],
-            'tomorrow' => ['label' => 'Tomorrow', 'icon' => 'heroicon-o-arrow-right'],
-            'weekly'   => ['label' => 'Weekly',   'icon' => 'heroicon-o-calendar-days'],
-            'monthly'  => ['label' => 'Monthly',  'icon' => 'heroicon-o-calendar'],
+        $states = \App\Support\SubstitutionTimetable::STATES;
+        $views  = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month'];
+        $fmt    = fn ($d, $f = 'd M') => \Carbon\Carbon::parse($d)->format($f);
+        $s      = $summary;
+        $active = $s['confirmed'] + $s['awaiting'];
+        $pct    = $s['lessons_total'] > 0 ? (int) round($active / $s['lessons_total'] * 100) : null;
+        $attnTone = [
+            'uncovered'  => 'red',
+            'declined'   => 'red',
+            'no_handoff' => 'amber',
+            'pending'    => 'slate',
         ];
-
-        $displayDays = $rosterDays;
-        if ($view === 'monthly') {
-            $activeDates = collect($rosterRows)
-                ->flatMap(fn ($row) => array_keys($row['days'] ?? []))
-                ->unique()
-                ->all();
-
-            $displayDays = array_values(array_filter(
-                $rosterDays,
-                fn ($day) => in_array($day['date'], $activeDates, true)
-            ));
-
-            if (empty($displayDays)) {
-                $displayDays = $rosterDays;
-            }
-        }
-
-        $statusChip = [
-            'accepted'  => 'sp-pill-green',
-            'pending'   => 'sp-pill-amber',
-            'declined'  => 'sp-pill-red',
-            'completed' => 'sp-pill-slate',
-        ];
-
-        $entryBorder = [
-            'leave' => 'border-sky-200 bg-sky-50/80 dark:border-sky-500/30 dark:bg-sky-500/10',
-            'duty'  => 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/30 dark:bg-emerald-500/10',
-        ];
+        $hasFilters = $campus || $unit || $statusFilter || filled($search);
     @endphp
 
-    <x-principal.module-hero
-        title="Substitution Roster"
-        description="Teacher-first coverage matrix for approved leaves and assigned duties. Filter by date window to see all substitutions happening that day, week, or month."
-        icon="heroicon-o-table-cells"
-        tone="slate"
-    >
-        <div class="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900/40 dark:text-slate-300 dark:ring-slate-700">
-            <span class="font-semibold">{{ count($rosterRows) }}</span>
-            <span>teachers with coverage</span>
-        </div>
-    </x-principal.module-hero>
-
-    <div class="sp-cm-intro">
-        This page is the operational coverage roster. It shows who is covering which lesson or duty, on which day, and where there are still unfilled gaps that need attention.
-    </div>
-
-    <div class="sp-kpis">
-        @foreach ([
-            ['Teachers covered', count($rosterRows), 'slate', 'heroicon-o-users'],
-            ['Periods covered', $data['summary']['periods_covered'], 'emerald', 'heroicon-o-shield-check'],
-            ['Standalone duties', $data['summary']['duties_count'], 'sky', 'heroicon-o-clipboard-document-list'],
-            ['Open gaps', $data['summary']['gaps_count'], $data['summary']['gaps_count'] > 0 ? 'rose' : 'amber', 'heroicon-o-exclamation-triangle'],
-        ] as [$label, $value, $tone, $icon])
-            <div class="sp-kpi sp-kpi--{{ $tone }}">
-                <div class="sp-kpi-head">
-                    <span class="sp-kpi-label">{{ $label }}</span>
-                    <span class="sp-kpi-icon"><x-filament::icon :icon="$icon" style="width:16px;height:16px;" /></span>
+    <div class="sp-st">
+        {{-- ───────────── Toolbar ───────────── --}}
+        <div class="sp-st-bar">
+            <div class="sp-st-bar__row">
+                <div class="sp-st-seg" role="tablist" aria-label="Window">
+                    @foreach ($views as $key => $label)
+                        <button type="button" role="tab" wire:click="setView('{{ $key }}')"
+                                aria-selected="{{ $view === $key ? 'true' : 'false' }}"
+                                @class(['sp-st-seg__btn', 'is-active' => $view === $key])>{{ $label }}</button>
+                    @endforeach
                 </div>
-                <div class="sp-kpi-value">{{ $value }}</div>
-            </div>
-        @endforeach
-    </div>
 
-    <div class="sp-card">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <div class="sp-card-h">Roster window</div>
-                <div class="sp-card-sub">Switch between Today, Tomorrow, Weekly, and Monthly windows, then pick any date anchor.</div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <button type="button" wire:click="prevWindow" class="sp-btn sp-btn-ghost !py-2 !px-3">← Prev</button>
-                <button type="button" wire:click="currentWindow" class="sp-btn sp-btn-ghost !py-2 !px-3">Current</button>
-                <button type="button" wire:click="nextWindow" class="sp-btn sp-btn-ghost !py-2 !px-3">Next →</button>
-                <span class="text-xs text-gray-500">
-                    {{ \Carbon\Carbon::parse($weekStart)->format('d M Y') }} – {{ \Carbon\Carbon::parse($weekEnd)->format('d M Y') }}
-                </span>
-            </div>
-        </div>
-
-        <div class="sp-tabs mt-4">
-            <div class="sp-tabs__group">
-                @foreach ($tabs as $key => $tab)
-                    <button type="button" wire:click="setView('{{ $key }}')" @class(['sp-tab', 'is-active' => $view === $key])>
-                        <x-dynamic-component :component="$tab['icon']" class="h-4 w-4" />
-                        {{ $tab['label'] }}
+                <div class="sp-st-nav">
+                    <button type="button" wire:click="prevWindow" class="sp-st-icon-btn" aria-label="Previous">
+                        <x-heroicon-m-chevron-left />
                     </button>
-                @endforeach
-            </div>
-        </div>
+                    <div class="sp-st-nav__label">{{ $windowLabel }}</div>
+                    <button type="button" wire:click="nextWindow" class="sp-st-icon-btn" aria-label="Next">
+                        <x-heroicon-m-chevron-right />
+                    </button>
+                </div>
 
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-            <div class="relative">
-                <input type="date" wire:model.live="focusDate" class="sp-tabs__search !w-44 appearance-none pr-8" />
-                <x-heroicon-m-calendar class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
-
-            <div class="relative">
-                <select wire:model.live="campus" class="sp-tabs__search !w-44 appearance-none pr-8">
-                    <option value="">All campuses</option>
-                    @foreach ($campuses as $c)
-                        <option value="{{ $c }}">{{ $c }}</option>
-                    @endforeach
-                </select>
-                <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <div class="sp-st-bar__quick">
+                    <button type="button" wire:click="goToday"
+                            @class(['sp-st-chipbtn', 'is-active' => $view === 'day' && $focusDate === $today])>Today</button>
+                    <button type="button" wire:click="goTomorrow" class="sp-st-chipbtn">Tomorrow</button>
+                    <label class="sp-st-field sp-st-field--date">
+                        <span class="sr-only">Jump to date</span>
+                        <input type="date" wire:model.live="focusDate" />
+                    </label>
+                </div>
             </div>
 
-            <div class="relative">
-                <select wire:model.live="statusFilter" class="sp-tabs__search !w-44 appearance-none pr-8">
-                    <option value="">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="accepted">Accepted</option>
-                </select>
-                <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
+            <div class="sp-st-bar__row sp-st-bar__row--filters">
+                <label class="sp-st-field sp-st-field--search">
+                    <x-heroicon-m-magnifying-glass class="sp-st-field__icon" />
+                    <span class="sr-only">Search teacher</span>
+                    <input type="search" wire:model.live.debounce.300ms="search" placeholder="Search teacher…" autocomplete="off" />
+                </label>
 
-            <div class="text-xs text-gray-500">
-                Leaves and duties are grouped by substitute teacher, so the roster shows what each teacher is actually covering.
-            </div>
-            @if ($view === 'monthly')
-                <span class="sp-pill sp-pill-indigo">Monthly showing active days only</span>
-            @endif
-        </div>
-    </div>
-
-    <div class="sp-card">
-        <div class="sp-card-h">How to read this roster</div>
-        <div class="sp-card-sub">
-            Each row is a teacher. Each day column lists the classes, periods, and duties they are covering on that date. Blue cards are leave coverages, green cards are standalone duties, and amber warnings flag coverage that still needs a duty handoff.
-        </div>
-    </div>
-
-    <div class="sp-card overflow-x-auto p-0">
-        <table class="min-w-full border-collapse text-xs">
-            <thead class="bg-gray-50/80 text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
-                <tr>
-                    <th class="sticky left-0 z-10 w-72 border-b border-gray-200 bg-gray-50/95 px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 backdrop-blur dark:border-white/10 dark:bg-slate-950/95 dark:text-gray-400">Teacher</th>
-                    @foreach ($displayDays as $day)
-                        <th class="min-w-[220px] border-b border-gray-200 px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:border-white/10 dark:text-gray-400">
-                            <div class="flex items-center justify-between gap-2">
-                                <span>{{ $day['label'] }}</span>
-                                <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-gray-500 ring-1 ring-gray-200 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">
-                                    {{ \Carbon\Carbon::parse($day['date'])->format('d M') }}
-                                </span>
-                            </div>
-                        </th>
-                    @endforeach
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($rosterRows as $row)
-                    @php
-                        $teacherInitial = \Illuminate\Support\Str::of($row['teacher_name'])->substr(0, 1);
-                        $teacherDays = $row['days'] ?? [];
-                    @endphp
-                    <tr class="border-t border-gray-100/80 align-top {{ $row['gap_count'] > 0 ? 'bg-amber-50/20' : '' }}">
-                        <th class="sticky left-0 z-10 border-b border-gray-100 bg-white px-4 py-4 text-left align-top dark:border-white/10 dark:bg-slate-950">
-                            <div class="flex items-start gap-3">
-                                <div class="sp-avatar">{{ $teacherInitial }}</div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $row['teacher_name'] }}</div>
-                                    <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
-                                        @if ($row['teacher_subject'])
-                                            <span class="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-white/5">{{ $row['teacher_subject'] }}</span>
-                                        @endif
-                                        @if ($row['teacher_campus'])
-                                            <span class="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-white/5">{{ strtoupper($row['teacher_campus']) }}</span>
-                                        @endif
-                                        <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{{ $row['covered_count'] }} items</span>
-                                        @if ($row['gap_count'] > 0)
-                                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">{{ $row['gap_count'] }} gaps</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        </th>
-
-                        @foreach ($displayDays as $day)
-                            @php $entries = $teacherDays[$day['date']] ?? []; @endphp
-                            <td class="border-b border-gray-100 px-2 py-3 align-top dark:border-white/10">
-                                <div class="space-y-2">
-                                    @forelse ($entries as $cell)
-                                        @php
-                                            $tone = $entryBorder[$cell['source']] ?? 'border-gray-200 bg-white dark:border-white/10 dark:bg-white/5';
-                                            $status = $statusChip[$cell['status']] ?? 'sp-pill-gray';
-                                        @endphp
-                                        <div class="rounded-xl border p-3 shadow-sm {{ $tone }}">
-                                            <div class="flex items-start justify-between gap-2">
-                                                <span class="sp-pill {{ $cell['source'] === 'leave' ? 'sp-pill-blue' : 'sp-pill-green' }}">
-                                                    {{ $cell['source'] === 'leave' ? 'Leave coverage' : 'Duty assignment' }}
-                                                </span>
-                                                <span class="sp-pill {{ $status }}">{{ strtoupper($cell['status']) }}</span>
-                                            </div>
-
-                                            <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
-                                                @if ($cell['source'] === 'leave')
-                                                    {{ $cell['class_code'] ?? 'Class' }} · {{ $cell['subject'] }}
-                                                @else
-                                                    {{ $cell['subject'] }}
-                                                @endif
-                                            </div>
-
-                                            <div class="mt-1 text-[11px] leading-5 text-gray-600 dark:text-gray-300">
-                                                @if ($cell['source'] === 'leave')
-                                                    <div>Assigned duty: <span class="font-medium text-gray-900 dark:text-white">Class substitution</span></div>
-                                                    <div>Period: <span class="font-medium text-gray-900 dark:text-white">{{ $cell['period'] }}</span></div>
-                                                    <div>Session: <span class="font-medium text-gray-900 dark:text-white">{{ $cell['session'] ?: 'Regular' }}</span></div>
-                                                    <div>Original: <span class="font-medium text-gray-900 dark:text-white">{{ $cell['original'] }}</span></div>
-                                                    <div>Covering: <span class="font-medium text-gray-900 dark:text-white">{{ $cell['substitute'] }}</span></div>
-                                                    @if ($cell['room'])
-                                                        <div>Room: <span class="font-medium text-gray-900 dark:text-white">{{ $cell['room'] }}</span></div>
-                                                    @endif
-                                                @else
-                                                    <div>Assigned duty: <span class="font-medium text-gray-900 dark:text-white">Out-of-class assignment</span></div>
-                                                    <div>Duty date: <span class="font-medium text-gray-900 dark:text-white">{{ $day['label'] }} · {{ \Carbon\Carbon::parse($cell['date'])->format('d M') }}</span></div>
-                                                    @if ($cell['room'])
-                                                        <div>Location: <span class="font-medium text-gray-900 dark:text-white">{{ $cell['room'] }}</span></div>
-                                                    @endif
-                                                    <div>Covered by: <span class="font-medium text-gray-900 dark:text-white">{{ $cell['substitute'] }}</span></div>
-                                                @endif
-                                            </div>
-
-                                            @if ($cell['gap'])
-                                                <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                                                    ⚠ {{ $cell['gap_reason'] }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @empty
-                                        @if ($view === 'monthly')
-                                            <div class="rounded-lg border border-dashed border-gray-200 px-2 py-2 text-center text-[10px] text-gray-300 dark:border-white/10 dark:text-gray-500">-</div>
-                                        @else
-                                            <div class="rounded-xl border border-dashed border-gray-200 px-3 py-4 text-center text-[11px] text-gray-300 dark:border-white/10 dark:text-gray-500">No coverage</div>
-                                        @endif
-                                    @endforelse
-                                </div>
-                            </td>
+                <label class="sp-st-field">
+                    <span class="sp-st-field__label">Campus</span>
+                    <select wire:model.live="campus">
+                        <option value="">All</option>
+                        @foreach ($campuses as $c)
+                            <option value="{{ $c }}">{{ $c }}</option>
                         @endforeach
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="{{ count($displayDays) + 1 }}" class="px-6 py-12 text-center text-sm text-gray-500">
-                            No coverage rows match the current filters.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+                    </select>
+                    <x-heroicon-m-chevron-down class="sp-st-field__caret" />
+                </label>
 
-    <div id="eligibility-lookup"
-         x-data="{}"
-         @scroll-to-eligibility.window="$nextTick(() => document.getElementById('eligibility-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))"
-         class="sp-card mt-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Eligibility lookup</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Pick a leave to inspect substitute availability before assigning the coverage.</p>
-            </div>
-            @if($eligibilityLeaveId)
-                <button type="button" wire:click="clearInspect" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-300 dark:hover:text-indigo-200">
-                    Clear
-                </button>
-            @endif
-        </div>
+                <label class="sp-st-field">
+                    <span class="sp-st-field__label">Unit</span>
+                    <select wire:model.live="unit">
+                        <option value="">All</option>
+                        @foreach ($units as $code => $label)
+                            <option value="{{ $code }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <x-heroicon-m-chevron-down class="sp-st-field__caret" />
+                </label>
 
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Leave:</label>
-            <div class="relative">
-                <select wire:model.live="eligibilityLeaveId" class="min-w-[320px] appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-8 text-xs dark:border-white/10 dark:bg-white/5 dark:text-white">
-                    <option value="">— select a leave —</option>
-                    @foreach($inspectableLeaves as $l)
-                        <option value="{{ $l->id }}">
-                            {{ $l->teacher?->name ?? '—' }} ·
-                            {{ ucfirst($l->status) }} ·
-                            {{ optional($l->starts_at)->format('d M') }}–{{ optional($l->ends_at)->format('d M') }}
-                            ({{ \App\Models\LeaveType::labelFor($l->type) }})
-                        </option>
-                    @endforeach
-                </select>
-                <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
-            @if($inspectableLeaves->isEmpty())
-                <span class="text-xs text-gray-400 italic">No leaves in current window.</span>
-            @endif
-        </div>
+                <label class="sp-st-field">
+                    <span class="sp-st-field__label">Show</span>
+                    <select wire:model.live="statusFilter">
+                        <option value="">Everything</option>
+                        @foreach ($filters as $k => $label)
+                            <option value="{{ $k }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <x-heroicon-m-chevron-down class="sp-st-field__caret" />
+                </label>
 
-        @if($eligibilityLeaveId && $eligibility)
-            <div class="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
-                @if($inspectedLeave)
-                    <div class="mb-3 text-xs text-gray-700 dark:text-gray-300">
-                        <strong>{{ $inspectedLeave->teacher?->name }}</strong>
-                        · {{ \App\Models\LeaveType::labelFor($inspectedLeave->type) }}
-                        · {{ optional($inspectedLeave->starts_at)->format('d M') }}–{{ optional($inspectedLeave->ends_at)->format('d M Y') }}
-                        @if($inspectedLeave->substitute_teacher_id)
-                            · <span class="text-emerald-700 dark:text-emerald-300">currently covered by {{ $inspectedLeave->substitute?->name }}</span>
-                        @endif
+                @if ($hasFilters)
+                    <button type="button" wire:click="resetFilters" class="sp-st-link">Clear filters</button>
+                @endif
+
+                @if ($view !== 'month')
+                    <div class="sp-st-seg sp-st-seg--sm sp-st-bar__end" aria-label="Layout">
+                        <button type="button" wire:click="setLayout('roster')" @class(['sp-st-seg__btn', 'is-active' => $layout === 'roster'])>
+                            <x-heroicon-m-users /> By teacher
+                        </button>
+                        <button type="button" wire:click="setLayout('grid')" @class(['sp-st-seg__btn', 'is-active' => $layout === 'grid'])>
+                            <x-heroicon-m-table-cells /> By period
+                        </button>
                     </div>
                 @endif
 
-                @include('filament.principal.teacher.eligibility-grid', [
-                    'eligibility' => $eligibility,
-                    'showPick'    => false,
-                ])
+                <div wire:loading.delay class="sp-st-loading">Updating…</div>
             </div>
-        @elseif($eligibilityLeaveId && ! $eligibility)
-            <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                Could not build eligibility because the teacher is missing, there is no published timetable, or the leave window falls outside school days.
+        </div>
+
+        {{-- ───────────── KPIs ───────────── --}}
+        <div class="sp-st-kpis">
+            <div class="sp-st-kpi">
+                <div class="sp-st-kpi__label">Teachers on leave</div>
+                <div class="sp-st-kpi__value">{{ $s['teachers_on_leave'] }}</div>
+                <div class="sp-st-kpi__hint">{{ $s['lessons_total'] }} lessons to cover</div>
+            </div>
+            <div class="sp-st-kpi sp-st-kpi--green">
+                <div class="sp-st-kpi__label">Covered</div>
+                <div class="sp-st-kpi__value">{{ $active }}@if ($pct !== null)<small>{{ $pct }}%</small>@endif</div>
+                <div class="sp-st-meter" aria-hidden="true">
+                    @if ($s['lessons_total'] > 0)
+                        <i class="is-confirmed" style="width: {{ $s['confirmed'] / $s['lessons_total'] * 100 }}%"></i>
+                        <i class="is-awaiting" style="width: {{ $s['awaiting'] / $s['lessons_total'] * 100 }}%"></i>
+                        <i class="is-gap" style="width: {{ $s['gaps_count'] / $s['lessons_total'] * 100 }}%"></i>
+                    @endif
+                </div>
+                <div class="sp-st-kpi__hint">{{ $s['confirmed'] }} confirmed · {{ $s['awaiting'] }} awaiting reply</div>
+            </div>
+            <div @class(['sp-st-kpi', 'sp-st-kpi--red' => $s['gaps_count'] > 0])>
+                <div class="sp-st-kpi__label">Needs action</div>
+                <div class="sp-st-kpi__value">{{ $s['gaps_count'] }}</div>
+                <div class="sp-st-kpi__hint">{{ $s['uncovered'] }} uncovered · {{ $s['no_handoff'] }} without hand-off</div>
+            </div>
+            <div class="sp-st-kpi">
+                <div class="sp-st-kpi__label">Standalone duties</div>
+                <div class="sp-st-kpi__value">{{ $s['duties_count'] }}</div>
+                <div class="sp-st-kpi__hint">{{ $s['pending_leaves'] }} leave{{ $s['pending_leaves'] === 1 ? '' : 's' }} pending approval</div>
+            </div>
+        </div>
+
+        {{-- ───────────── Attention list ───────────── --}}
+        @if (count($attention))
+            <div class="sp-st-card sp-st-attn">
+                <div class="sp-st-card__head">
+                    <div>
+                        <div class="sp-st-card__title">Needs attention</div>
+                        <div class="sp-st-card__sub">Leaves in this window without confirmed cover, worst first.</div>
+                    </div>
+                    <a href="{{ $leavesUrl }}" class="sp-st-link">Open Teacher Leaves →</a>
+                </div>
+                <ul class="sp-st-attn__list">
+                    @foreach ($attention as $a)
+                        <li class="sp-st-attn__row">
+                            <span class="sp-st-dot sp-st-dot--{{ $attnTone[$a['state']] ?? 'slate' }}"></span>
+                            <div class="sp-st-attn__main">
+                                <div class="sp-st-attn__name">{{ $a['teacher'] }}
+                                    <span class="sp-st-attn__type">{{ $a['type_label'] }}</span>
+                                </div>
+                                <div class="sp-st-attn__meta">
+                                    {{ $fmt($a['starts_at']) }}@if ($a['starts_at'] !== $a['ends_at']) – {{ $fmt($a['ends_at']) }}@endif
+                                    · {{ $a['lessons'] }} lesson{{ $a['lessons'] === 1 ? '' : 's' }} in window
+                                    @if ($a['substitute']) · sub: {{ $a['substitute'] }} @endif
+                                </div>
+                            </div>
+                            <span class="sp-pill sp-pill-{{ $attnTone[$a['state']] ?? 'slate' }}">{{ $a['label'] }}</span>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
         @endif
+
+        {{-- ───────────── Main view ───────────── --}}
+        @if ($view === 'month')
+            <div class="sp-st-card sp-st-card--flush">
+                <div class="sp-st-cal">
+                    <div class="sp-st-cal__head">
+                        @foreach (['Mon','Tue','Wed','Thu','Fri','Sat'] as $d)
+                            <div>{{ $d }}</div>
+                        @endforeach
+                    </div>
+                    @foreach ($calendar as $week)
+                        <div class="sp-st-cal__week">
+                            @foreach ($week as $day)
+                                <button type="button" wire:click="openDay('{{ $day['date'] }}')"
+                                        title="Open {{ $fmt($day['date'], 'l d M') }}"
+                                        @class([
+                                            'sp-st-cal__day',
+                                            'is-out'   => ! $day['in_month'],
+                                            'is-today' => $day['is_today'],
+                                            'has-gap'  => $day['gaps'] > 0,
+                                            'is-empty' => ! $day['lessons'] && ! $day['duties'],
+                                        ])>
+                                    <span class="sp-st-cal__num">{{ $day['num'] }}</span>
+                                    @if ($day['lessons'] || $day['duties'])
+                                        <span class="sp-st-cal__stats">
+                                            @if ($day['lessons'])
+                                                <span class="sp-st-tag sp-st-tag--blue">{{ $day['lessons'] }} lesson{{ $day['lessons'] === 1 ? '' : 's' }}</span>
+                                            @endif
+                                            @if ($day['gaps'])
+                                                <span class="sp-st-tag sp-st-tag--red">{{ $day['gaps'] }} gap{{ $day['gaps'] === 1 ? '' : 's' }}</span>
+                                            @endif
+                                            @if ($day['duties'])
+                                                <span class="sp-st-tag sp-st-tag--green">{{ $day['duties'] }} dut{{ $day['duties'] === 1 ? 'y' : 'ies' }}</span>
+                                            @endif
+                                        </span>
+                                        @if (count($day['absent']))
+                                            <span class="sp-st-cal__who">Away: {{ implode(', ', array_slice($day['absent'], 0, 2)) }}@if (count($day['absent']) > 2) +{{ count($day['absent']) - 2 }}@endif</span>
+                                        @endif
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @elseif ($isSunday)
+            <div class="sp-st-card sp-st-empty">
+                <x-heroicon-o-moon class="sp-st-empty__icon" />
+                <div class="sp-st-empty__title">Sunday: no lessons scheduled</div>
+                <div class="sp-st-empty__sub">Use the arrows to move to a school day.</div>
+            </div>
+        @elseif ($layout === 'grid')
+            {{-- Period × day grid --}}
+            <div class="sp-st-card sp-st-card--flush">
+                <div class="sp-st-scroll">
+                    <table class="sp-st-table sp-st-table--grid">
+                        <thead>
+                            <tr>
+                                <th class="sp-st-sticky sp-st-col-period">Period</th>
+                                @foreach ($rosterDays as $day)
+                                    <th @class(['is-today' => $day['date'] === $today])>
+                                        <button type="button" wire:click="openDay('{{ $day['date'] }}')" class="sp-st-dayhead">
+                                            <span>{{ $day['label'] }}</span><b>{{ $fmt($day['date']) }}</b>
+                                        </button>
+                                    </th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (count($allDay))
+                                <tr class="sp-st-row-allday">
+                                    <th class="sp-st-sticky sp-st-col-period">Duties</th>
+                                    @foreach ($rosterDays as $day)
+                                        <td>
+                                            @foreach ($allDay[$day['date']] ?? [] as $cell)
+                                                @include('filament.principal.pages.partials.substitution-chip', ['cell' => $cell, 'perspective' => 'grid'])
+                                            @endforeach
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endif
+                            @foreach ($periods as $p)
+                                <tr>
+                                    <th class="sp-st-sticky sp-st-col-period"><span class="sp-st-period">{{ $p }}</span></th>
+                                    @foreach ($rosterDays as $day)
+                                        <td @class(['is-today' => $day['date'] === $today])>
+                                            @foreach ($grid[$day['date']][$p] ?? [] as $cell)
+                                                @include('filament.principal.pages.partials.substitution-chip', ['cell' => $cell, 'perspective' => 'grid'])
+                                            @endforeach
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @else
+            {{-- Teacher × day roster --}}
+            <div class="sp-st-card sp-st-card--flush">
+                @if (count($rosterRows))
+                    <div class="sp-st-scroll">
+                        <table class="sp-st-table">
+                            <thead>
+                                <tr>
+                                    <th class="sp-st-sticky sp-st-col-teacher">Covering teacher</th>
+                                    @foreach ($rosterDays as $day)
+                                        <th @class(['is-today' => $day['date'] === $today])>
+                                            @if ($view === 'day')
+                                                <span class="sp-st-dayhead"><span>{{ $day['label'] }}</span><b>{{ $fmt($day['date']) }}</b></span>
+                                            @else
+                                                <button type="button" wire:click="openDay('{{ $day['date'] }}')" class="sp-st-dayhead">
+                                                    <span>{{ $day['label'] }}</span><b>{{ $fmt($day['date']) }}</b>
+                                                </button>
+                                            @endif
+                                        </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($rosterRows as $row)
+                                    <tr @class(['is-unassigned' => $row['is_unassigned']])>
+                                        <th class="sp-st-sticky sp-st-col-teacher">
+                                            <div class="sp-st-who">
+                                                <span @class(['sp-st-avatar', 'is-warn' => $row['is_unassigned']])>
+                                                    @if ($row['is_unassigned'])
+                                                        <x-heroicon-m-exclamation-triangle />
+                                                    @else
+                                                        {{ \Illuminate\Support\Str::of($row['teacher_name'])->substr(0, 1)->upper() }}
+                                                    @endif
+                                                </span>
+                                                <span class="sp-st-who__text">
+                                                    <span class="sp-st-who__name">{{ $row['is_unassigned'] ? 'No substitute' : $row['teacher_name'] }}</span>
+                                                    <span class="sp-st-who__meta">
+                                                        @if ($row['is_unassigned'])
+                                                            Lessons with nobody assigned
+                                                        @else
+                                                            {{ collect([$row['teacher_subject'], $row['teacher_campus'] ? strtoupper($row['teacher_campus']) : null])->filter()->implode(' · ') }}
+                                                        @endif
+                                                    </span>
+                                                    <span class="sp-st-who__tags">
+                                                        @if ($row['lesson_count'])<span class="sp-st-tag sp-st-tag--blue">{{ $row['lesson_count'] }} lesson{{ $row['lesson_count'] === 1 ? '' : 's' }}</span>@endif
+                                                        @if ($row['duty_count'])<span class="sp-st-tag sp-st-tag--green">{{ $row['duty_count'] }} dut{{ $row['duty_count'] === 1 ? 'y' : 'ies' }}</span>@endif
+                                                        @if ($row['gap_count'] && ! $row['is_unassigned'])<span class="sp-st-tag sp-st-tag--red">{{ $row['gap_count'] }} need action</span>@endif
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </th>
+                                        @foreach ($rosterDays as $day)
+                                            <td @class(['is-today' => $day['date'] === $today])>
+                                                @foreach ($row['days'][$day['date']] ?? [] as $cell)
+                                                    @include('filament.principal.pages.partials.substitution-chip', ['cell' => $cell, 'perspective' => 'roster'])
+                                                @endforeach
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="sp-st-empty">
+                        <x-heroicon-o-calendar class="sp-st-empty__icon" />
+                        <div class="sp-st-empty__title">No cover or duties {{ $hasFilters ? 'match these filters' : 'in this window' }}</div>
+                        <div class="sp-st-empty__sub">
+                            @if ($hasFilters)
+                                <button type="button" wire:click="resetFilters" class="sp-st-link">Clear filters</button>
+                            @else
+                                Approved leaves with timetabled lessons and active duty assignments appear here.
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        <div class="sp-st-legend">
+            @foreach (['confirmed', 'awaiting', 'no_handoff', 'declined', 'uncovered', 'duty'] as $k)
+                <span class="sp-st-legend__item"><i class="sp-st-swatch sp-st-swatch--{{ $k }}"></i>{{ $states[$k] }}</span>
+            @endforeach
+        </div>
+
     </div>
 </x-filament-panels::page>

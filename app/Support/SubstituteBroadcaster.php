@@ -111,6 +111,35 @@ class SubstituteBroadcaster
     }
 
     /**
+     * Wind down the cover search once the leave is decided (approved or
+     * rejected). The chosen substitute's offer, if any, becomes 'assigned';
+     * every other open invitation / interest is cancelled so links stop working.
+     */
+    public static function settle(TeacherLeave $leave, ?int $substituteId = null): void
+    {
+        if ($substituteId) {
+            $leave->offers()
+                ->where('teacher_id', $substituteId)
+                ->whereIn('status', ['pending', 'interested'])
+                ->update(['status' => 'assigned', 'responded_at' => now()]);
+        }
+
+        $leave->offers()
+            ->whereIn('status', ['pending', 'interested'])
+            ->update(['status' => 'cancelled', 'responded_at' => now()]);
+
+        if ($leave->auto_search_status && $leave->auto_search_status !== 'disabled'
+            && ! str_starts_with((string) $leave->auto_search_status, 'closed_')) {
+            $leave->update([
+                'auto_search_status'    => $substituteId ? 'closed_assigned' : 'closed_manual',
+                'auto_search_closed_at' => now(),
+            ]);
+        } elseif ($leave->auto_search_status === 'closed_full' && $substituteId) {
+            $leave->update(['auto_search_status' => 'closed_assigned']);
+        }
+    }
+
+    /**
      * Principal picks one interested teacher as the substitute.
      * Marks them 'assigned', sets leave.substitute_teacher_id, closes search,
      * notifies the rest.

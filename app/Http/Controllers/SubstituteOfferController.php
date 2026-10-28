@@ -40,7 +40,10 @@ class SubstituteOfferController extends Controller
             $offer->update(['status' => 'expired']);
             return $this->page('expired', 'This invitation has expired.', $offer);
         }
-        if ($leave->substitute_teacher_id && $leave->substitute_teacher_id !== $offer->teacher_id) {
+        if ($leave->status === 'rejected') {
+            return $this->page('closed', 'This leave request was withdrawn, so no cover is needed. Thank you!', $offer);
+        }
+        if ($leave->substitute_teacher_id && (int) $leave->substitute_teacher_id !== (int) $offer->teacher_id) {
             return $this->page('filled', 'A substitute has already been assigned. Thank you for being available!', $offer);
         }
 

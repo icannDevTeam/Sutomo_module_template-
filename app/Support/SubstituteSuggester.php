@@ -201,8 +201,8 @@ class SubstituteSuggester
         $ownLeaves = TeacherLeave::query()
             ->where('teacher_id', $t->id)
             ->where('status', 'approved')
-            ->where('starts_at', '<=', $end)
-            ->where('ends_at',   '>=', $start)
+            ->whereDate('starts_at', '<=', $end)
+            ->whereDate('ends_at',   '>=', $start)
             ->get(['starts_at', 'ends_at']);
 
         foreach ($ownLeaves as $l) {
@@ -217,8 +217,8 @@ class SubstituteSuggester
             ->where('substitute_teacher_id', $t->id)
             ->where('status', 'approved')
             ->when($excludeLeaveId, fn ($q) => $q->where('id', '!=', $excludeLeaveId))
-            ->where('starts_at', '<=', $end)
-            ->where('ends_at',   '>=', $start)
+            ->whereDate('starts_at', '<=', $end)
+            ->whereDate('ends_at',   '>=', $start)
             ->with('teacher:id,name')
             ->get();
 

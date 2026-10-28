@@ -132,14 +132,7 @@ class TeacherLeaveResource extends Resource
                         Tables\Actions\Action::make('rejectInModal')
                             ->label('Reject')->icon('heroicon-o-x-mark')->color('danger')
                             ->requiresConfirmation()
-                            ->action(function ($record) {
-                                $record->update([
-                                    'status'     => 'rejected',
-                                    'decided_by' => auth()->user()?->name ?? 'Principal',
-                                    'decided_at' => now(),
-                                ]);
-                                Notification::make()->title('Leave rejected')->warning()->send();
-                            }),
+                            ->action(fn ($record) => self::rejectLeave($record)),
                     ] : []),
                 Tables\Actions\Action::make('printLetter')
                     ->label('Print Letter')->icon('heroicon-o-printer')->color('gray')
@@ -154,14 +147,7 @@ class TeacherLeaveResource extends Resource
                 Tables\Actions\Action::make('reject')->icon('heroicon-o-x-mark')->color('danger')
                     ->visible(fn ($record) => $record->status === 'pending')
                     ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => 'rejected',
-                            'decided_by' => auth()->user()?->name ?? 'Principal',
-                            'decided_at' => now(),
-                        ]);
-                        Notification::make()->title('Leave rejected')->warning()->send();
-                    }),
+                    ->action(fn ($record) => self::rejectLeave($record)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkAction::make('exportCsv')
@@ -193,6 +179,18 @@ class TeacherLeaveResource extends Resource
         ];
     }
 
+    /** Reject a leave and shut down any cover search still running for it. */
+    protected static function rejectLeave(TeacherLeave $record): void
+    {
+        $record->update([
+            'status'     => 'rejected',
+            'decided_by' => auth()->user()?->name ?? 'Principal',
+            'decided_at' => now(),
+        ]);
+        SubstituteBroadcaster::settle($record);
+        Notification::make()->title('Leave rejected')->warning()->send();
+    }
+
     /**
      * Approve action with a candidate-picker modal.
      * Used both as a row action and as a modal footer action on the View modal.
@@ -207,6 +205,12 @@ class TeacherLeaveResource extends Resource
             ->modalHeading(fn ($record) => 'Assign Substitute · ' . ($record->teacher?->name ?? 'Teacher'))
             ->modalWidth('5xl')
             ->modalSubmitActionLabel('Approve & Assign')
+            // Keep a substitute already chosen via "Pick Substitute" pre-selected.
+            ->fillForm(fn ($record) => [
+                'substitute_teacher_id'      => $record->substitute_teacher_id,
+                'create_duty_assignment'     => true,
+                'approve_without_substitute' => false,
+            ])
             ->modalContent(function ($record) {
                 $candidates = SubstituteSuggester::for($record);
                 return view('filament.principal.teacher.substitute-picker', [
@@ -258,6 +262,8 @@ class TeacherLeaveResource extends Resource
                     'decided_by'            => auth()->user()?->name ?? 'Principal',
                     'decided_at'            => now(),
                 ]);
+
+                SubstituteBroadcaster::settle($record, $skipSubstitute ? null : (int) $substituteId);
 
                 $subName = null;
                 if (! $skipSubstitute && $substituteId) {
